@@ -1,7 +1,7 @@
 package OurNet::BBS;
 require 5.005;
 
-$OurNet::BBS::VERSION = "1.5";
+$OurNet::BBS::VERSION = "1.51";
 
 use strict;
 use base qw/OurNet::BBS::Base/;

@@ -1,6 +1,6 @@
 MANIFEST
+Makefile.PL
 README
-TODO
 Changes
 bin/bbscomd
 t/BBS-BBSAgent.t
