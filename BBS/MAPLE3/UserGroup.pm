@@ -1,10 +1,10 @@
-# $File: //depot/OurNet-BBS/BBS/MAPLE3/UserGroup.pm $ $Author: clkao $
-# $Revision: #16 $ $Change: 2388 $ $DateTime: 2001/11/22 22:34:45 $
+# $File: //depot/OurNet-BBS/BBS/MAPLE3/UserGroup.pm $ $Author: autrijus $
+# $Revision: #17 $ $Change: 2440 $ $DateTime: 2001/11/27 15:38:54 $
 
 package OurNet::BBS::MAPLE3::UserGroup;
 
 use strict;
-use fields qw/bbsroot shmkey maxuser _ego _hash _array/;
+use fields qw/bbsroot _ego _hash _array/;
 use subs qw/writeok readok/;
 use OurNet::BBS::Base;
 
@@ -12,7 +12,6 @@ use constant IsWin32 => ($^O eq 'MSWin32');
 use open (IsWin32 ? (IN => ':raw', OUT => ':raw') : ());
 
 sub writeok { 0 }
-
 sub readok { 1 }
 
 sub FETCHSIZE {

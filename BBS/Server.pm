@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Server.pm $ $Author: autrijus $
-# $Revision: #53 $ $Change: 2328 $ $DateTime: 2001/11/09 23:11:22 $
+# $Revision: #54 $ $Change: 2454 $ $DateTime: 2001/11/28 07:08:31 $
 
 package OurNet::BBS::Server;
 
@@ -115,17 +115,22 @@ sub daemonize {
 	if (UNIVERSAL::isa($ROOT, 'OurNet::BBS')) {
 	    no warnings;
 
-	    my $sysop = eval { $ROOT->{users}{SYSOP} } || [];
-	    my $guest = eval { $ROOT->{users}{autrijus} } || [];
+	    my $users = eval { $ROOT->{users} };
+	    my $sysop = eval { $users->{SYSOP} } || [];
+	    my $guest = eval { $users->{guest} } || [];
 
 	    local $@;
 
 	    $AuthLevel &= ~AUTH_CRYPT unless eval{
-		$sysop->{passwd} or $guest->{passwd} 
+		$sysop->{passwd} 
+	    } or eval {
+		$guest->{passwd} 
 	    };
 
 	    $AuthLevel &= ~AUTH_PGP unless eval{
-		$sysop->{plans} or $guest->{plans}
+		$sysop->{plans}
+	    } or eval {
+		$guest->{plans}
 	    };
 	}
 	else {

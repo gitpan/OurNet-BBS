@@ -1,4 +1,43 @@
 ____________________________________________________________________________
+[  2546] By: autrijus                              on 2001/12/10  04:24:28
+        Log: * This be OurNet::BBS v1.63.
+	   ! BBS.pm Changes
+____________________________________________________________________________
+[  2545] By: autrijus                              on 2001/12/10  04:21:25
+        Log: * adds the OurNet::BBS::Tutorial diagrams.
+             * updates HISTORY in accord to BBS.pod.
+             * updates MANIFEST.
+	   + BBS/Tutorial.pod
+	   ! BBS.pod HISTORY MANIFEST
+____________________________________________________________________________
+[  2491] By: autrijus                              on 2001/12/01  12:05:42
+        Log: * gives BBSAgent a more liberal timeout (60 sec).
+             * reported by cpf, chris.
+	   ! BBS/BBSAgent/BBS.pm
+____________________________________________________________________________
+[  2456] By: autrijus                              on 2001/11/28  12:16:45
+        Log: * let Win32 happy with test on missing SIGUSR2.
+             * stdtest now counts the previously-obiwan use_ok().
+	   ! BBS/MAPLE2/SessionGroup.pm BBS/MELIX/SessionGroup.pm
+	   ! t/stdtests
+____________________________________________________________________________
+[  2454] By: autrijus                              on 2001/11/28  07:08:31
+        Log: * finally the CIPH_CRYPT validation routine is sane again.
+	   ! BBS/Server.pm
+____________________________________________________________________________
+[  2441] By: autrijus                              on 2001/11/27  15:42:06
+        Log: * uses the natural path splitter instead of some nonprotable guess.
+	   ! Makefile.PL
+____________________________________________________________________________
+[  2440] By: autrijus                              on 2001/11/27  15:38:54
+        Log: * remedy clkao's patch that made M3 skips maxuser/usershmkey params.
+	   ! BBS/MAPLE3/BBS.pm BBS/MAPLE3/User.pm BBS/MAPLE3/UserGroup.pm
+	   ! BBS/MELIX/BBS.pm BBS/MELIX/User.pm BBS/MELIX/UserGroup.pm
+____________________________________________________________________________
+[  2435] By: autrijus                              on 2001/11/27  09:55:03
+        Log: * check CC routine borked. reported by pudge.
+	   ! Makefile.PL
+____________________________________________________________________________
 [  2392] By: clkao                                 on 2001/11/22  13:41:47
         Log: remove unused MELIX toplevel fields: usershmkey and maxuser
 	   ! BBS/MELIX/BBS.pm
@@ -70,9 +109,6 @@ ____________________________________________________________________________
         Log: * updated bootstrapping version of autoinstall.
 	   ! ExtUtils/AutoInstall.pm
 ____________________________________________________________________________
-[  2270] By: werther                               on 2001/11/04  17:45:56
-        Log: <My mistake>
-____________________________________________________________________________
 [  2249] By: autrijus                              on 2001/11/02  09:29:31
         Log: * Authen now accepts Crypt::Rijndael_PP as perl-only alternative.
              * Makefile.PL will probe for compiler/gpg to determine the auth modules.
@@ -81,9 +117,6 @@ ____________________________________________________________________________
 [  2234] By: autrijus                              on 2001/10/31  22:57:59
         Log: * the id/title implementation of NNTP was wrong.
 	   ! BBS/NNTP/Board.pm
-____________________________________________________________________________
-[  2231] By: werther                               on 2001/10/30  01:25:40
-        Log: In fact, it's not public!!	
 ____________________________________________________________________________
 [  2228] By: autrijus                              on 2001/10/28  11:20:55
         Log: * split dependency of OurNet Client vs. Server.
@@ -269,6 +302,20 @@ ____________________________________________________________________________
              * updated tests for callback + coderef feature
              * changed STORE semantic to avoid unnecessary loops
 	   ! BBS/Authen.pm BBS/Client.pm BBS/Server.pm t/stdtests
+____________________________________________________________________________
+[  2054] By: autrijus                              on 2001/10/13  10:20:11
+        Log: * enables non-reentrant (i.e. callback inside callback) OOB.
+             * introduces OBJECT_CACHE to directly access a cached object.
+             * Client now automagically registers callback when sending a code ref.
+             * 
+	   ! BBS/Authen.pm BBS/Client.pm BBS/Server.pm
+____________________________________________________________________________
+[  2053] By: autrijus                              on 2001/10/13  08:46:19
+        Log: * Client now does rough (shallow) check for CODE refs.
+             * MELIX auto-supplies $$ if pid not given to new sessions.
+             * implements a crude hack of lastref() equivalent to $value->{ref}
+             * turns everything to procedural and updates echo-agent accordingly
+	   ! BBS/Client.pm BBS/MELIX/SessionGroup.pm
 ____________________________________________________________________________
 [  2052] By: autrijus                              on 2001/10/13  06:32:51
         Log: * the complementary Write code for OOB.
@@ -548,9 +595,6 @@ ____________________________________________________________________________
         Log: * REF and SPAWN should not be subject to permission control.
 	   ! BBS/Server.pm
 ____________________________________________________________________________
-[  1799] By: autrijus                              on 2001/09/11  07:19:42
-        Log: * 
-____________________________________________________________________________
 [  1748] By: autrijus                              on 2001/09/07  13:02:18
         Log: * pod clean up; updated flags, using new POD directives to mimic proper manpage style
 	   ! bin/bbscomd
@@ -562,9 +606,6 @@ ____________________________________________________________________________
 [  1745] By: clkao                                 on 2001/09/07  11:38:23
         Log: kludge non-english datetime parse.
 	   ! BBS/BBSAgent/Article.pm
-____________________________________________________________________________
-[  1744] By: autrijus                              on 2001/09/07  10:01:41
-        Log: * start working on translation.
 ____________________________________________________________________________
 [  1743] By: autrijus                              on 2001/09/07  09:31:53
         Log: * version bump and pod cleanup for bbscomd

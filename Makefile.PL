@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # $File: //depot/OurNet-BBS/Makefile.PL $ $Author: autrijus $
-# $Revision: #28 $ $Change: 2249 $ $DateTime: 2001/11/03 01:29:31 $
+# $Revision: #30 $ $Change: 2441 $ $DateTime: 2001/11/27 15:42:06 $
 
 use 5.006;
 use strict;
@@ -23,7 +23,7 @@ foreach my $cipher (@ciphers) {
 
 require Config;
 
-unless ($have_ciph) {
+unless (!$have_ciph) {
     @cipher_module = have($Config::Config{cc})
         ? ('Crypt::Rijndael' => '0.03') : ('Crypt::Rijndael_PP' => '0.01');
 }
@@ -96,5 +96,5 @@ sub have {
     # do we have something?
     return grep {
         -x "$_/$_[0]" or -x "$_/$_[0].exe"
-    } split(';', $ENV{PATH});
+    } split($Config::Config{path_sep}, $ENV{PATH});
 }

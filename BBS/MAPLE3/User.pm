@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/User.pm $ $Author: autrijus $
-# $Revision: #16 $ $Change: 1607 $ $DateTime: 2001/08/30 03:01:38 $
+# $Revision: #17 $ $Change: 2440 $ $DateTime: 2001/11/27 15:38:54 $
 
 package OurNet::BBS::MAPLE3::User;
 
@@ -123,7 +123,7 @@ sub refresh_meta {
 
 sub refresh_mailbox {
     my $self = shift;
-    my $PATH_USR = 'usr'; # XXX should be in inivars
+    my $PATH_USR = 'usr'; # XXX: should be in initvars
 
     return $self->{_hash}{mailbox} ||= $self->module('ArticleGroup')->new({
 	basepath	=> "$self->{bbsroot}/$PATH_USR/".

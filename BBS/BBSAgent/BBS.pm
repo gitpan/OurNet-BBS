@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/BBSAgent/BBS.pm $ $Author: autrijus $
-# $Revision: #6 $ $Change: 1838 $ $DateTime: 2001/09/18 20:54:37 $
+# $Revision: #7 $ $Change: 2491 $ $DateTime: 2001/12/01 12:05:42 $
 
 package OurNet::BBS::BBSAgent::BBS;
 
@@ -34,7 +34,7 @@ sub load_bbsobj {
 
     my $bbsobj = OurNet::BBSAgent->new(
 	OurNet::BBS::Utils::locate($bbsname, 'OurNet::BBSAgent'),
-        $self->{timeout} ||= 10,
+        $self->{timeout} ||= 60,
         $self->{logfile},
     );
 

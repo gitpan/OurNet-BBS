@@ -1,10 +1,11 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/SessionGroup.pm $ $Author: autrijus $
-# $Revision: #7 $ $Change: 1575 $ $DateTime: 2001/08/28 01:26:00 $
+# $Revision: #8 $ $Change: 2456 $ $DateTime: 2001/11/28 12:16:45 $
 
 package OurNet::BBS::MAPLE2::SessionGroup;
 
 use strict;
 use fields qw/bbsroot shmkey maxsession chatport passwd shmid shm _ego _hash/;
+use constant IsWin32 => ($^O eq 'MSWin32');
 
 use OurNet::BBS::Base (
     '%registered' => {},
@@ -41,10 +42,11 @@ sub message_handler {
             }
         }
     }
-    $SIG{USR2} = \&message_handler;
+
+    $SIG{USR2} = \&message_handler unless IsWin32;
 };
 
-$SIG{USR2} = \&message_handler;
+$SIG{USR2} = \&message_handler unless IsWin32;
 
 sub _lock {}
 sub _unlock {}

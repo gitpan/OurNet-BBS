@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # $File: //depot/OurNet-BBS/t/stdtests $ $Author: autrijus $
-# $Revision: #30 $ $Change: 2325 $ $DateTime: 2001/11/09 20:08:02 $
+# $Revision: #31 $ $Change: 2456 $ $DateTime: 2001/11/28 12:16:45 $
 
 use strict; $|++;
 use constant IsWin32 => ($^O eq 'MSWin32');
@@ -39,7 +39,7 @@ my $backend  = $1 if $BBS =~ m/OurNet::BBS::([^:]+)::/;
 my @modules  = grep { m|BBS/$backend| } <$::MANIFEST> and close $::MANIFEST
     if $backend and $::MANIFEST;
 
-plan tests => 44 + @modules;
+plan tests => 44 + @modules + ($IsClient and IsWin32);
 
 # tests compilation
 require_ok("OurNet::$_") foreach map { 

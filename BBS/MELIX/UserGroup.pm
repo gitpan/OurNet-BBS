@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MELIX/UserGroup.pm $ $Author: autrijus $
-# $Revision: #4 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
+# $Revision: #5 $ $Change: 2440 $ $DateTime: 2001/11/27 15:38:54 $
 
 package OurNet::BBS::MELIX::UserGroup;
 

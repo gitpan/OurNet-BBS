@@ -101,6 +101,7 @@ BBS/Server.pm
 BBS/ShmArray.pm
 BBS/ShmScalar.pm
 BBS/SocketScalar.pm
+BBS/Tutorial.pod
 BBS/Utils.pm
 Changes
 ExtUtils/AutoInstall.pm

@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MELIX/SessionGroup.pm $ $Author: autrijus $
-# $Revision: #13 $ $Change: 2350 $ $DateTime: 2001/11/13 14:33:49 $
+# $Revision: #14 $ $Change: 2456 $ $DateTime: 2001/11/28 12:16:45 $
 
 package OurNet::BBS::MELIX::SessionGroup;
 
@@ -7,6 +7,7 @@ use strict;
 use base qw/OurNet::BBS::MAPLE3::SessionGroup/;
 use fields qw/lastref _ego _hash/;
 use subs qw/refresh_meta shminit STORE message_handler DESTROY/;
+use constant IsWin32 => ($^O eq 'MSWin32');
 
 use OurNet::BBS::Base (
      '$packstring'	=> 'LLLLLLLLa18Z13Z13Z24Z34x2',
@@ -100,10 +101,10 @@ sub message_handler {
         }
     }
 
-    $SIG{USR2} = \&message_handler;
+    $SIG{USR2} = \&message_handler unless IsWin32;
 };
 
-$SIG{USR2} = \&message_handler;
+$SIG{USR2} = \&message_handler unless IsWin32;
 
 sub STORE {
     my ($self, $key, $value) = @_;

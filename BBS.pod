@@ -406,7 +406,17 @@ syndication between nodes.
 
 =over 4
 
-=item v1.63, Fri Nov  9 19:51:33 CST 2001
+=item v1.63, Mon Dec 10 20:21:38 CST 2001
+
+Added three simple diagrams in B<OurNet::BBS::Tutorial>.
+
+A longer timeout (60 sec) is now used by B<BBSAgent>.
+
+Fixed installation glitches reported by pudge.
+
+Remove unused B<MELIX> toplevel fields C<usershmkey> and C<maxuser>.
+
+Group semantic in B<MAPLE3> and B<MELIX> finally worked.
 
 The dependency to B<Test::More> 0.31+ is now handled.
 
