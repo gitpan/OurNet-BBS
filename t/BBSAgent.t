@@ -33,7 +33,7 @@ while (my ($site, $addr) = each %sites) {
 
     if (defined inet_aton($addr)) {
         my $result = eval {
-	    $BBS->{boards}->sanity_test(!$ARGV[0])
+	    $BBS->sanity_test(!$ARGV[0])
 	};
 
 	if ($@ =~ /problem connecting/) {

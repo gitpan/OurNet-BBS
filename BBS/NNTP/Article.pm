@@ -38,7 +38,7 @@ sub refresh_header {
 
     foreach my $line (@{$self->{head}}) {
 	next unless $line =~ m/([\w-]+):\s(.*)/;
-	print "(set header $1 to $2)\n";
+	print "(set header $1 to $2)\n" if $OurNet::BBS::DEBUG;
 	$self->{_cache}{header}{$1} = $2;
     }
     return 1;

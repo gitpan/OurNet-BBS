@@ -12,6 +12,9 @@ sub refresh_meta {
     $self->{_cache}{uid} ||= $self->{recno} - 1;
     $self->{_cache}{name} ||= $self->{id};
     return if exists $self->{_cache}{$key};
+
+    die "malicious intent stopped cold" if index($key, '../') > -1;
+
     require OurNet::BBS::ScalarFile;
     tie $self->{_cache}{$key}, 'OurNet::BBS::ScalarFile',
         "$self->{bbsroot}/home/$self->{id}/$key";

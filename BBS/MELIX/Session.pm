@@ -3,7 +3,7 @@ $VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
-use fields qw/recno shmid shm chatport registered _cache/;
+use fields qw/recno shmid shm chatid chatport registered userid passwd _cache/;
 use POSIX;
 
 BEGIN {
@@ -24,7 +24,24 @@ sub refresh_meta {
 
 sub refresh_chat {
     my $self = shift;
-    die 'no chat yet';
+    return if exists $self->{_cache}{chat};
+
+    require OurNet::BBS::SocketScalar;
+    $self->refresh_meta('userid');
+
+    die 'need passwd for session chat' unless $self->{passwd};
+
+    tie $self->{_cache}{chat}, 'OurNet::BBS::SocketScalar',
+        (index($self->{chatport}, ':') > -1) ? $self->{chatport}
+             : ('localhost', $self->{chatport});
+
+    $self->{_cache}{chat} = "/! $self->{_cache}{userid} ".
+			       "$self->{_cache}{userid} ".
+                               "$self->{passwd}\n";
+
+    $self->{_cache}{chatid} = $self->{_cache}{userid};
+
+#   $self->_shmwrite();
 }
 
 sub _shmwrite {

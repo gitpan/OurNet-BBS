@@ -5,8 +5,10 @@ $VERSION = "0.1";
 # idxfile for hdr of the deeper level that this articlegroup is holding.
 use strict;
 use base qw/OurNet::BBS::Base/;
-use fields qw/basepath board name dir hdrfile idxfile recno mtime btime _cache _phash/;
+use fields qw/basepath board name dir hdrfile idxfile recno 
+	      bm readlevel postlevel mtime btime _cache _phash/;
 use vars qw/%chronos/;
+use subs qw/readok writeok/;
 
 use constant GEM_FOLDER  => 0x00010000;
 use constant GEM_BOARD   => 0x00020000;
@@ -23,10 +25,22 @@ BEGIN {
     );
 }
 
+sub writeok {
+    my ($self, $user) = @_;
+
+    # store/delete an article require bm permission in that board
+    return $user->has_perm('PERM_BM') or $user->id() eq $self->bm();
+}
+
+sub readok {
+    my ($self, $user) = @_;
+
+    my $readlevel = $self->readlevel();
+    return (!$readlevel or $readlevel & $user->{userlevel});
+}
+
 sub basedir {
     my $self = shift;
-
-#print "$self->{basepath}, $self->{board}\n";
 
     return join('/', $self->{basepath}, $self->{board});
 }

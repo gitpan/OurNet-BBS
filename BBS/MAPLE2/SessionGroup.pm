@@ -3,7 +3,7 @@ $VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot shmkey maxsession chatport shmid shm _cache/;
+use fields qw/bbsroot shmkey maxsession chatport passwd shmid shm _cache/;
 use OurNet::BBS::ShmScalar;
 use POSIX;
 
@@ -26,19 +26,19 @@ BEGIN {
 sub message_handler {
     # we don't handle multiple messages in the queue yet.
     foreach my $instance (values %instances) {
-        print "check for instance $instance\n";
+        print "check for instance $instance\n" if $OurNet::BBS::DEBUG;
         $instance->refresh_meta($_)
             foreach (0..$instance->{maxsession}-1);
 
         foreach my $session (values %{$registered{$instance}}) {
-            print "check for $session->{_cache}{pid}\n";
+            print "check for $session->{_cache}{pid}\n" if $OurNet::BBS::DEBUG;
             $session->refresh_meta();
             if ($session->{_cache}{msgcount}) {
                 my ($pid, $userid, $message) =
                     unpack('LZ13Z80x3', $session->{_cache}{msgs});
                 my $from = $pid && (grep {$_->{pid} == $pid}
                     @{$instance->{_cache}}{0..$instance->{maxsession}-1})[0];
-                print "pid $pid, from $from\n";
+                print "pid $pid, from $from\n" if $OurNet::BBS::DEBUG;
                 $session->dispatch($from || $userid, $message);
             }
         }
@@ -80,16 +80,18 @@ sub refresh_meta {
 
     # print "[BoardGroup] no shm support" unless $self->{shm};
     if ($key eq int($key)) {
-        print "new toy called $key\n" unless $self->{_cache}{$key};
-        $registered{$self} ||= {};
-        $self->{_cache}{$key} ||= $self->module('Session')->new
-	    ({
+        print "new toy called $key\n" unless 
+	    !$OurNet::BBS::DEBUG or $self->{_cache}{$key};
+
+        $self->{_cache}{$key} ||= $self->module('Session')->new({
 	      recno	=> $key,
 	      shmid	=> $self->{shmid},
 	      shm	=> $self->{shm},
 	      chatport	=> $self->{chatport},
-	      registered=> $registered{$self},
-	     });
+	      registered=> $registered{$self} ||= {},
+	      passwd	=> $self->{passwd},
+	});
+
         return;
     }
 }
@@ -101,13 +103,14 @@ sub STORE {
         unless UNIVERSAL::isa($value, 'HASH');
 
     unless (length($key)) {
-        print "trying to create new session\n";
+        print "trying to create new session\n" if $OurNet::BBS::DEBUG;
+
         undef $key;
         for my $newkey (0..$self->{maxsession}-1) {
             $self->refresh_meta($newkey);
             ($key ||= $newkey, last) if $self->{_cache}{$newkey}{pid} < 2;
         }
-        print "new key $key...\n";
+        print "new key $key...\n" if $OurNet::BBS::DEBUG;
     }
 
     die "no more session $key" unless defined $key;

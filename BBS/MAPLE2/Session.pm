@@ -31,10 +31,9 @@ sub refresh_chat {
     tie $self->{_cache}{chat}, 'OurNet::BBS::SocketScalar',
         (index($self->{chatport}, ':') > -1) ? $self->{chatport}
              : ('localhost', $self->{chatport});
-    print "/! 9 9 $self->{_cache}{userid} ".
-                            "$self->{_cache}{userid}\n";
+
     $self->{_cache}{chat} = "/! 9 9 $self->{_cache}{userid} ".
-                            "$self->{_cache}{userid}\n";
+                                   "$self->{_cache}{userid}\n";
     $self->{_cache}{chatid} = $self->{_cache}{userid};
 
     $self->_shmwrite();

@@ -6,7 +6,7 @@ use base qw/OurNet::BBS::MAPLE3::SessionGroup/;
 use fields qw/_cache/;
 use subs qw/shminit/;
 use OurNet::BBS::ShmArray;
-#my (%instances, %registered);
+my (%instances, %registered);
 
 BEGIN {
   __PACKAGE__->initvars
@@ -47,7 +47,9 @@ sub shminit {
 sub message_handler {
     # we don't handle multiple messages in the queue yet.
     foreach my $instance (values %instances) {
-	print "checking $instance $instance->{shm}{offset}\n";
+	print "checking $instance $instance->{shm}{offset}\n"
+	    if $OurNet::BBS::DEBUG;
+
         $instance->refresh_meta($_)
             foreach (0..$instance->{shm}{offset}/$packsize);
 
@@ -78,12 +80,16 @@ sub STORE {
         undef $key;
         for my $newkey (0..$self->{maxsession}-1) {
             $self->refresh_meta($newkey);
-print "slot $newkey pid = $self->{_cache}{$newkey}{pid}";
+	    print "slot $newkey pid = $self->{_cache}{$newkey}{pid}"
+		if $OurNet::BBS::DEBUG;
             ($key ||= $newkey, last) unless $self->{_cache}{$newkey}{pid};
         }
-        print "new session slot $key...$self->{shm}{offset}\n";
+        print "new session slot $key...$self->{shm}{offset}\n"
+	    if $OurNet::BBS::DEBUG;
+
 	$self->{shm}{offset} += $packsize if $key*$packsize >= $self->{shm}{offset};
-        print "new offset...$self->{shm}{offset}\n";
+        print "new offset...$self->{shm}{offset}\n"
+	    if $OurNet::BBS::DEBUG;
     }
 
     die "no more session $key" unless defined $key;

@@ -4,7 +4,7 @@ $VERSION = "0.1";
 use strict;
 use base qw/OurNet::BBS::MAPLE2::BoardGroup/;
 use fields qw/_cache/;
-use subs qw/shminit EXISTS/;
+use subs qw/shminit EXISTS readok writeok/;
 
 BEGIN {
     __PACKAGE__->initvars(
@@ -18,6 +18,21 @@ BEGIN {
 	'$PATH_BRD'   => 'brd',
 	'$PATH_GEM'   => 'gem/brd',
     );
+}
+
+sub writeok {
+    my ($self, $user) = @_;
+
+    return $user->has_perm('PERM_BOARD');
+}
+
+sub readok {
+    my ($self, $user, $op, $argref) = @_;
+
+    # reading a board requires checking against its 'read' permission
+    # XXX: must incoporate with board's permission here
+    my $readlevel = $self->{$argref->[0]}{readlevel};
+    return (!$readlevel or $readlevel & $user->{userlevel});
 }
 
 sub shminit {

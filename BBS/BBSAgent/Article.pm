@@ -59,8 +59,8 @@ sub refresh_meta {
         } split(',', $var{headi});
 
         # special-case header munging
-        $date = $1 if $date   =~ m/\(([^)]*)\)/;      # embedded date
-        $nick = $1 if $author =~ s/\s?\(([^)]*)\)$//; # nickname in braces
+        $date = $1 if $date   =~ m/\(([^)]*)\)/;            # embedded date
+	$nick = $1 if $author =~ s/\s?\((.*?)\)?[\s\t]*$//; # nickname
 
         # this should rule out most ANSI codes but not all
         $body =~ s/\015//g;         # crlf: fascist!
@@ -89,14 +89,14 @@ sub refresh_meta {
                    ? $author : "$author.bbs\@$self->{bbsobj}{bbsaddr}";
 
         $self->{_cache}{header} = {
-            From         => $from,
+            From         => $from . (defined $nick ? " ($nick)" : ''),
             Subject      => $title,
             Date         => $date,
             'Message-ID' => OurNet::BBS::Utils::get_msgid(
-                $date,
-                $from,
-                $self->{board},
-                $self->{bbsobj}{bbsaddr}
+		$date,
+		$from, # should we add nick here, as per above?
+		$self->{board},
+		$self->{bbsobj}{bbsaddr},
             ),
         };
 

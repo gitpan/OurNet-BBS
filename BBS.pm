@@ -1,13 +1,13 @@
+# $File: //depot/OurNet-BBS/BBS.pm $ $Author: autrijus $
+# $Revision: #17 $ $Change: 1112 $ $DateTime: 2001/06/13 11:06:50 $
+
 package OurNet::BBS;
 require 5.005;
 
-$OurNet::BBS::VERSION = "1.53";
+$OurNet::BBS::VERSION  = '1.54';
 
 use strict;
 use base qw/OurNet::BBS::Base/;
-use fields qw/backend bbsroot brdshmkey maxboard sessionshmkey maxsession
-              usershmkey maxuser chatport _cache/;
-
 use OurNet::BBS::Utils;
 
 =head1 NAME
@@ -63,70 +63,33 @@ More detailed document is expected to appear soon.
 
 =cut
 
+BEGIN { 
+    __PACKAGE__->initvars(
+	'@BOARDS'   => [qw/bbsroot brdshmkey maxboard/],
+	'@GROUPS'   => [qw/bbsroot/],
+        '@SESSIONS' => [qw/bbsroot sessionshmkey maxsesions chatport passwd/],
+	'@USERS'    => [qw/bbsroot usershmkey maxuser/],
+    );
+}
+
 sub new { 
-    local $@;
-
-    my $mod = eval {
-	$_[0]->fillmod($_[1], 'BBS');
-    };
-
-    return $@ ? OurNet::BBS::Base::new(@_)
-              : $mod->new(@_[2..$#_]);
+    return ($_[0] eq __PACKAGE__)
+	? $_[0]->fillmod($_[1], 'BBS')->new(@_[1..$#_])
+	: OurNet::BBS::Base::new(@_);
 }           
 
-sub refresh_boards {
-    my ($self, $key) = @_;
-
-    return $self->fillin($key, 'BoardGroup', $self->{bbsroot},
-			 $self->{brdshmkey}, $self->{maxboard});
-
-}
-
-sub refresh_groups {
-    my ($self, $key) = @_;
-
-    return $self->fillin($key, 'GroupGroup', $self->{bbsroot});
-}
-
-sub refresh_sessions {
-    my ($self, $key) = @_;
-
-    return $self->fillin($key, 'SessionGroup', $self->{bbsroot},
-			 $self->{sessionshmkey}, $self->{maxsession},
-                         $self->{chatport});
-}
-
-sub refresh_users {
-    my ($self, $key) = @_;
-
-    return $self->fillin($key, 'UserGroup', $self->{bbsroot},
-			 $self->{usershmkey}, $self->{maxuser});
-}
+sub readok { 1 }
+sub writeok { 0 }
 
 sub refresh_meta {
-    # do nothing -- as of now
-}
+    my ($self, $key) = @_;
 
-sub fillmod {
-    my ($self, $backend, $class) = @_;
+    no strict 'refs';
 
-    my $prefix = (index($backend, '::') > -1 ? '' : ((ref($self) || $self).'::'));
-    my $module = "$prefix$backend/$class.pm";
-    $module =~ s|::|/|g;
-    require $module;
-    
-    return "$prefix${backend}::$class";
-}
-
-sub fillin {
-    my ($self, $key, $class) = splice(@_, 0, 3);
-    return if defined($self->{_cache}{$key});
-
-    $self->{_cache}{$key} = $self->fillmod(
-	$self->{backend}, $class
-    )->new(@_);
-    
-    return 1;
+    return $self->fillin(
+	$key, substr(ucfirst($key), 0, -1).'Group', 
+	map { $self->{$_} } @{uc($key)}
+    );
 }
 
 1;

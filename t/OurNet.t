@@ -6,15 +6,12 @@ use File::Path;
 use File::Temp;
 
 BEGIN { 
-    plan tests => ($^O =~ /Win32/ ? 1 : 6);
+    plan tests => 6;
 }
 
 use OurNet::BBS;
-use OurNet::BBS::PlClient;
 
 ok(1);
-
-exit if $^O =~ /Win32/;
 
 my $prefix = File::Temp::tempdir();
 my $count = 0; # sleep count
@@ -24,6 +21,10 @@ mkpath(["$prefix/boards", "$prefix/group", "$prefix/man/boards"])
 
 open(BOARDS, ">$prefix/.BOARDS") or die "Cannot make $prefix/.BOARDS: $!";
 close BOARDS;
+
+my $port = 2000 + int(rand(100));
+
+$OurNet::BBS::DEBUG = 1;
 
 if (fork()) {
     ok(my $BBS = OurNet::BBS->new('MAPLE2', $prefix));
@@ -41,11 +42,11 @@ if (fork()) {
         body   => 'body',
     };
 
-    $brd->daemonize() 
+    $brd->daemonize($port) 
 	unless my $pid = fork();
 
     while ($count++ < 5 and $brd->{articles}[1]{title} eq 'title') {
-       sleep 1;
+	sleep 1;
     }
 
     ok(kill(1, $pid));
@@ -60,15 +61,21 @@ else {
         sleep 1;
     }
 
-    my $brd = OurNet::BBS->new('PlClient', 'localhost');
+
+    my $brd;
+
+    $count = 0;
+
+    while ($count++ < 5 and !$brd) {
+	$brd = eval { OurNet::BBS->new('OurNet', 'localhost', $port) };
+        sleep 1;
+    }
 
     $brd->{title} = 'new board';
-    sleep 1;
 
     while (my ($k, $v) = each(%{$brd})) {
 	if ($k eq 'bm') {
 	    $brd->{$k} = $brd->{title};
-	    sleep 1;
 	}
     }
 

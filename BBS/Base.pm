@@ -14,6 +14,8 @@ use vars qw/%RegVar %RegSub %RegMod/;
 
 sub initvars {
     my $class = shift;
+
+    local $^W;
     no strict 'refs';
 
     if (!UNIVERSAL::can($class, '__accessor')) {
@@ -28,7 +30,7 @@ sub initvars {
         }
     }
 
-    my $backend = $1 if scalar caller() =~ m|^OurNet::BBS::(\w+)|;
+    my $backend = $1 if scalar caller() =~ m|^OurNet::BBS::([^:]+)|;
 
     my @defer;
 
@@ -128,8 +130,28 @@ sub ego {
 }
 
 sub daemonize {
-    require OurNet::BBS::PlServer;
-    OurNet::BBS::PlServer->daemonize(@_);
+    require OurNet::BBS::Server;
+    OurNet::BBS::Server->daemonize(@_);
+}
+
+sub writeok {
+    my ($self, $user, $op, $argref) = @_;
+
+    print "warning: permission model for ".ref($self)." unimplemented.\n".
+          "         access forbidden for user ".$user->id().".\n"
+	if $OurNet::BBS::DEBUG;
+
+    return;
+}
+
+sub readok {
+    my ($self, $user, $op, $argref) = @_;
+
+    print "warning: permission model for ".ref($self)." unimplemented.\n".
+          "         access forbidden for user ".$user->id().".\n"
+	if $OurNet::BBS::DEBUG;
+
+    return;
 }
 
 sub new {
@@ -185,7 +207,7 @@ sub TIEHASH {
 
     if (UNIVERSAL::isa($_[1], 'HASH')) {
         # Passed in a single hashref -- assign it!
-        %{$self} = %{$_[1]};
+	%{$self} = %{$_[1]};
     }
     else {
         # Automagically fill in the fields.
@@ -308,6 +330,26 @@ sub contains {
 	    (' '.join(' ', @{ref($self)."::packlist"}).' '),
         " $key ",
     ) > -1);
+}
+
+# loads a module: ($self, $backend, $module).
+sub fillmod {
+    my $self = $_[0];
+    $self =~ s|::|/|g;
+    
+    require "$self/$_[1]/$_[2].pm";
+    return join('::', @_);
+}
+
+sub fillin {
+    my ($self, $key, $class) = splice(@_, 0, 3);
+    return if defined($self->{_cache}{$key});
+
+    $self->{_cache}{$key} = OurNet::BBS->fillmod(
+	$self->{backend}, $class
+    )->new(@_);
+
+    return 1;
 }
 
 1;

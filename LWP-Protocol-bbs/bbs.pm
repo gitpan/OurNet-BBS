@@ -1,15 +1,17 @@
+# $File$ $Author: autrijus $
+# $Revision$ $Change$ $DateTime$
+
 package LWP::Protocol::bbs;
 require 5.005;
 
-$LWP::Protocol::bbs::VERSION = '1.52';
+$LWP::Protocol::bbs::VERSION = '1.54';
 
 use strict;
 
-use OurNet::BBS;
-use OurNet::BBS::PlClient;
+use LWP::Debug;
 use HTTP::Status;
 use HTTP::Response;
-use LWP::Debug;
+use OurNet::BBS::Client;
 
 use base qw/LWP::Protocol/;
 
@@ -54,24 +56,40 @@ sub request {
     my ($host, $port) = split(/:/, $1);
 
     # connect to remote site
-    my $BBS = OurNet::BBS::PlClient->new($host, $port || 7978);
+    my $BBS = OurNet::BBS::Client->new($host, $port || 7978);
     my $obj = $BBS;
 
     foreach my $chunk (split('/', $url)) {
         next if $chunk eq '';
         my $ego = tied(%{tied(%{$obj})->{_hash}});
         
-        if (index($ego->{remote_ref}, '=ARRAY(') > -1 and $chunk =~ /^\d+$/) {
+        if (index($ego->{remote_ref}, '=ARRAY(') > -1 
+	    and uc($chunk) eq lc($chunk)) {
             $obj = $obj->[$chunk];
         }
         else {
             $obj = $obj->{$chunk};
         }
-        print "obj: $obj\n";
+        print "$obj\n";
     }
    
     if (ref($obj)) {
+        my $ego = tied(%{tied(%{$obj})->{_hash}});
+	my $result = '';
+
         # XXX need some Dumper action here instead of returning a ref
+        if (index($ego->{remote_ref}, '=ARRAY(') > -1) {
+	    foreach my $element (1..$#{$obj}) {
+		$result .= "$element => $obj->[$element]\n";
+	    }
+        }
+        else {
+	    foreach my $element (keys(%{$obj})) {
+		$result .= "$element => $obj->[$element]\n";
+	    }
+        }
+
+	$obj = $result;
     }
 
     my $response = new HTTP::Response &HTTP::Status::RC_OK;

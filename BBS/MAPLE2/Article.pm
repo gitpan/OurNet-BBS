@@ -64,8 +64,9 @@ sub _refresh_body {
     $self->{_cache}{body} = <_>;
 
     my ($from, $title, $date);
+
     if ($self->{_cache}{body} =~ 
-	    s/^作者: ([^ ]+) (?:\((.+?)\) )?[^\n]*\n標題: (.*)\n時間: (.+)\n\n//
+	s/^作者: ([^ \(]+)\s?(?:\((.+?)\) )?[^\n]*\n標題: (.*)\n時間: (.+)\n\n//
     ) {
         ($from, $self->{_cache}{nick}, $title, $date) = ($1, $2, $3, $4);
     }
@@ -74,10 +75,8 @@ sub _refresh_body {
     }
 
     $self->{_cache}{header} = {
-        From         => $from  ||= (
-            $self->{_cache}{author} .
-            ($self->{_cache}{nick} ? " ($self->{_cache}{nick})" : '')
-        ),
+        From         => ($from || $self->{_cache}{author}) .
+            ($self->{_cache}{nick} ? " ($self->{_cache}{nick})" : ''),
         Subject      => $title ||= $self->{_cache}{title},
         Date         => $date  ||= scalar localtime($self->{btime}),
         'Message-ID' => OurNet::BBS::Utils::get_msgid(
@@ -139,13 +138,16 @@ sub refresh_meta {
         }
         if ($self->{_cache}{id} ne $self->{name}) {
             $self->{_cache}{id} = $self->{name};
-            $self->{_cache}{author}   ||= 'guest.';
-            $self->{_cache}{nick}     ||= '天外來客';
-            $self->{_cache}{date}     = sprintf("%2d/%02d", (localtime)[4] + 1, (localtime)[3]);
-            $self->{_cache}{title}    = (substr($self->{basepath}, 0, 4) eq 'man/')
-                ? '◇ (untitled)' : '(untitled)';
+            $self->{_cache}{author}   ||= '(unknown).';
+            $self->{_cache}{date}     = sprintf(
+		"%2d/%02d", (localtime)[4] + 1, (localtime)[3]
+	    );
+            $self->{_cache}{title}    = 
+		(substr($self->{basepath}, 0, 4) eq 'man/')
+		    ? '◇ (untitled)' : '(untitled)';
             $self->{_cache}{filemode} = 0;
-            open DIR, "+>>$file" or die "can't write DIR file for $self->{board}: $!";
+            open DIR, "+>>$file" 
+		or die "can't write DIR file for $self->{board}: $!";
             print DIR pack($packstring, @{$self->{_cache}}{@packlist});
             close DIR;
             # print "Recno: ".$self->{recno}."\n";
@@ -162,11 +164,16 @@ sub STORE {
 
     if ($key eq 'body') {
         my $file = join('/', $self->basedir, $self->{name});
-        unless (-s $file or substr($value, 0, 6) eq '作者: ') {
+        unless (-s $file) {
             $value =
-            "作者: $self->{_cache}{author} ($self->{_cache}{nick}) ".
-            "看板: $self->{board} \n標題: ".substr($self->{_cache}{title}, 0, 60).
-            "\n時間: ".($self->{_cache}{datetime} || scalar localtime)."\n\n".$value;
+                "作者: $self->{_cache}{author} ".
+                (defined $self->{_cache}{nick} 
+                    ? "($self->{_cache}{nick}) " : " ").
+                "看板: $self->{board} \n".
+                "標題: ".substr($self->{_cache}{title}, 0, 60)."\n".
+                "時間: ".($self->{_cache}{datetime} || scalar localtime).
+                "\n\n".
+                $value;
         }
         open _, ">$file" or die "cannot open $file";
         print _ $value;
@@ -201,21 +208,28 @@ sub remove {
     open DIR, $file or die "cannot open $file for reading";
     # print "seeeking to ".($packsize * $self->{recno});
 
-    my $buf = '';
+    my ($before, $after) = ('', '');
+
     if ($self->{recno}) {
         # before...
         seek DIR, 0, 0;
-        read(DIR, $buf, $packsize * $self->{recno});
+        read(DIR, $before, $packsize * $self->{recno});
     }
+
     if ($self->{recno} < ((stat($file))[7] / $packsize) - 1) {
-        seek DIR, $packsize * ($self->{recno}+1), 0;
-        read(DIR, $buf, $packsize * ((stat($file))[7] - (($self->{recno}+1) * $packsize)));
+        seek DIR, $packsize * ($self->{recno} + 1), 0;
+        read(
+	    DIR, $after, 
+	    $packsize * (
+		(stat($file))[7] - (($self->{recno} + 1) * $packsize)
+	    )
+	);
     }
 
     close DIR;
 
     open DIR, ">$file" or die "cannot open $file for writing";
-    print DIR $buf;
+    print DIR $before . $after;
     close DIR;
 
     return unlink join('/', $self->basedir, $self->{name});

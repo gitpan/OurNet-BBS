@@ -5,6 +5,7 @@ use strict;
 use base qw/OurNet::BBS::MAPLE3::ArticleGroup/;
 use fields qw/_cache _phash/;
 use subs qw/STORE/;
+
 BEGIN {__PACKAGE__->initvars()};
 
 sub STORE {
@@ -49,12 +50,16 @@ sub STORE {
             use Date::Format;
 
             if ($value->{header}) {
-                if (my $adr = (Mail::Address->parse($value->{header}{From}))[0]) {
+                if (my $adr = (Mail::Address->parse(
+		    $value->{header}{From}))[0]
+		) {
                     $value->{author} = $adr->address;
                     $value->{nick} = $adr->comment;
                 }
 
-                $value->{date} = time2str('%y/%m/%d', str2time($value->{header}{Date}));
+                $value->{date} = time2str(
+		    '%y/%m/%d', str2time($value->{header}{Date})
+		);
                 $value->{title} = $value->{header}{Subject};
             }
             else {

@@ -67,11 +67,10 @@ sub STORE {
     delete $header{Board};
 
     $self->{nntp}->post(
-	sort { $a cmp $b } map {"$_: $header{$_}\n"} (keys %header),
+	(sort { $a cmp $b } map {"$_: $header{$_}\n"} (keys %header)),
 	"\n", 
 	$value->{body},
     );
-
     print "post returns: ".$self->{nntp}->message if $OurNet::BBS::DEBUG;
 
     return 1;
