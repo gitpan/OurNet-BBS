@@ -1,23 +1,21 @@
 # $File: //depot/OurNet-BBS/BBS/BBSAgent/BBS.pm $ $Author: autrijus $
-# $Revision: #4 $ $Change: 1131 $ $DateTime: 2001/06/14 16:30:21 $
+# $Revision: #5 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
 
 package OurNet::BBS::BBSAgent::BBS;
 
 use strict;
 use base qw/OurNet::BBS/;
-use fields qw/backend bbsroot login password timeout bbsobj _cache/;
-use OurNet::BBSAgent;
+use fields qw/backend bbsroot login password timeout bbsobj _ego _hash/;
+use OurNet::BBS::Base (
+    '@BOARDS' => [qw/bbsroot bbsobj/],
+);
 
-BEGIN { 
-    __PACKAGE__->initvars(
-	'@BOARDS' => [qw/bbsroot bbsobj/],
-    ) 
-}
+use OurNet::BBSAgent;
 
 sub refresh_boards {
     my ($self, $key) = @_;
 
-    $self->ego()->load_bbsobj();
+    $self->load_bbsobj;
 
     no strict 'refs';
     return $self->fillin(
@@ -25,9 +23,9 @@ sub refresh_boards {
     );
 }
 
-
 sub load_bbsobj {
     my ($self, $bbsname, $nologin) = @_;
+    $self = $self->ego;
 
     return $self->{bbsobj} if $self->{bbsobj};
 
@@ -39,7 +37,6 @@ sub load_bbsobj {
         $self->{timeout} ||= 10,
     );
 
-    print "$bbsname loaded\n" if $OurNet::BBS::DEBUG;
     return $bbsobj if $nologin;
 
     $self->{bbsobj} = $bbsobj;
@@ -50,8 +47,7 @@ sub load_bbsobj {
 
     eval {
 	$self->{bbsobj}->login(
-	    grep {defined $_} 
-		($self->{login}, $self->{password})
+	    grep {defined $_} ($self->{login}, $self->{password})
 	);
     };
 
@@ -64,7 +60,7 @@ sub load_bbsobj {
 sub sanity_test {
     my ($self, $nologin) = @_;
 
-    my $ego  = $self->ego();
+    my $ego  = $self->ego;
     my $vars = ($ego->load_bbsobj('', $nologin) || return)->{var};
     my $brd  = $vars->{sanity_board} or return 1;
 

@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/SocketScalar.pm $ $Author: autrijus $
-# $Revision: #2 $ $Change: 1132 $ $DateTime: 2001/06/14 16:34:13 $
+# $Revision: #3 $ $Change: 1527 $ $DateTime: 2001/08/17 22:51:34 $
 
 package OurNet::BBS::SocketScalar;
 
@@ -11,7 +11,7 @@ sub TIESCALAR {
     $host .= ":$port" if $port;
 
     my $obj = IO::Socket::INET->new(PeerAddr => $host);
-    print "connected: $host\n";
+    print "connected: $host\n" if $OurNet::BBS::DEBUG;
     my $self = bless(\$obj, $class);
     return $self;
 }

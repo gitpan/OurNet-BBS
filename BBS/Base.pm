@@ -1,17 +1,23 @@
 # $File: //depot/OurNet-BBS/BBS/Base.pm $ $Author: autrijus $
-# $Revision: #22 $ $Change: 1290 $ $DateTime: 2001/06/25 20:46:35 $
+# $Revision: #29 $ $Change: 1600 $ $DateTime: 2001/08/29 23:35:16 $
 
 package OurNet::BBS::Base;
+use 5.006;
 
 use strict;
-use OurNet::BBS::ArrayProxy;
+
+use constant EGO    => 0; use constant FLAG  => 1;
+use constant HASH   => 1; use constant ARRAY => 2;
+use constant CODE   => 3; use constant GLOB  => 4;
+use constant TYPES  => [qw/_ego _hash _array _code _glob/];
+use constant SIGILS => [qw/$ % @ & */];
 
 # These magical hashes below holds all cached initvar constants:
 # = subrountines   as $RegSub{$glob}
 # = module imports as $RegMod{$glob}
 # = variables      as $RegVar{$class}{$sym}
 
-my (%RegVar, %RegSub, %RegMod); 
+my (%RegVar, %RegSub, %RegMod);
 
 my %Packlists; # $packlist cache for contains()
 
@@ -19,47 +25,145 @@ my %Packlists; # $packlist cache for contains()
 # These methods expects a package name as their first argument.
 
 # constructor method; turn into an pseudo hash if _phash exists
-sub new {
-    my $class = shift;
-    my ($self, $proxy);
 
-    no strict 'refs';
+use constant CONSTRUCTOR => << '.';
+sub __PKG__::new {
+    my __PACKAGE__ $self = bless([\%{__PKG__::FIELDS}], '__PACKAGE__');
 
-    tie %{$self}, $class, @_;
-    tie @{$proxy}, 'OurNet::BBS::ArrayProxy', $self
-	if (exists(${"$class\::FIELDS"}{_phash}));
+#    eval {
+    if (ref($_[1])) {
+        # Passed in a single hashref -- assign it!
+	%{$self} = %{$_[1]};
+    }
+    else {
+        # Automagically fill in the fields.
+	$self->{$_} = $_[$self->[0]{$_}] foreach ((__KEYS__)[0 .. $#_-1]);
+    }
+#    };
 
-    return bless($proxy || $self, $class);
+#    require Carp and Carp::confess($@) if $@;
+    
+__TIE__
+    return $self->{_ego} = bless (\[$self, __OBJ__], '__PKG__');
 }
 
-# Class method; implements mutable variable inheritance across namespaces
-sub initvars {
+1;
+.
+
+=head2 import
+
+import does following things:
+
+1. set up @ISA.
+2. export type constants.
+3. set overload bits.
+4. install accessor methods.
+5. handle variable propagation.
+6. install the new handler.
+
+=cut
+
+require overload; # no import, please
+
+sub import {
     my $class = shift;
+    my $pkg   = caller(0);
 
     no strict 'refs';
     no warnings 'once';
 
-    # install accessor methods
-    unless (UNIVERSAL::can($class, '__accessor')) {
-        foreach my $property (keys(%{"$class\::FIELDS"}), '__accessor') {
-            *{"$class\::$property"} = sub {
-                my $self = $_[0]->ego;
+    *{"$pkg\::$_"}  = \&{$_} foreach qw/EGO FLAG HASH ARRAY CODE GLOB/;
+    return *{"$pkg\::SIGILS"}  = \&{SIGILS} if $pkg eq 'OurNet::BBS::Client';
+    return if $pkg eq 'main';
 
-                $self->refresh;
+    *{"$pkg\::ego"} = sub { ${$_[0]}->[0] };
+
+    push @{"$pkg\::ISA"}, $class;
+
+    my (@overload, $tie_eval, $obj_eval);
+    my $fields = \%{"$pkg\::FIELDS"};
+
+    foreach my $type (HASH .. GLOB) {
+	if (exists($fields->{TYPES->[$type]})) {
+	    my $sigil = SIGILS->[$type];
+
+	    push @overload, "$sigil\{}" => sub { 
+		# use Carp; eval { ${$_[0]}->[$type] } || Carp::confess($@) 
+		${$_[0]}->[$type]
+	    };
+
+	    if ($type == HASH or $type == ARRAY) {
+		$tie_eval = "tie my ${sigil}obj => '$pkg', ".
+		            "[\$self, $type];\n" . $tie_eval;
+		# "[\$self, $type__OBJ__];\n" . $tie_eval; # huh?
+		$obj_eval .= ", \\${sigil}obj";
+	    }
+	    elsif ($type == CODE) {
+		$tie_eval .= 'my $code = sub { $self->refresh(undef, CODE);'.
+			     '$self->{_code}(@_) };';
+		$obj_eval .= ', $code';
+	    }
+	    elsif ($type == GLOB) {
+		$tie_eval = 'my $glob = \$self->{_glob};' . $tie_eval;
+		$obj_eval .= ', $glob';
+	    }
+	}
+	else {
+	    $obj_eval .= ', undef';
+	    
+	}
+    }
+
+    $obj_eval =~ s/(?:, undef)+$//;
+
+    my $sub_new = CONSTRUCTOR;
+    my $keys = join(' ', sort {
+	$fields->{$a} <=> $fields->{$b} 
+    } grep {
+	/^[^_]/ 
+    } keys(%{$fields}));
+
+    $sub_new =~ s/__TIE__/$tie_eval/g;
+    $sub_new =~ s/__OBJ__/$obj_eval/g;
+    $sub_new =~ s/__PKG__/$pkg/g;
+    $sub_new =~ s/__KEYS__/qw{$keys}/g;
+    $sub_new =~ s/__PACKAGE__/OurNet::BBS::Base/g;
+
+    unless (eval $sub_new) {
+	require Carp;
+	Carp::confess "$sub_new\n\n$@";
+    }
+
+    $pkg->overload::OVERLOAD(
+	@overload,
+	'""'   => sub { overload::AddrRef($_[0]) },
+	'0+'   => sub { 0 },
+	'bool' => sub { 1 },
+	'cmp' => sub { "$_[0]" cmp "$_[1]" },
+	'<=>' => sub { "$_[0]" cmp "$_[1]" }, # for completeness' sake
+    );
+
+    # install accessor methods
+    unless (UNIVERSAL::can($pkg, '__accessor')) {
+        foreach my $property (keys(%{"$pkg\::FIELDS"}), '__accessor') {
+            *{"$pkg\::$property"} = sub {
+                my $self = ${$_[0]}->[EGO];
+		$self->refresh_meta;
                 $self->{$property} = $_[1] if $#_;
                 return $self->{$property};
             };
         }
     }
 
-    my $backend = $1 if scalar caller() =~ m|^OurNet::BBS::([^:]+)|;
+    # my $backend = $1 if $pkg =~ m|^OurNet::BBS::([^:]+)|;
+    my $backend = substr($pkg, 13, index($pkg, ':', 14) - 13); # fast
 
     my @defer; # delayed aliasing until variables are processed
-    foreach my $parent (@{"$class\::ISA"}) {
+    foreach my $parent (@{"$pkg\::ISA"}) {
         next if $parent eq __PACKAGE__; # Base won't use mutable variables
 
         while (my ($sym, $ref) = each(%{"$parent\::"})) {
-	    push @defer, ($class, $sym, $ref);
+	    push @defer, ($pkg, $sym, $ref);
         }
 
 	unshift @_, @{$RegMod{$parent}} if ($RegMod{$parent});
@@ -67,7 +171,7 @@ sub initvars {
 
     while (my ($mod, $symref) = splice(@_, 0, 2)) {
         if ($mod =~ m/^\w/) { # getvar from other modules
-	    push @{$RegMod{$class}}, $mod, $symref;
+	    push @{$RegMod{$pkg}}, $mod, $symref;
 
             require "OurNet/BBS/$backend/$mod.pm";
             $mod = "OurNet::BBS::$backend\::$mod";
@@ -76,9 +180,9 @@ sub initvars {
                 my ($ch, $sym) = unpack('a1a*', $symref);
 		die "can't import: $mod\::$sym" unless *{"$mod\::$sym"};
 
-		++$RegVar{$class}{$sym};
+		++$RegVar{$pkg}{$sym};
 
-                *{"$class\::$sym"} = (
+                *{"$pkg\::$sym"} = (
                     $ch eq '$' ? \${"$mod\::$sym"} :
                     $ch eq '@' ? \@{"$mod\::$sym"} :
                     $ch eq '%' ? \%{"$mod\::$sym"} :
@@ -90,50 +194,51 @@ sub initvars {
         else { # this module's own setvar
             my ($ch, $sym) = unpack('a1a*', $mod);
 
-	    *{"$class\::$sym"} = ($ch eq '$') ? \$symref : $symref;
-	    ++$RegVar{$class}{$sym};
+	    *{"$pkg\::$sym"} = ($ch eq '$') ? \$symref : $symref;
+	    ++$RegVar{$pkg}{$sym};
         }
     }
 
     my @defer_sub; # further deferred subroutines that needs localizing
-    while (my ($class, $sym, $ref) = splice(@defer, 0, 3)) {
-	next if exists $RegVar{$class}{$sym} # already imported
-	     or defined(*{"$class\::$sym"}); # defined by use subs
+    while (my ($pkg, $sym, $ref) = splice(@defer, 0, 3)) {
+	next if exists $RegVar{$pkg}{$sym} # already imported
+	     or *{"$pkg\::$sym"}{CODE}; # defined by use subs
 
 	if (defined(&{$ref})) { 
-	    push @defer_sub, ($class, $sym, $ref);
+	    push @defer_sub, ($pkg, $sym, $ref);
 	    next; 
 	}
 
 	next unless ($ref =~ /^\*(.+)::(.+)/)
 	        and exists $RegVar{$1}{$2};
 
-	*{"$class\::$sym"} = $ref;
-	++$RegVar{$class}{$sym};
+	*{"$pkg\::$sym"} = $ref;
+	++$RegVar{$pkg}{$sym};
     } 
 
     # install per-package wrapper handlers for mutable variables
-    while (my ($class, $sym, $ref) = splice(@defer_sub, 0, 3)) {
+    while (my ($pkg, $sym, $ref) = splice(@defer_sub, 0, 3)) {
 	my $ref = ($RegSub{$ref} || $ref);
-	next unless ($ref =~ /^\*(.+)::([^_][^:]+)$/);
+	next unless ($ref =~ /^\*(.+)::([^:]+)$/);
+	next if defined(&{"$pkg\::$sym"});
 
-	if (%{$RegVar{$class}} and (uc($sym) ne $sym or $sym eq 'STORE')) {
+	if (%{$RegVar{$pkg}} and (uc($sym) ne $sym or $sym eq 'STORE')) {
 	    eval qq(
-		sub $class\::$sym {
+		sub $pkg\::$sym {
 	    ) . join('', 
 		map { qq(
-		    local *$1\::$_ = *$class\::$_;
-		)} (keys(%{$RegVar{$class}}))
+		    local *$1\::$_ = *$pkg\::$_;
+		)} (keys(%{$RegVar{$pkg}}))
 	    ) . qq(
 		    &{$ref}(\@_);
 		};
 	    );
 	}
 	else {
-	    *{"$class\::$sym"} = $ref;
+	    *{"$pkg\::$sym"} = $ref;
 	};
 
-	$RegSub{"*$class\::$sym"} = $ref;
+	$RegSub{"*$pkg\::$sym"} = $ref;
     }
 }
 
@@ -141,26 +246,24 @@ sub initvars {
 # These methods expects a tied object as their first argument.
 
 # unties through an object to get back the true $self
-sub ego {
-    my $self = $_[0];
-
-    return (
-	tied(%{$self})
-            ? UNIVERSAL::isa(tied(%{$self}), 'OurNet::BBS::ArrayProxy')
-                ? tied(%{tied(%{$self})->{_hash}})
-                : tied(%{$self})
-            : $self
-    );
-}
+sub ego { $_[0] }
 
 # the all-important cache refresh instance method
 sub refresh {
-    my $self = (shift)->ego;
-    my $method = (
-	$_[0] && UNIVERSAL::can($self, "refresh_$_[0]")
-    ) || 'refresh_meta';
+    my $self = shift;
+    my $ego;
 
-    return $self->$method(@_);
+    ($self, $ego) = (ref($self) eq __PACKAGE__)
+	? ($self->{_ego}, $self)
+	: ($self, ${$self}->[EGO]);
+
+    no strict 'refs';
+
+    my $prefix = ref($self)."::refresh_";
+    my $method = $_[0] && defined(&{"$prefix$_[0]"}) 
+	? "$prefix$_[0]" : $prefix.'meta';
+
+    return $method->($ego, @_);
 }
 
 # opens access to connections via OurNet protocol
@@ -168,6 +271,10 @@ sub daemonize {
     require OurNet::BBS::Server;
     OurNet::BBS::Server->daemonize(@_);
 }
+
+=begin comment
+
+# The following code doesn't work, because they always override.
 
 # permission checking; fall-back for undefined packages
 sub writeok {
@@ -191,49 +298,60 @@ sub readok {
     return;
 }
 
+=end comment
+=cut
+
 # clears internal memory; uses CLEAR instead
 sub purge {
-    $_[0]->ego->CLEAR;
-}
-
-# the fallback implementation of per-object DELETE handler
-sub remove {
-    die "can't DELETE @_: $!";
+    $_[0]->ego->{_ego}->CLEAR;
 }
 
 # returns the BBS backend for the object
 sub backend {
-    my $self = $_[0]->ego;
+    my $backend = ref($_[0]);
 
-    my $backend = ref($self);
-    $backend = $1 if $backend =~ m|^OurNet::BBS::(\w+)|;
+    $backend = ref($_[0]{_ego}) if $backend eq __PACKAGE__;
+    $backend = substr($backend, 13, index($backend, ':', 14) - 13); # fast
+    # $backend = $1 if $backend =~ m|^OurNet::BBS::(\w+)|;
 
     return $backend;
 }
 
+# developer-friendly way to check files' timestamp for mtime fields
+sub filestamp {
+    my ($self, $file, $field, $check_only) = @_;
+    my $time = (stat($file))[9];
+
+    no warnings 'uninitialized';
+
+    return 1 if $self->{$field ||= 'mtime'} == $time;
+    $self->{$field} = $time unless $check_only;
+
+    return 0; # something changed
+}
+
 # developer-friendly way to check timestamp for mtime fields
 sub timestamp {
-    no warnings qw/uninitialized numeric/;
+    my ($self, $time, $field, $check_only) = @_;
 
-    my ($self, $file, $field) = @_;
-    my $time = int($file) ? $file : (stat($file))[9]; # XXX: too magical
+    no warnings 'uninitialized';
 
-    if ($self->{$field || 'mtime'} == $time) {
-        return 1; # nothing changed
-    }
-    else {
-        $self->{$field || 'mtime'} = $time unless defined $field;
-        return 0; # something changed
-    }
+    return 1 if $self->{$field ||= 'mtime'} == $time;
+    $self->{$field} = $time unless $check_only;
+
+    return 0; # something changed
 }
 
 # check if something's in packlist; packages don't contain undef
 sub contains {
     my ($self, $key) = @_;
+    $self = $self->{_ego} if ref($self) eq __PACKAGE__;
 
     no strict 'refs';
+    no warnings 'uninitialized';
+    # print "checking $key against $self: @{ref($self).'::packlist'}\n";
 
-    return (defined $key and index(
+    return (length($key) and index(
         $Packlists{ref($self)} ||= " @{ref($self).'::packlist'} ",
         " $key ",
     ) > -1);
@@ -251,9 +369,9 @@ sub fillmod {
 # create a new module and fills in arguments in the expected order
 sub fillin {
     my ($self, $key, $class) = splice(@_, 0, 3);
-    return if defined($self->{_cache}{$key});
+    return if defined($self->{_hash}{$key});
 
-    $self->{_cache}{$key} = OurNet::BBS->fillmod(
+    $self->{_hash}{$key} = OurNet::BBS->fillmod(
 	$self->{backend}, $class
     )->new(@_);
 
@@ -264,16 +382,19 @@ sub fillin {
 sub module {
     my ($self, $mod, $val) = @_;
 
-    if ($val) {
-        # Store value
-        die "STORE: attempt to store non-hash value ($val) into ".ref($self)
-            unless UNIVERSAL::isa($val, 'HASH');
+    if ($val and UNIVERSAL::isa($val, 'UNIVERSAL')) {
+	my $pkg = ref($val);
 
-        return ref($val) if (UNIVERSAL::isa($val, 'UNIVERSAL'));
+	if (UNIVERSAL::isa($val, 'HASH')) {
+	    # special case: somebody blessed a hash to put into STORE.
+	    bless $val, 'main'; # you want black magic?
+	    $_[2] = \%{$val};   # curse (unbless) it!
+	}
+
+	return $pkg;
     }
 
-    my $backend = $self->backend();
-
+    my $backend = $self->backend;
     require "OurNet/BBS/$backend/$mod.pm";
     return "OurNet::BBS::$backend\::$mod";
 }
@@ -282,41 +403,55 @@ sub module {
 sub SPAWN { return $_[0] }
 sub REF { return ref($_[0]) }
 
+## Tiescalar Accessors ################################################
+# XXX: Experimental: Globs only.
+
+sub TIESCALAR {
+    return bless(\$_[1], $_[0]);
+}
+
+## Tiearray Accessors #################################################
+# These methods expects a raw (untied) object as their first argument.
+
+# merged hasharray!
+sub TIEARRAY {
+    return bless(\$_[1], $_[0]);
+}
+
+sub FETCHSIZE {
+    my ($self, $key) = @_;
+    my ($ego, $flag) = @{${$self}};
+
+    $self->refresh(undef, ARRAY);
+
+    return scalar @{$ego->{_array} ||= []};
+}
+
+sub PUSH {
+    my $self = shift;
+    my $size = $self->FETCHSIZE;
+
+    foreach my $item (@_) {
+        $self->STORE($size++, $item);
+    }
+}
+
 ## Tiehash Accessors ##################################################
 # These methods expects a raw (untied) object as their first argument.
 
 # the Tied Hash constructor method
 sub TIEHASH {
-    no strict 'refs';
-
-    my $self  = bless([\%{"$_[0]\::FIELDS"}], $_[0]); # performance cruft
-
-    if (UNIVERSAL::isa($_[1], 'HASH')) {
-        # Passed in a single hashref -- assign it!
-	%{$self} = %{$_[1]};
-    }
-    else {
-        # Automagically fill in the fields.
-        foreach my $key (keys(%{$self})) {
-            $self->{$key} = $_[$self->[0]{$key}];
-        }
-    }
-
-    return $self;
+    return bless(\$_[1], $_[0]);
 }
 
-# fetch accessesor; will delegate via PHash magic to ArrayProxy if needed
+# fetch accessesor
 sub FETCH {
     my ($self, $key) = @_;
+    my ($ego, $flag) = @{${$self}};
 
-    if (exists($self->{_phash})) {
-        ${$self->{_phash}[1]} = $key;
-        return 1;
-    }
-    else {
-        $self->refresh($key);
-        return $self->{_cache}{$key};
-    }
+    $self->refresh($key, $flag);
+
+    return ($flag == HASH) ? $ego->{_hash}{$key} : $ego->{_array}[$key];
 }
 
 # fallback implementation to STORE
@@ -327,37 +462,43 @@ sub STORE {
 # delete an element; calls its remove() subroutine to handle actual removal
 sub DELETE {
     my ($self, $key) = @_;
+    my ($ego, $flag) = @{${$self}};
 
-    $self->refresh($key);
-    return unless exists $self->{_cache}{$key};
+    $self->refresh($key, $flag);
 
-    $self->{_cache}{$key}->ego->remove;
-    return delete($self->{_cache}{$key});
+    if ($flag == HASH) {
+	return unless exists $ego->{_hash}{$key};
+	$ego->{_hash}{$key}->ego->remove
+	    if UNIVERSAL::can($ego->{_hash}{$key}, 'ego');
+	return delete($ego->{_hash}{$key});
+    }
+    else {
+	return unless exists $ego->{_array}[$key];
+	$ego->{_array}[$key]->ego->remove
+	    if UNIVERSAL::can($ego->{_array}[$key], 'ego');
+	return delete($ego->{_array}[$key]);
+    }
 }
 
-# check for existence of a key; will look into both _cache and _phash keys
+# check for existence of a key.
 sub EXISTS {
     my ($self, $key) = @_;
+    my ($ego, $flag) = @{${$self}};
 
-    $self->refresh($key);
+    $self->refresh($key, $flag);
 
-    return (exists $self->{_cache}{$key} or
-           (exists $self->{_phash} and
-            exists $self->{_phash}[0]{$key})) ? 1 : 0;
+    return ($flag == HASH) ? exists $ego->{_hash}{$key} 
+                           : exists $ego->{_array}[$key];
 }
 
 # iterator; this one merely uses 'scalar keys()'
 sub FIRSTKEY {
     my $self = $_[0];
+    my $ego = ${$self}->[EGO];
 
-    $self->refresh_meta;
+    $ego->refresh_meta(undef, HASH);
 
-    scalar (
-	(exists $self->{_phash})
-	    ? keys (%{$self->{_phash}[0]})
-	    : keys (%{$self->{_cache}})
-    );
-
+    scalar keys (%{$ego->{_hash}});
     return $self->NEXTKEY;
 }
 
@@ -365,29 +506,37 @@ sub FIRSTKEY {
 sub NEXTKEY {
     my $self = $_[0];
 
-    if (exists $self->{_phash}) {
-	return (each %{$self->{_phash}[0]});
-    }
-    else {
-	return (each %{$self->{_cache}});
-    }
+    return each %{${$self}->[EGO]->{_hash}};
 }
 
 # empties the cache, do not DELETE the objects themselves
 sub CLEAR {
-    my $self = $_[0];
+    my $self = ${$_[0]}->[EGO];
 
-    if (exists $self->{_cache}) {
-	$self->{_cache} = {};
-    }
-
-    if (exists $self->{_phash}) {
-	$self->{_phash}[0] = [ {} ];
-    }
+    %{$self->{_hash}}  = () if (exists $self->{_hash});
+    @{$self->{_array}} = () if (exists $self->{_array});
 }
 
-# couldn't care less
-sub UNTIE {}
-sub DESTROY {}
+# could care less
+sub DESTROY () {};
+sub UNTIE   () {};
+
+our $AUTOLOAD;
+
+sub AUTOLOAD {
+    my $action = substr($AUTOLOAD, (
+        (rindex($AUTOLOAD, ':') - 1) || return
+    ));
+
+    no strict 'refs';
+
+    *{$AUTOLOAD} = sub {
+	use Carp; confess ref($_[0]->{_ego}).$action
+	    unless defined &{ref($_[0]->{_ego}).$action};
+	goto &{ref($_[0]->{_ego}).$action}
+    };
+
+    goto &{$AUTOLOAD};
+}
 
 1;

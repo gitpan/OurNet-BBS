@@ -1,23 +1,24 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/Article.pm $ $Author: autrijus $
-# $Revision: #17 $ $Change: 1254 $ $DateTime: 2001/06/21 10:39:30 $
+# $Revision: #23 $ $Change: 1649 $ $DateTime: 2001/09/01 21:07:24 $
 
 package OurNet::BBS::MAPLE2::Article;
 
 use strict;
 use warnings;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot board basepath name dir recno mtime btime _cache/;
+use fields qw/bbsroot board basepath name dir recno mtime btime _ego _hash/;
 
-BEGIN {
-    __PACKAGE__->initvars(
-        'ArticleGroup' => [qw/$packsize $packstring @packlist/]
-    );
-}
+use OurNet::BBS::Base (
+    'ArticleGroup' => [qw/$packsize $packstring @packlist/],
+    'Board'	   => [qw/&remove_entry/],
+);
 
 my %chronos;
 
 sub basedir {
     my $self = shift;
+    print join('/', $self->{bbsroot}, $self->{basepath},
+                     $self->{board}, $self->{dir}, "\n")
+    if !$self->{bbsroot};
     return join('/', $self->{bbsroot}, $self->{basepath},
                      $self->{board}, $self->{dir});
 }
@@ -47,6 +48,8 @@ sub new_id {
     open(my $BODY, '>', "$file/$id") or die "cannot open $file/$id";
     close $BODY;
 
+    $self->{_hash}{time} = $chrono;
+
     return $id;
 }
 
@@ -57,39 +60,38 @@ sub _refresh_body {
 
     my $file = join('/', $self->basedir, $self->{name});
 
-    return if $self->{btime} and (stat($file))[9] == $self->{btime}
-                             and defined $self->{_cache}{body};
+    return unless -e $file;
+    return if $self->filestamp($file, 'btime') and defined $self->{_hash}{body};
 
-    $self->{btime} = (stat($file))[9];
-    $self->{_cache}{date} ||= 
+    $self->{_hash}{date} ||= 
 	sprintf("%2d/%02d", (localtime($self->{btime}))[4] + 1, 
 	        (localtime($self->{btime}))[3]);
 
     local $/;
     open my $DIR, $file or die "can't open DIR file for $self->{board}";
-    $self->{_cache}{body} = <$DIR>;
+    $self->{_hash}{body} = <$DIR>;
     close $DIR;
 
     my ($from, $title, $date);
 
-    if ($self->{_cache}{body} =~ 
+    if ($self->{_hash}{body} =~ 
 	s/^作者: ([^ \(]+)\s?(?:\((.+?)\) )?[^\n]*\n標題: (.*)\n時間: (.+)\n\n//
     ) {
-        ($from, $self->{_cache}{nick}, $title, $date) = ($1, $2, $3, $4);
+        ($from, $self->{_hash}{nick}, $title, $date) = ($1, $2, $3, $4);
     }
     else {
         $self->refresh_meta;
     }
 
-    $self->{_cache}{header} = {
-        From	=> ($from || $self->{_cache}{author}) .
-		   ($self->{_cache}{nick} ? " ($self->{_cache}{nick})" : ''),
-        Subject	=> $title ||= $self->{_cache}{title},
+    $self->{_hash}{header} = {
+        From	=> ($from || $self->{_hash}{author}) .
+		   ($self->{_hash}{nick} ? " ($self->{_hash}{nick})" : ''),
+        Subject	=> $title ||= $self->{_hash}{title},
         Date 	=> $date  ||= scalar localtime($self->{btime}),
 	Board	=> $self->{board},
     };
 
-    OurNet::BBS::Utils::set_msgid($self->{_cache}{header});
+    OurNet::BBS::Utils::set_msgid($self->{_hash}{header});
 
     return 1;
 }
@@ -107,26 +109,25 @@ sub refresh_header {
 }
 
 sub refresh_meta {
-    my $self = shift;
+    my $self = shift->ego;
 
-    $self->{name} ||= $self->new_id();
+    $self->{name} ||= $self->new_id;
 
     my $file = join('/', $self->basedir, $self->{name});
-    return unless -e $file;
-    $self->{btime} = (stat($file))[9];
+    $self->{btime} = (stat($file))[9] if -e $file;
 
     $file = join('/', $self->basedir, '.DIR');
 
-    return if $self->timestamp($file);
+    return if $self->filestamp($file);
 
     local $/ = \$packsize;
     open(my $DIR, $file) or die "can't read DIR file for $self->{board}: $!";
 
     if (defined $self->{recno}) {
         seek $DIR, $packsize * $self->{recno}, 0;
-        @{$self->{_cache}}{@packlist} = unpack($packstring, <$DIR>);
+        @{$self->{_hash}}{@packlist} = unpack($packstring, <$DIR>);
 
-        if ($self->{_cache}{id} ne $self->{name}) {
+        if ($self->{_hash}{id} ne $self->{name}) {
             undef $self->{recno};
             seek $DIR, 0, 0;
         }
@@ -135,24 +136,24 @@ sub refresh_meta {
     unless (defined $self->{recno}) {
         $self->{recno} = 0;
         while (my $data = <$DIR>) {
-            @{$self->{_cache}}{@packlist} = unpack($packstring, $data);
-            # print "$self->{_cache}{id} versus $self->{name}\n";
-            last if ($self->{_cache}{id} eq $self->{name});
+            @{$self->{_hash}}{@packlist} = unpack($packstring, $data);
+            # print "$self->{_hash}{id} versus $self->{name}\n";
+            last if ($self->{_hash}{id} eq $self->{name});
             $self->{recno}++;
         }
-        if ($self->{_cache}{id} ne $self->{name}) {
-            $self->{_cache}{id} = $self->{name};
-            $self->{_cache}{author}   ||= '(unknown).';
-            $self->{_cache}{date}     = sprintf(
+        if ($self->{_hash}{id} ne $self->{name}) {
+            $self->{_hash}{id} = $self->{name};
+            $self->{_hash}{author}   ||= '(unknown).';
+            $self->{_hash}{date}     = sprintf(
 		"%2d/%02d", (localtime)[4] + 1, (localtime)[3]
 	    );
-            $self->{_cache}{title}    = 
+            $self->{_hash}{title}    = 
 		(substr($self->{basepath}, 0, 4) eq 'man/')
 		    ? '◇ (untitled)' : '(untitled)';
-            $self->{_cache}{filemode} = 0;
+            $self->{_hash}{filemode} = 0;
             open $DIR, "+>>$file" 
 		or die "can't write DIR file for $self->{board}: $!";
-            print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
+            print $DIR pack($packstring, @{$self->{_hash}}{@packlist});
             close $DIR;
             # print "Recno: ".$self->{recno}."\n";
         }
@@ -163,6 +164,7 @@ sub refresh_meta {
 
 sub STORE {
     my ($self, $key, $value) = @_;
+    $self = $self->ego;
 
     $self->refresh_meta($key);
 
@@ -170,12 +172,12 @@ sub STORE {
         my $file = join('/', $self->basedir, $self->{name});
         unless (-s $file) {
             $value =
-                "作者: $self->{_cache}{author} ".
-                (defined $self->{_cache}{nick} 
-                    ? "($self->{_cache}{nick}) " : " ").
+                "作者: $self->{_hash}{author} ".
+                (defined $self->{_hash}{nick} 
+                    ? "($self->{_hash}{nick}) " : " ").
                 "看板: $self->{board} \n".
-                "標題: ".substr($self->{_cache}{title}, 0, 60)."\n".
-                "時間: ".($self->{_cache}{datetime} || scalar localtime).
+                "標題: ".substr($self->{_hash}{title}, 0, 60)."\n".
+                "時間: ".localtime($self->{_hash}{time} || time).
                 "\n\n".
                 $value;
         }
@@ -183,7 +185,7 @@ sub STORE {
         print $BODY $value;
         close $BODY;
         $self->{btime} = (stat($file))[9];
-        $self->{_cache}{$key} = $value;
+        $self->{_hash}{$key} = $value;
     }
     else {
         if ($key eq 'title' and
@@ -192,51 +194,24 @@ sub STORE {
             $value = "◇ $value";
         }
 
-        $self->{_cache}{$key} = $value;
+        $self->{_hash}{$key} = $value;
 
         my $file = join('/', $self->basedir, '.DIR');
 
         open(my $DIR, '+<', $file) or die "cannot open $file for writing";
         # print "seeeking to ".($packsize * $self->{recno});
         seek $DIR, $packsize * $self->{recno}, 0;
-        print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
+        print $DIR pack($packstring, @{$self->{_hash}}{@packlist});
         close $DIR;
 
-	$self->timestamp($file);
+	$self->filestamp($file);
     }
 }
 
 sub remove {
     my $self = shift;
-    my $file = join('/', $self->basedir, '.DIR');
 
-    open(my $DIR, $file) or die "cannot open $file for reading";
-    # print "seeeking to ".($packsize * $self->{recno});
-
-    my ($before, $after) = ('', '');
-
-    if ($self->{recno}) {
-        # before...
-        seek $DIR, 0, 0;
-        read($DIR, $before, $packsize * $self->{recno});
-    }
-
-    if ($self->{recno} < ((stat($file))[7] / $packsize) - 1) {
-        seek $DIR, $packsize * ($self->{recno} + 1), 0;
-        read(
-	    $DIR, $after, 
-	    $packsize * (
-		(stat($file))[7] - (($self->{recno} + 1) * $packsize)
-	    )
-	);
-    }
-
-    close $DIR;
-
-    open $DIR, '>', $file or die "cannot open $file for writing";
-    print $DIR $before . $after;
-    close $DIR;
-
+    $self->remove_entry(join('/', $self->basedir, '.DIR'));
     return unlink join('/', $self->basedir, $self->{name});
 }
 

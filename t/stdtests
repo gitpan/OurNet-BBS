@@ -1,0 +1,253 @@
+#!/usr/bin/perl -w
+# $File: //depot/OurNet-BBS/t/stdtests $ $Author: autrijus $
+# $Revision: #18 $ $Change: 1662 $ $DateTime: 2001/09/02 05:54:09 $
+
+sub BEGIN {
+    # XXX kluge against insufficient granularity on file timestamps
+    no warnings qw/once redefine/;
+
+    *{'OurNet::BBS::Base::timestamp'} =
+	sub { $_[0]->{$_[2] || 'mtime'} = $_[1] and return };
+
+    *{'OurNet::BBS::Base::filestamp'} =
+	sub { $_[0]->{$_[2] || 'mtime'} = (stat($_[1]))[9] and return }
+	    if ($^O eq 'MSWin32');
+
+    if (ref($::BBS) eq 'ARRAY') {
+	$OurNet::BBS::BYPASS_NEGOTIATION = 1;
+	OurNet::BBS->new(@{$::BBS})->daemonize(7977) if $ARGV[0];
+    }
+}
+
+use strict; $|++;
+use Test::More tests => 42;
+
+our $pid;
+
+my $BBS = $::BBS;
+
+if (ref($BBS) eq 'ARRAY') {
+    if ($^O eq 'MSWin32') {
+        eval "use Win32::Process; 1;" or die $^E;
+        Win32::Process::Create($pid, $^X, qq($^X "$0" 1), 0, 32, '.');
+    }
+    else {
+    	exec($^X, $0, 1) unless $pid = fork;
+    }
+
+    for (1 .. 20) {
+	last if eval { $BBS = OurNet::BBS->new('OurNet', 'localhost', 7977) };
+	sleep 1;
+    }
+
+    die "cannot connect: $@" unless $BBS;
+}
+
+_dump() if $ARGV[0];
+
+is($BBS->REF, $BBS->module('BBS'), 'constructor');
+
+my $brd = $BBS->{boards}{test};
+
+# make a board...
+$BBS->{boards}{test} = {
+    title => 'test board',
+    bm    => 'sysop',
+};
+
+# BOARDS test
+is(join(',', keys(%{$BBS->{boards}})), 'test', 'board: all keys');
+is($BBS->{boards}{test}{bm}, 'sysop', 'board: metadata');
+is($brd, $BBS->{boards}{test}, 'board: board fetch');
+
+is($brd->{articles}, $brd->{articles}, 'article: equality 1');
+
+# push #1
+push @{$brd->{articles}}, {
+    header => {
+	Subject => 'test title',
+	From	=> 'user',
+    },
+    body   => 'bodie 0',
+};
+
+my $art = $brd->{articles};
+is($#{$art}, 0, 'article: fetchsize');
+is($art->[0]{author}, 'user', 'article: push + metadata');
+isnt($art->[0]->REF, $art->REF, 'article: REF context');
+
+$brd->{articles}{''} = {
+    title  => 'hashy title',
+    author => 'xyzzy',
+    body   => 'bodie 1',
+};
+
+is($brd->{articles}[1]{title}, 'hashy title', "article: {''} + metadata");
+
+# append #2
+$brd->{articles}{''} = {
+    title  => 'random title',
+    author => 'smart',
+    body   => 'bodie 2',
+};
+
+my $head = $brd->{articles}[2]{header};
+is($brd->{articles}[2]{header}{From}, 'smart', 'article: header');
+
+isnt($brd->{articles}[1]{header}{Date},
+     $brd->{articles}[2]{header}{Date}, 'article: chrono-ahead');
+
+like($brd->{articles}[2]{body}, qr/bodie/, 'article: body fetch');
+is(index($brd->{articles}[2]{header}{'Message-ID'}, '@'), 38, 'article: msgid');
+
+$brd->{articles}{''} = $brd->{articles}[2];
+is($brd->{articles}[2]{header}{From},
+   $brd->{articles}[3]{header}{From}, 'article: push by reference');
+
+$brd->{articles}[-1]{body} = 'bodie 3'; # fix for the foreach test below
+
+# alternative access
+my $id = $brd->{articles}[2]{id}; # XXX: nested fetch *will* break OurNet!
+like($brd->{articles}{$id}{body}, qr/bodie/, 'article: fetch via id');
+ 
+# set #1
+$brd->{articles}->purge unless $BBS->REF =~ /RAM/;
+
+$brd->{articles}[0] = {
+    author => 'changed author',
+    title  => 'changed title',
+    body   => $brd->{articles}[0]{body},
+};
+is($brd->{articles}[0]{title}, 'changed title', 'article: attribute store');
+
+# foreach iteration
+my $flag = 0;
+foreach my $index (0..$#{$brd->{articles}}) { # can't use @{} for OurNet
+    my $t = $brd->{articles}[$flag];
+    is($t->{body}, "bodie $flag", "article: foreach ($flag)" );
+    ok($t->mtime, "article: mtime for ($flag)");
+
+    unless ($flag++) {
+        $BBS->{boards}{kitty} = {
+            title => 'test board',
+            bm    => 'sysop',
+        };
+        is($BBS->{boards}{kitty}{bm}, 'sysop', 'article: access inside loop');
+    }
+}
+
+# each interation
+while (my ($k, $v) = each (%{$brd->{articles}})) {
+    is($v->{title}, $brd->{articles}{$k}{title}, 'article: each %{}');
+    ok($flag-- > 0, "article: key count consistency ($k)");
+}
+
+SKIP: {
+    skip 'todo: push array via OurNet', 1
+	if $brd->isa('OurNet::BBS::Client');
+
+    # archiving
+    push @{$brd->{archives}}, @{$brd->{articles}};
+    like($brd->{archives}[1]{title}, qr/hashy title/, 'archive: push & access');
+}
+
+# archive directory
+push @{$brd->{archives}}, bless ({
+    title  => 'Random Directory',
+    author => 'random',
+}, $brd->module('ArticleGroup'));
+
+# is store successful?
+is($brd->{archives}[-1]{author}, 'random', 'archive: create via bless');
+
+# push into new dir
+push @{$brd->{archives}[-1]}, {
+    title  => 'turandot',
+    author => 'aida',
+    body   => 'satva',
+};
+
+is($brd->{archives}[-1]->name, $brd->{archives}[-1]{id},
+   'archive: by-name fetch');
+
+SKIP: {
+    skip 'todo: push array via OurNet', 1
+	if $brd->isa('OurNet::BBS::Client');
+
+    like($brd->{archives}[4][0]{title}, qr/turandot/, 'archive: new dir');
+}
+
+like($brd->{archives}[-1][0]{title}, qr/turandot/, 'archive: negative index');
+
+SKIP: {
+    skip 'Group not supported for this backend', 3
+	unless eval { $BBS->{groups}{home} = {
+	    owner => 'autrijus',
+	    title => 'home sweet home',
+	} };
+
+    # new group
+    my $grp = $BBS->{groups}{home};
+
+    is(join('', keys(%{$BBS->{groups}})), 'home', 'group: keys');
+
+    # group inside group
+    ++$BBS->{groups}{rainbow}{home};
+    is(join('', sort {$a cmp $b} keys(%{$BBS->{groups}})),
+       'homerainbow', 'group: modification');
+
+    # delete group
+    delete $BBS->{groups}{home};
+    like(join('', keys(%{$BBS->{groups}{rainbow}})),
+	 qr/^(?!.*home).*$/, 'group: delete');
+}
+
+no strict 'refs';
+
+my %brdmap = (
+    MAPLE3	=> 'brd',
+    MELIX	=> 'brd',
+    PTT		=> 'board',
+    CVIC	=> 'board',
+    MAPLE2	=> 'board',
+);
+
+my $path_brd = ${$BBS->module('BoardGroup').'::PATH_BRD'}
+	    || $brdmap{$BBS->backend};
+
+SKIP: {
+    skip 'no $PATH_BRD for physical board deletion', 1
+	unless $path_brd;
+
+    # delete board
+    delete $BBS->{boards}{test};
+    ok(!(-e "$::prefix/$path_brd/test/.DIR"), 'board: delete');
+}
+
+sub _dump {
+    my $T = tied(%{${$BBS}->[1]});
+
+    print '$BBS:                     '."$BBS\n";
+    print ' ${$BBS}:                 '."${$BBS}\n";
+    print '  ${$BBS}->[EGO]:         '."${$BBS}->[EGO]\n";
+    print '   ${$BBS}->[0]{_ego}:    '."${$BBS}->[0]{_ego} # top\n";
+    print '   ${$BBS}->[0][0]:       '."${$BBS}->[0][0] # phash keys\n";
+    print '   ${$BBS}->[0][1]:       '."${$BBS}->[0][1] # phash: backend\n";
+    print '  ${$BBS}->[HASH]:        '."${$BBS}->[1] # hash accessor\n";
+    print '   tied(%{${$BBS}->[1]}): '."$T # \$T\n";
+    print '    ${$T}:                '."${$T}\n";
+    print '     ${$T}->[EGO]:        '."${$T}->[EGO] # same as above\n";
+    print '      ${$T}->[0]{_ego}:   '."${$T}->[0]{_ego} # top\n";
+    print '     ${$T}->[FLAG]:       '."${$T}->[FLAG] # HASH\n";
+}
+
+1;
+
+END {
+    if ($::pid) {
+        UNIVERSAL::can($pid, 'Kill') ? $pid->Kill(1) : kill(1, $::pid);
+	File::Path::rmtree([$::prefix], 0, 1) if $::prefix;
+    }
+}
+
+__END__

@@ -1,25 +1,23 @@
+# $File: //depot/OurNet-BBS/BBS/MELIX/SessionGroup.pm $ $Author: autrijus $
+# $Revision: #6 $ $Change: 1575 $ $DateTime: 2001/08/28 01:26:00 $
+
 package OurNet::BBS::MELIX::SessionGroup;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::MAPLE3::SessionGroup/;
-use fields qw/_cache/;
+use fields qw/_ego _hash/;
 use subs qw/shminit/;
-use OurNet::BBS::ShmArray;
-my (%instances, %registered);
 
-BEGIN {
-  __PACKAGE__->initvars
-    (
-     '$packstring'    => 'LLLLLLLLa18Z13Z13Z24Z34x2',
-     '$packsize'      => 136,
-     '@packlist'   => 
-     [
+use OurNet::BBS (
+     '$packstring'	=> 'LLLLLLLLa18Z13Z13Z24Z34x2',
+     '$packsize'	=> 136,
+     '@packlist'	=> [
       qw/pid uid idle_time mode ufo sockaddr sockport destuip msgs userid
 	 mateid username from/
      ],
-    );
-}
+);
+
+use OurNet::BBS::ShmArray;
 
 sub shminit {
     my $self = shift;
@@ -28,44 +26,54 @@ sub shminit {
 	$self->{shmid} = shmget($self->{shmkey},
 				($self->{maxsession})*$packsize+36, 0)) {
       tie $self->{shm}{number}, 'OurNet::BBS::ShmScalar',
-	  $self->{shmid}, $self->{maxsession}*$packsize, 4, 'L';
+	  $self->{shmid}, $self->{maxsession} * $packsize     , 4, 'L';
       tie $self->{shm}{offset}, 'OurNet::BBS::ShmScalar',
-	  $self->{shmid}, $self->{maxsession}*$packsize+4, 4, 'L';
+	  $self->{shmid}, $self->{maxsession} * $packsize +  4, 4, 'L';
       tie @{$self->{shm}{sysload}}, 'OurNet::BBS::ShmArray',
-	  $self->{shmid}, $self->{maxsession}*$packsize+8, 8, 3, 'd';
+	  $self->{shmid}, $self->{maxsession} * $packsize +  8, 8, 3, 'd';
       tie $self->{shm}{avgload}, 'OurNet::BBS::ShmScalar',
-	  $self->{shmid}, $self->{maxsession}*$packsize+32, 4, 'L';
+	  $self->{shmid}, $self->{maxsession} * $packsize + 32, 4, 'L';
       tie $self->{shm}{mbase}, 'OurNet::BBS::ShmScalar',
-	  $self->{shmid}, $self->{maxsession}*$packsize+36, 4, 'L';
+	  $self->{shmid}, $self->{maxsession} * $packsize + 36, 4, 'L';
       tie @{$self->{shm}{mpool}}, 'OurNet::BBS::ShmArray',
-	  $self->{shmid}, $self->{maxsession}*$packsize+40, 100, 128, 'LLLLZ13Z71';
+	  $self->{shmid}, $self->{maxsession} * $packsize + 40, 100, 128, 'LLLLZ13Z71';
+
       $instances{$self} = $self;
     }
 }
 
-
 sub message_handler {
     # we don't handle multiple messages in the queue yet.
+
     foreach my $instance (values %instances) {
 	print "checking $instance $instance->{shm}{offset}\n"
 	    if $OurNet::BBS::DEBUG;
 
         $instance->refresh_meta($_)
-            foreach (0..$instance->{shm}{offset}/$packsize);
+            foreach (0 .. $instance->{shm}{offset} / $packsize);
 
         foreach my $session (values %{$registered{$instance}}) {
-            $session->refresh_meta();
-            if (my $which = $session->{_cache}{pmsgs}[0]) {
+            $session->refresh_meta;
+
+            if (my $which = $session->{_hash}{pmsgs}[0]) {
 		my %msg;
+
 		@msg{qw/btime caller sender reciever userid message/} =
-		    @{$instance->{shm}{mpool}[$which-1]};
-                my $from = $msg{sender} && (grep {$_->{pid} && $_->{uid} == $msg{sender}}
-                    @{$instance->{_cache}}{0..$instance->{shm}{offset}/$packsize})[0];
+		    @{$instance->{shm}{mpool}[$which - 1]};
+
+		print join(',', %msg);
+
+                my $from = $msg{sender} && ( grep {
+		    $_->{pid} && $_->{uid} == $msg{sender}
+		} @{$instance->{_hash}}{
+		    0 .. $instance->{shm}{offset} / $packsize
+		})[0];
 
                 $session->dispatch($from, $msg{message});
             }
         }
     }
+
     $SIG{USR2} = \&message_handler;
 };
 
@@ -73,21 +81,24 @@ $SIG{USR2} = \&message_handler;
 
 sub STORE {
     my ($self, $key, $value) = @_;
-    die "STORE: attempt to store non-hash value ($value) into ".ref($self)
-        unless UNIVERSAL::isa($value, 'HASH');
+    $self = $self->ego;
 
-    unless (length($key)) {
+    if (!length($key)) {
         undef $key;
-        for my $newkey (0..$self->{maxsession}-1) {
+
+        for my $newkey (0 .. $self->{maxsession} - 1) {
             $self->refresh_meta($newkey);
-	    print "slot $newkey pid = $self->{_cache}{$newkey}{pid}"
+	    print "slot $newkey pid = $self->{_hash}{$newkey}{pid}"
 		if $OurNet::BBS::DEBUG;
-            ($key ||= $newkey, last) unless $self->{_cache}{$newkey}{pid};
+            ($key ||= $newkey, last) unless $self->{_hash}{$newkey}{pid};
         }
+
         print "new session slot $key...$self->{shm}{offset}\n"
 	    if $OurNet::BBS::DEBUG;
 
-	$self->{shm}{offset} += $packsize if $key*$packsize >= $self->{shm}{offset};
+	$self->{shm}{offset} += $packsize
+	    if $key * $packsize >= $self->{shm}{offset};
+
         print "new offset...$self->{shm}{offset}\n"
 	    if $OurNet::BBS::DEBUG;
     }
@@ -95,13 +106,13 @@ sub STORE {
     die "no more session $key" unless defined $key;
 
     $self->refresh_meta($key);
-    %{$self->{_cache}{$key}} = %{$value};
-    $self->{_cache}{$key}{flag} = 1;
+    %{$self->{_hash}{$key}} = %{$value};
+    $self->{_hash}{$key}{flag} = 1;
     ++$self->{shm}{number};
 }
 
 sub DESTROY {
-    my $self = shift;
+    my $self = shift->ego;
 
     delete $instances{$self};
 }

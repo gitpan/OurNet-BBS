@@ -1,17 +1,16 @@
 # $File: //depot/OurNet-BBS/BBS/MELIX/BBS.pm $ $Author: autrijus $
-# $Revision: #4 $ $Change: 1136 $ $DateTime: 2001/06/14 18:12:19 $
+# $Revision: #5 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
 
 package OurNet::BBS::MELIX::BBS;
 
 use strict;
 use base qw/OurNet::BBS/;
 use fields qw/backend bbsroot brdshmkey maxboard sessionshmkey maxsession
-              usershmkey maxuser chatport passwd _cache/;
+              usershmkey maxuser chatport passwd _ego _hash/;
 use subs qw/readok writeok/;
+use OurNet::BBS::Base;
 
-BEGIN { __PACKAGE__->initvars() }
-
-sub writeok { 0 }
+sub writeok { 1 }
 
 sub readok {
     my ($self, $user) = @_;

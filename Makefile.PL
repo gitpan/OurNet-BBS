@@ -14,14 +14,15 @@ WriteMakefile(
 
     PREREQ_PM       => {
 	'Bundle::PlRPC'		=> '0.03',	# Server, Client
-        'Date::Parse'		=> '2.20',	# DBI, MAPLE2, MELIX, NNTP
+        'Date::Parse'		=> '2.20',	# RAM, MAPLE2, MELIX, NNTP
 	'Digest::MD5'		=> '2.10',	# Server, Client, Utils
 	'File::Temp'		=> '0.12',	# Test scripts
         'Mail::Address'		=> '1.17',	# BBSAgent, MAPLE2, MELIX
 	'Net::NNTP'		=> '2.19',	# NNTP
 	'Mail::Box'		=> '1.313',     # MailBox
-	'OurNet::BBSAgent'	=> '1.53',	# BBSAgent
+	'OurNet::BBSAgent'	=> '1.55',	# BBSAgent
         'Term::ReadKey'         => '2.13',	# bbscomd
+        'Test::More'		=> '0.11',	# tests
 	'enum'			=> '1.016',	# MAPLE3
     },
 

@@ -28,3 +28,7 @@ remote procedure call protocol.
 
 For some of this library's practical uses, consult CPAN for
 OurNet::BBSApp::Sync and relevant boards on telnet://elixus.org/.
+
+See the HISTORY section in the OurNet::BBS manpage for an
+overview on developments so far.
+

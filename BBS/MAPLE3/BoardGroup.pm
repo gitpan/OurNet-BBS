@@ -1,26 +1,23 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/BoardGroup.pm $ $Author: autrijus $
-# $Revision: #5 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+# $Revision: #6 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
 
 package OurNet::BBS::MAPLE3::BoardGroup;
 
 use strict;
 use base qw/OurNet::BBS::MAPLE2::BoardGroup/;
-use fields qw/_cache/;
+use fields qw/_ego _hash/;
 use subs qw/shminit EXISTS readok writeok/;
-
-BEGIN {
-    __PACKAGE__->initvars(
-        '$packstring' => 'Z13Z49Z37CLLLLLLL',
-        '$packsize'   => 128,
-        '@packlist'   => [
-            qw/id title bm bvote bstamp readlevel postlevel
-               battr btime bpost blast/
-        ],
-        '$BRD'        => '.BRD',
-	'$PATH_BRD'   => 'brd',
-	'$PATH_GEM'   => 'gem/brd',
-    );
-}
+use OurNet::BBS::Base (
+    '$packstring' => 'Z13Z49Z37CLLLLLLL',
+    '$packsize'   => 128,
+    '@packlist'   => [
+        qw/id title bm bvote bstamp readlevel postlevel
+           battr btime bpost blast/
+    ],
+    '$BRD'        => '.BRD',
+    '$PATH_BRD'   => 'brd',
+    '$PATH_GEM'   => 'gem/brd',
+);
 
 sub writeok {
     my ($self, $user) = @_;
@@ -39,11 +36,9 @@ sub readok {
 sub shminit {
     my $self = shift;
 
-    if ($^O ne 'MSWin32' and
-        $self->{shmid} = shmget(
-	    $self->{shmkey}, $self->{maxboard}*$packsize+8, 0)
-	) 
-    {
+    if ($^O ne 'MSWin32' and $self->{shmid} = shmget(
+	$self->{shmkey}, $self->{maxboard}*$packsize+8, 0
+    )) {
         tie $self->{shm}{number}, 'OurNet::BBS::ShmScalar',
            $self->{shmid}, $self->{maxboard}*128, 4, 'L';
         tie $self->{shm}{uptime}, 'OurNet::BBS::ShmScalar',
@@ -56,7 +51,9 @@ sub shminit {
 
 sub EXISTS {
     my ($self, $key) = @_;
-    return 1 if exists ($self->{_cache}{$key});
+    $self = $self->ego;
+
+    return 1 if exists ($self->{_hash}{$key});
     return ((-d "$self->{bbsroot}/$PATH_BRD/$key") ? 1 : 0);
 }
 

@@ -1,43 +1,32 @@
 # $File: //depot/OurNet-BBS/BBS/NNTP/BoardGroup.pm $ $Author: autrijus $
-# $Revision: #3 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+# $Revision: #5 $ $Change: 1531 $ $DateTime: 2001/08/18 01:03:39 $
 
 package OurNet::BBS::NNTP::BoardGroup;
 
 use strict;
-use Net::NNTP;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot dummy nntp _cache/;
+use fields qw/bbsroot nntp _ego _hash/;
+use OurNet::BBS::Base;
 
-BEGIN {
-    __PACKAGE__->initvars(
-        '@packlist' => [qw/id title bm level/],
-    )
-};
+use Net::NNTP;
 
 sub refresh_meta {
     my ($self, $key) = @_;
 
-    $self->{nntp} ||= Net::NNTP->new($self->{bbsroot}) or die $!;
+    $self->{nntp} ||= Net::NNTP->new(
+	$self->{bbsroot},
+	Debug => $OurNet::BBS::DEBUG,
+    ) or die $!;
 
-    if ($key) {
-        $self->{_cache}{$key} ||= $self->module('Board')->new({
-	    nntp	=> $self->{nntp},
-	    groupname	=> $key,
-        });
+    my @keys = (defined $key ? $key : keys(%{$self->{nntp}->list}));
 
-        return 1;
+    foreach $key (@keys) {
+	$self->{_hash}{$key} ||= $self->module('Board')->new({
+	    nntp  => $self->{nntp},
+	    board => $key,
+	});
     }
 
-    return if $self->timestamp(-1);
-
-    # XXX: ALLBOARDS
-    die "no list board yet";
-}
-
-sub EXISTS {
-    my ($self, $key) = @_;
-
-    return 1 if exists ($self->{_cache}{$key});
+    return 1;
 }
 
 1;

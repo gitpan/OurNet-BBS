@@ -1,16 +1,16 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/UserGroup.pm $ $Author: autrijus $
-# $Revision: #4 $ $Change: 1270 $ $DateTime: 2001/06/24 07:15:18 $
+# $Revision: #7 $ $Change: 1629 $ $DateTime: 2001/08/31 04:12:03 $
 
 package OurNet::BBS::MAPLE2::UserGroup;
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot shmkey maxuser shmid shm _cache _phash/;
+use fields qw/bbsroot shmkey maxuser shmid shm _ego _hash _array/;
+use OurNet::BBS::Base;
 use OurNet::BBS::ShmScalar;
 
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
-    my ($self, $key, $arrayfetch) = @_;
+    my ($self, $key, $flag) = @_;
 
     unless ($self->{shmid} || !$self->{shmkey}) {
         if ($^O ne 'MSWin32' and
@@ -24,7 +24,7 @@ sub refresh_meta {
                 $self->{shmid}, $self->{maxuser}*13, 4, 'L';
             tie $self->{shm}{touchtime}, 'OurNet::BBS::ShmScalar',
                 $self->{shmid}, $self->{maxuser}*13+4, 4, 'L';
-            tie $self->{_cache}{number}, 'OurNet::BBS::ShmScalar',
+            tie $self->{_hash}{number}, 'OurNet::BBS::ShmScalar',
                 $self->{shmid}, $self->{maxuser}*13+8, 4, 'L';
             tie $self->{shm}{busystate}, 'OurNet::BBS::ShmScalar',
                 $self->{shmid}, $self->{maxuser}*13+12, 4, 'L';
@@ -33,22 +33,21 @@ sub refresh_meta {
 
     my $name;
     if ($key) {
-        if (length($key) and $arrayfetch) {
+        if (length($key) and $flag == ARRAY) {
             shmread($self->{shmid}, $name, 13 * $key, 13);
             $name = unpack('Z13', $name);
-            return if $self->{_phash}[0][0]{$name} == $key;
+            return if $self->{_hash}{$name} == $self->{_array}[$key];
         }
         elsif ($key) {
             # key fetch
-            return if $self->{_phash}[0][0]{$key};
+            return if $self->{_hash}{$key} or !$self->{maxuser};
 
             my $buf;
             $name = $key;
-            $key = '';
+            undef $key;
 
             foreach my $rec (1..$self->{maxuser}) {
                 shmread($self->{shmid}, $buf, 13 * $rec, 13);
-                # print "$buf\n";
                 if ($name eq unpack('Z13', $buf)) {
                     $key = $rec;
                     last;
@@ -63,13 +62,13 @@ sub refresh_meta {
     my $obj = $self->module('User')->new(
         $self->{bbsroot},
         $name,
-        $key, # XXX -1?
+        $key,
     );
 
-    $self->{_phash}[0][0]{$name} = $key;
-    $self->{_phash}[0][$key] = $obj;
+    $self->{_hash}{$name} = $self->{_array}[$key] = $obj;
 
     return 1;
-}
-1;
 
+}
+
+1;

@@ -1,11 +1,11 @@
 # $File: //depot/OurNet-BBS/BBS/CVIC/FileGroup.pm $ $Author: autrijus $
-# $Revision: #2 $ $Change: 1266 $ $DateTime: 2001/06/23 16:54:04 $
+# $Revision: #3 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
 
 package OurNet::BBS::CVIC::FileGroup;
 
 use base qw/OurNet::BBS::MAPLE2::FileGroup/;
-use fields qw/_cache/;
+use fields qw/_ego _hash/;
 
-BEGIN { __PACKAGE__->initvars() }
+use OurNet::BBS::Base;
 
 1;

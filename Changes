@@ -1,4 +1,450 @@
 ____________________________________________________________________________
+[  1685] By: autrijus@autribsd                     on 2001/09/03 23:10:33
+	Log: * This be OurNet-BBS v1.6!
+       Path: BBS
+	   - PTT/Session.pm
+       Path: .
+	   ! BBS.pm Makefile.PL
+____________________________________________________________________________
+[  1683] By: autrijus@autricvic                    on 2001/09/03 23:00:17
+	Log: * fixes scope bug.
+       Path: .
+	   ! BBS.pm
+____________________________________________________________________________
+[  1681] By: autrijus@autribsd                     on 2001/09/03 22:41:51
+	Log: * Integrated the new design docs to manpage.
+	     * ramping up for v1.6.
+       Path: bin
+	   ! bbscomd
+       Path: .
+	   ! BBS.pm TODO
+____________________________________________________________________________
+[  1662] By: autrijus@autribsd                     on 2001/09/02 05:54:09
+	Log: * completes the DBI => RAM transition.
+       Path: BBS
+	   ! RAM/Article.pm RAM/ArticleGroup.pm RAM/BBS.pm RAM/Board.pm
+	   ! RAM/BoardGroup.pm RAM/Group.pm RAM/GroupGroup.pm
+	   ! RAM/Session.pm RAM/SessionGroup.pm RAM/User.pm
+	   ! RAM/UserGroup.pm
+	   - DBI/Article.pm DBI/ArticleGroup.pm DBI/BBS.pm DBI/Board.pm
+	   - DBI/BoardGroup.pm DBI/Group.pm DBI/GroupGroup.pm
+	   - DBI/Session.pm DBI/SessionGroup.pm DBI/User.pm
+	   - DBI/UserGroup.pm
+       Path: t
+	   ! 1-RAM.t 7-OurNet-RAM.t stdtests
+	   - 1-DBI.t 7-OurNet-DBI.t
+____________________________________________________________________________
+[  1661] By: autrijus@autribsd                     on 2001/09/02 05:46:10
+	Log: * changes DBI to RAM in accord to the roadmap.
+       Path: BBS
+	   RAM/Article.pm RAM/ArticleGroup.pm RAM/BBS.pm RAM/Board.pm
+	   RAM/BoardGroup.pm RAM/Group.pm RAM/GroupGroup.pm RAM/Session.pm
+	   RAM/SessionGroup.pm RAM/User.pm RAM/UserGroup.pm
+       Path: t
+	   1-RAM.t 7-OurNet-RAM.t
+       Path: .
+	   ! MANIFEST
+____________________________________________________________________________
+[  1650] By: autrijus@autricvic                    on 2001/09/01 21:09:06
+	Log: * removes redundant warnings
+       Path: BBS
+	   ! MAPLE3/Article.pm
+____________________________________________________________________________
+[  1649] By: autrijus@autribsd                     on 2001/09/01 21:07:24
+	Log: * reorganizes remove_entry to consolidate it into
+	     MAPLE2::Board
+       Path: BBS
+	   ! MAPLE2/Article.pm MAPLE2/Board.pm MAPLE3/Article.pm
+	   ! MELIX/Group.pm
+____________________________________________________________________________
+[  1648] By: autrijus@autricvic                    on 2001/09/01 20:58:06
+	Log: * ditto, 80 col
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1647] By: autrijus@autricvic                    on 2001/09/01 20:55:28
+	Log: * handles group creation and deletion elegantly now
+	     * minor test message fix for 80 columns
+       Path: BBS
+	   ! MELIX/Group.pm MELIX/GroupGroup.pm
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1646] By: autrijus@autricvic                    on 2001/09/01 19:43:12
+	Log: * abstracts remove_entry code
+	     * implements MELIX group parents and delete
+	     * random msg cleanup
+       Path: BBS
+	   ! MAPLE2/Article.pm MAPLE3/Article.pm MELIX/Group.pm
+	   ! MELIX/GroupGroup.pm
+       Path: t
+	   ! 5-BBSAgent.t stdtests
+____________________________________________________________________________
+[  1645] By: autrijus@autribsd                     on 2001/09/01 18:48:09
+	Log: * BBSAgent no longer tests sanity without user request
+	     * cleared up remove() functions
+       Path: BBS
+	   ! MAPLE2/Board.pm MELIX/Group.pm
+       Path: t
+	   ! 5-BBSAgent.t
+____________________________________________________________________________
+[  1644] By: autrijus@autribsd                     on 2001/09/01 18:30:09
+	Log: * uses the new SKIP feature of Test::More
+	     * updated DBI to handle group delete
+       Path: BBS
+	   ! DBI/GroupGroup.pm
+       Path: t
+	   ! stdtests
+       Path: .
+	   ! Makefile.PL
+____________________________________________________________________________
+[  1638] By: autrijus@autribsd                     on 2001/09/01 02:38:15
+	Log: * todos for the next phase. (or shall i say wish lists?)
+       Path: .
+	   ! TODO
+____________________________________________________________________________
+[  1630] By: autrijus@whitegnote                   on 2001/08/31 04:14:01
+	Log: * biten by priority.
+       Path: BBS
+	   ! MAPLE3/UserGroup.pm
+____________________________________________________________________________
+[  1629] By: autrijus@autricvic                    on 2001/08/31 04:12:03
+	Log: * don't bother if tieshm fails.
+       Path: BBS
+	   ! MAPLE2/UserGroup.pm
+____________________________________________________________________________
+[  1628] By: autrijus@whitegnote                   on 2001/08/31 03:47:07
+	Log: * implements -g (fallback to guest) for bbscomd
+	     * daemonize() now recognizes an extra argument $guest_id
+       Path: BBS
+	   ! Server.pm
+       Path: bin
+	   ! bbscomd
+____________________________________________________________________________
+[  1627] By: autrijus@whitegnote                   on 2001/08/31 03:46:35
+	Log: * win32 granularity fix fix
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1623] By: autrijus@whitegnote                   on 2001/08/31 03:00:50
+	Log: * yasb galore!
+       Path: BBS
+	   ! MAPLE2/BoardGroup.pm MAPLE2/UserGroup.pm
+____________________________________________________________________________
+[  1607] By: autrijus@autricvic                    on 2001/08/30 03:01:38
+	Log: * yasb. how in the hell does this pass?
+       Path: BBS
+	   ! MAPLE3/User.pm
+____________________________________________________________________________
+[  1606] By: autrijus@autricvic                    on 2001/08/30 02:35:36
+	Log: * allow multiple BMs and SYSOP to write to board.
+       Path: BBS
+	   ! MAPLE3/ArticleGroup.pm
+____________________________________________________________________________
+[  1605] By: autrijus@autribsd                     on 2001/08/30 02:22:21
+	Log: * mailbox permission implemented: everybody could push.
+	     * fixed bm settings so you could only post for yourself.
+       Path: BBS
+	   ! MAPLE3/ArticleGroup.pm MAPLE3/User.pm MAPLE3/UserGroup.pm
+	   ! MELIX/Article.pm
+____________________________________________________________________________
+[  1604] By: autrijus@autribsd                     on 2001/08/30 01:12:52
+	Log: * file granularity only cheated on Win32.
+	     * stops DBI warnings about missing author.
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1600] By: autrijus@whitegnote                   on 2001/08/29 23:35:16
+	Log: * implements filestamp()
+       Path: BBS
+	   ! Base.pm CVIC/Group.pm CVIC/GroupGroup.pm MAPLE2/Article.pm
+	   ! MAPLE2/ArticleGroup.pm MAPLE2/Board.pm MAPLE2/BoardGroup.pm
+	   ! MAPLE3/Article.pm MAPLE3/ArticleGroup.pm MELIX/Article.pm
+	   ! MELIX/Group.pm MELIX/GroupGroup.pm
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1599] By: autrijus@autricvic                    on 2001/08/29 22:25:43
+	Log: * first step toward splitting timestamp() with filestamp()
+       Path: BBS
+	   ! Base.pm MAPLE2/ArticleGroup.pm
+____________________________________________________________________________
+[  1598] By: autrijus@autricvic                    on 2001/08/29 21:16:26
+	Log: * allows check_only flag to timestamp()
+	     * fixes M2 Articlegroup FETCHSIZE bug
+       Path: BBS
+	   ! Base.pm MAPLE2/ArticleGroup.pm MAPLE2/BoardGroup.pm
+	   ! MAPLE3/ArticleGroup.pm
+____________________________________________________________________________
+[  1595] By: autrijus@whitegnote                   on 2001/08/29 20:28:55
+	Log: * fix FETCHSIZE bug of M2 ArticleGroups
+	     * fix Melix article updating bug
+       Path: BBS
+	   ! CVIC/BBS.pm MAPLE2/Article.pm MAPLE3/ArticleGroup.pm
+	   ! MELIX/Article.pm
+____________________________________________________________________________
+[  1585] By: autrijus@whitegnote                   on 2001/08/29 00:48:40
+	Log: * delete redundant files
+       Path: bin
+	   ! bbscomd
+____________________________________________________________________________
+[  1581] By: autrijus@autricvic                    on 2001/08/28 07:27:35
+	Log: * trial change: port 7979 for v1.6 on.
+       Path: BBS
+	   ! Client.pm Server.pm
+       Path: bin
+	   ! bbscomd
+____________________________________________________________________________
+[  1579] By: autrijus@whitegnote                   on 2001/08/28 06:51:59
+	Log: * added purge tests
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1578] By: autrijus@whitegnote                   on 2001/08/28 06:51:36
+	Log: * DBI now accepts { header => ... } style pushs
+	     * set after purge() now works
+	     * delete board now clears up .BRD / .BOARDS entry
+       Path: BBS
+	   ! DBI/ArticleGroup.pm MAPLE2/ArticleGroup.pm MAPLE2/Board.pm
+	   ! MAPLE3/ArticleGroup.pm
+____________________________________________________________________________
+[  1577] By: autrijus@autribsd                     on 2001/08/28 01:47:12
+	Log: * 1.6-delta, the rc0 before 1.6.
+       Path: .
+	   ! BBS.pm Changes
+____________________________________________________________________________
+[  1576] By: autrijus@autribsd                     on 2001/08/28 01:39:54
+	Log: * purged LWP extension from tree: it's not as if it could
+	     be used anywhere, and i don't want to see that if it could.
+       Path: LWP-Protocol-bbs
+	   - MANIFEST Makefile.PL README bbs.pm test.pl
+       Path: .
+	   ! MANIFEST
+____________________________________________________________________________
+[  1575] By: autrijus@autribsd                     on 2001/08/28 01:26:00
+	Log: * session support finally done, hurray!
+       Path: BBS
+	   ! MAPLE2/SessionGroup.pm MELIX/SessionGroup.pm
+____________________________________________________________________________
+[  1573] By: autrijus@autribsd                     on 2001/08/28 00:56:53
+	Log: * fixed wrong inheritance relationship in Base
+	     * Session support for MELIX should be here now
+       Path: BBS
+	   ! Base.pm MAPLE2/SessionGroup.pm MELIX/Session.pm
+____________________________________________________________________________
+[  1572] By: autrijus@autribsd                     on 2001/08/27 23:46:42
+	Log: * typ-o.
+       Path: .
+	   ! BBS.pm
+____________________________________________________________________________
+[  1571] By: autrijus@autribsd                     on 2001/08/27 23:45:57
+	Log: * fix incomplete nick parsing bug
+       Path: BBS
+	   ! BBSAgent/ArticleGroup.pm MAPLE2/ArticleGroup.pm
+	   ! MAPLE3/ArticleGroup.pm
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1570] By: autrijus@autribsd                     on 2001/08/27 01:18:18
+	Log: * fixed User tie for M3
+	     * ebx will not attempt to post back to archive now
+       Path: BBS
+	   ! MAPLE3/UserGroup.pm Server.pm
+____________________________________________________________________________
+[  1567] By: autrijus@autricvic                    on 2001/08/26 04:59:24
+	Log: * granularity hack extends to non-win32 platforms as well.
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1566] By: autrijus@autribsd                     on 2001/08/26 04:56:05
+	Log: * OurNet-based tests are now subject to the cache kluge too.
+	     * the calling interface is greatly simplefied.
+       Path: t
+	   ! 7-OurNet-DBI.t 8-OurNet-CVIC.t 9-OurNet-MELIX.t stdtests
+____________________________________________________________________________
+[  1565] By: autrijus@whitegnote                   on 2001/08/26 04:08:40
+	Log: * kluge against Win32's insufficient granularity on file
+	     timestamps
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1564] By: autrijus@autricvic                    on 2001/08/26 03:30:56
+	Log: * win32 now requires Win32::Process to pass tests.
+	     * the waiting time for OurNet servers extends to 20 seconds.
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1563] By: autrijus@autribsd                     on 2001/08/26 03:26:27
+	Log: * the magical file/time detection of timestamp() considered
+	     harmful.
+       Path: BBS
+	   ! Base.pm CVIC/Group.pm CVIC/GroupGroup.pm MAPLE2/Article.pm
+	   ! MAPLE2/ArticleGroup.pm MAPLE2/Board.pm MAPLE2/BoardGroup.pm
+	   ! MAPLE3/Article.pm MAPLE3/ArticleGroup.pm MELIX/Article.pm
+	   ! MELIX/Group.pm
+____________________________________________________________________________
+[  1562] By: autrijus@autricvic                    on 2001/08/26 03:16:24
+	Log: * style nitpick
+	     * MAPLE3 was MELIX test!
+       Path: t
+	   ! 2-CVIC.t 3-MAPLE3.t 4-MELIX.t 5-BBSAgent.t 6-MailBox.t
+____________________________________________________________________________
+[  1561] By: autrijus@whitegnote                   on 2001/08/26 02:59:05
+	Log: * timestamp a directory is wrong under win32
+	     * did away with fork() in win32 testing
+       Path: BBS
+	   ! MELIX/GroupGroup.pm
+       Path: t
+	   ! 7-OurNet-DBI.t 8-OurNet-CVIC.t 9-OurNet-MELIX.t stdtests
+____________________________________________________________________________
+[  1560] By: autrijus@autribsd                     on 2001/08/25 23:13:31
+	Log: * kluge around win32 fork limitation for testing
+       Path: t
+	   ! 7-OurNet-DBI.t 8-OurNet-CVIC.t 9-OurNet-MELIX.t
+____________________________________________________________________________
+[  1547] By: autrijus@autribsd                     on 2001/08/21 01:18:21
+	Log: * fixed MIME header parsings.
+       Path: BBS
+	   ! MAPLE2/ArticleGroup.pm MAPLE3/ArticleGroup.pm
+____________________________________________________________________________
+[  1546] By: autrijus@autribsd                     on 2001/08/21 00:56:27
+	Log: * num and first fields were swapped.
+	     * refresh without context (on attribute fetch) will not load
+	     everything now.
+       Path: BBS
+	   ! NNTP/ArticleGroup.pm
+____________________________________________________________________________
+[  1542] By: autrijus@autribsd                     on 2001/08/19 03:33:19
+	Log: * the ob-fix of BBSAgent backend.
+       Path: BBS
+	   ! BBSAgent/Article.pm BBSAgent/ArticleGroup.pm BBSAgent/Board.pm
+	   ! BBSAgent/BoardGroup.pm
+____________________________________________________________________________
+[  1539] By: autrijus@autricvic                    on 2001/08/19 03:00:01
+	Log: * cvic's push-by-reference doesn't work as the rest.
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1537] By: autrijus@autribsd                     on 2001/08/19 02:19:31
+	Log: * rseen now means 'the beginning of sync' instead of 'last
+	     synced'.
+	     * fixed OBJECT context fetch of Client/Server modules.
+	     * NNTP now reports FETCHSIZE with last + 1. 
+	     * added tests.
+       Path: BBS
+	   ! Client.pm NNTP/ArticleGroup.pm Server.pm
+       Path: t
+	   ! stdtests
+       Path: .
+	   ! BBS.pm
+____________________________________________________________________________
+[  1532] By: autrijus@autribsd                     on 2001/08/18 01:09:01
+	Log: * obiwan in example.
+       Path: .
+	   ! BBS.pm
+____________________________________________________________________________
+[  1531] By: autrijus@autribsd                     on 2001/08/18 01:03:39
+	Log: * fix for NNTP backend; full of YASBs.
+       Path: BBS
+	   ! Base.pm NNTP/ArticleGroup.pm NNTP/BBS.pm NNTP/Board.pm
+	   ! NNTP/BoardGroup.pm
+____________________________________________________________________________
+[  1530] By: autrijus@autribsd                     on 2001/08/17 23:56:02
+	Log: * so, this be -gamma. let's start testing!
+       Path: .
+	   ! Changes MANIFEST
+____________________________________________________________________________
+[  1527] By: autrijus@autribsd                     on 2001/08/17 22:51:34
+	Log: * the rest of v1.6-gamma changes, along with MANIFEST.
+       Path: BBS
+	   ! ScalarFile.pm SocketScalar.pm
+       Path: .
+	   ! MANIFEST
+____________________________________________________________________________
+[  1526] By: autrijus@autribsd                     on 2001/08/17 22:51:14
+	Log: * OurNet protocol, v0.3.
+       Path: BBS
+	   ! Authen.pm Client.pm Server.pm
+       Path: LWP-Protocol-bbs
+	   ! bbs.pm
+       Path: t
+	   + 7-OurNet-DBI.t 8-OurNet-CVIC.t 9-OurNet-MELIX.t
+____________________________________________________________________________
+[  1525] By: autrijus@autribsd                     on 2001/08/17 22:49:33
+	Log: * the new set of backends and tests that went with it
+       Path: BBS
+	   ! BBSAgent/Article.pm BBSAgent/ArticleGroup.pm BBSAgent/BBS.pm
+	   ! BBSAgent/Board.pm BBSAgent/BoardGroup.pm CVIC/Article.pm
+	   ! CVIC/ArticleGroup.pm CVIC/BBS.pm CVIC/Board.pm
+	   ! CVIC/BoardGroup.pm CVIC/FileGroup.pm CVIC/Group.pm
+	   ! CVIC/GroupGroup.pm CVIC/Session.pm CVIC/SessionGroup.pm
+	   ! CVIC/User.pm CVIC/UserGroup.pm DBI/Article.pm
+	   ! DBI/ArticleGroup.pm DBI/BBS.pm DBI/Board.pm DBI/BoardGroup.pm
+	   ! DBI/Group.pm DBI/GroupGroup.pm DBI/Session.pm
+	   ! DBI/SessionGroup.pm DBI/User.pm DBI/UserGroup.pm
+	   ! MAPLE2/Article.pm MAPLE2/ArticleGroup.pm MAPLE2/BBS.pm
+	   ! MAPLE2/Board.pm MAPLE2/BoardGroup.pm MAPLE2/FileGroup.pm
+	   ! MAPLE2/GroupGroup.pm MAPLE2/Session.pm MAPLE2/SessionGroup.pm
+	   ! MAPLE2/User.pm MAPLE2/UserGroup.pm MAPLE3/Article.pm
+	   ! MAPLE3/ArticleGroup.pm MAPLE3/BBS.pm MAPLE3/Board.pm
+	   ! MAPLE3/BoardGroup.pm MAPLE3/FileGroup.pm MAPLE3/GroupGroup.pm
+	   ! MAPLE3/SessionGroup.pm MAPLE3/User.pm MAPLE3/UserGroup.pm
+	   ! MELIX/Article.pm MELIX/ArticleGroup.pm MELIX/BBS.pm
+	   ! MELIX/Board.pm MELIX/BoardGroup.pm MELIX/FileGroup.pm
+	   ! MELIX/Group.pm MELIX/GroupGroup.pm MELIX/Session.pm
+	   ! MELIX/SessionGroup.pm MELIX/User.pm MELIX/UserGroup.pm
+	   ! MailBox/Article.pm MailBox/ArticleGroup.pm MailBox/BBS.pm
+	   ! MailBox/Board.pm MailBox/BoardGroup.pm NNTP/Article.pm
+	   ! NNTP/ArticleGroup.pm NNTP/BBS.pm NNTP/Board.pm
+	   ! NNTP/BoardGroup.pm PTT/Article.pm PTT/ArticleGroup.pm
+	   ! PTT/BBS.pm PTT/Board.pm PTT/BoardGroup.pm PTT/FileGroup.pm
+	   ! PTT/Session.pm PTT/SessionGroup.pm PTT/User.pm
+	   ! PTT/UserGroup.pm
+	   - MAPLE3/Group.pm
+       Path: t
+	   + 0-Base.t 1-DBI.t 2-CVIC.t 3-MAPLE3.t 4-MELIX.t 5-BBSAgent.t
+	   + 6-MailBox.t stdtests
+	   - BBSAgent.t DBI.t MAPLE2.t OurNet.t
+____________________________________________________________________________
+[  1524] By: autrijus@autribsd                     on 2001/08/17 22:46:31
+	Log: * the new overloaded base system for OurNet v1.6
+	     * see BBS.pm's HISTORY section for changes.
+       Path: BBS
+	   ! Base.pm Utils.pm
+	   - ArrayProxy.pm
+       Path: .
+	   ! BBS.pm Makefile.PL README TODO
+____________________________________________________________________________
+[  1516] By: autrijus@autribsd                     on 2001/08/06 23:26:04
+	Log: * PGP support automagically down under Win32, no matter what.
+       Path: BBS
+	   ! Authen.pm
+____________________________________________________________________________
+[  1515] By: autrijus@autribsd                     on 2001/08/06 23:24:25
+	Log: * experimental mailbox support via '!mailbox' board
+	     * fixed usergroup so only that user gets to see the mailbox
+	     * article.pm will add reasonable header
+       Path: BBS
+	   ! MAPLE3/Article.pm MAPLE3/UserGroup.pm
+____________________________________________________________________________
+[  1504] By: autrijus@autribsd                     on 2001/08/03 00:15:18
+	Log: * support for localaddr bind
+       Path: BBS
+	   ! Server.pm
+       Path: bin
+	   ! bbscomd
+____________________________________________________________________________
+[  1492] By: autrijus@autricvic                    on 2001/08/01 00:55:30
+	Log: * fixed the bug that causes e-mail without comments to be
+	     skipped 
+       Path: BBS
+	   ! MELIX/ArticleGroup.pm
+____________________________________________________________________________
+[  1484] By: autrijus@autricvic                    on 2001/07/23 01:32:16
+	Log: * changes update
+       Path: .
+	   ! Changes
+____________________________________________________________________________
 [  1482] By: autrijus@whitegnote                   on 2001/07/23 01:18:05
 	Log: * this be OurNet::BBS v1.56
        Path: .

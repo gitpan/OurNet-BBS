@@ -1,67 +1,67 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/UserGroup.pm $ $Author: autrijus $
-# $Revision: #9 $ $Change: 1460 $ $DateTime: 2001/07/17 22:31:42 $
+# $Revision: #14 $ $Change: 1630 $ $DateTime: 2001/08/31 04:14:01 $
 
 package OurNet::BBS::MAPLE3::UserGroup;
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot maxuser _cache _phash/;
+use fields qw/bbsroot shmkey maxuser _ego _hash _array/;
 use subs qw/writeok readok/;
-use open IN => ':raw', OUT => ':raw';
+use OurNet::BBS::Base;
 
-BEGIN { __PACKAGE__->initvars() }
+use constant IsWin32 => ($^O eq 'MSWin32');
+use open (IsWin32 ? (IN => ':raw', OUT => ':raw') : ());
 
 sub writeok { 0 }
+
 sub readok { 1 }
 
 sub FETCHSIZE {
-    my $self = $_[0];
+    my $self = $_[0]->ego;
 
     return (stat("$self->{bbsroot}/.USR"))[7] / 16;
 }
 
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
-    my ($self, $key, $arrayfetch) = @_;
+    my ($self, $key, $flag) = @_;
     my $name;
 
-    if ($key) {
-        if (length($key) and $arrayfetch) {
+    if (defined $key) {
+        if ($flag == ARRAY) {
             # array fetch
             open my $DIR, "$self->{bbsroot}/.USR";
-            seek $DIR, ($key - 1) * 16 + 4, 0;
+            seek $DIR, $key * 16 + 4, 0;
             read $DIR, $name, 12;
             $name = unpack('Z14', $name);
             close $DIR;
-            return if $self->{_phash}[0][0]{$name} == $key;
         }
-        elsif ($key) {
+        else {
             # key fetch
             $name = $key;
-            return if $self->{_phash}[0][0]{$key};
             $key = 0;
         }
+
+	return if $self->{_hash}{$name};
     }
 
     my $obj = $self->module('User')->new(
         $self->{bbsroot},
         $name,
-        $key, # XXX -1?
+        $key,
     );
 
     $key ||= $obj->{userno};
 
-    $self->{_phash}[0][0]{$name} = $key;
-    $self->{_phash}[0][$key] = $obj;
+    $self->{_hash}{$name} = $self->{_array}[$key] = $obj;
 
     return 1;
 }
 
 sub STORE {
     my ($self, $key, $value) = @_;
-    my $obj;
+    $self = $self->ego;
 
-    $obj = $self->module('User', $value)->new($self->{bbsroot}, $key);
+    my $obj = $self->module('User', $value)->new($self->{bbsroot}, $key);
 
     while (my ($k, $v) = each %{$value}) {
         $obj->{$k} = $v unless $k eq 'id';
@@ -72,9 +72,11 @@ sub STORE {
 
 sub EXISTS {
     my ($self, $key) = @_;
-    return exists ($self->{_cache}{$key}) or -d "$self->{bbsroot}/usr/".lc(
-	substr($self->{id}, 0, 1)
-    )."/$self->{id}";
+    $self = $self->ego;
+
+    return (exists ($self->{_hash}{$key}) or -d ("$self->{bbsroot}/usr/".lc(
+	substr($key, 0, 1)
+    )."/$key"));
 }
 
 1;

@@ -1,30 +1,24 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/ArticleGroup.pm $ $Author: autrijus $
-# $Revision: #7 $ $Change: 1317 $ $DateTime: 2001/06/27 04:50:59 $
+# $Revision: #15 $ $Change: 1600 $ $DateTime: 2001/08/29 23:35:16 $
 
 package OurNet::BBS::MAPLE2::ArticleGroup;
 
 use strict;
 use warnings;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot board basepath name dir recno mtime btime _cache _phash/;
+use fields qw/bbsroot board basepath name dir recno mtime btime/,
+           qw/_ego _hash _array/;
 
-BEGIN {
-    __PACKAGE__->initvars(
-        '$packstring'    => 'Z33Z1Z14Z6Z73C',
-        '$packsize'      => 128,
-        '@packlist'      => [qw/id savemode author date title filemode/],
-    );
-}
+use OurNet::BBS::Base (
+    '$packstring'    => 'Z33Z1Z14Z6Z73C',
+    '$packsize'      => 128,
+    '@packlist'      => [qw/id savemode author date title filemode/],
+);
 
 my %chronos;
 
 sub basedir {
-    my $self = shift;
-
     no warnings 'uninitialized';
-
-    return join('/', $self->{bbsroot}, $self->{basepath},
-                     $self->{board}, $self->{dir});
+    return join('/', @{$_[0]}{qw/bbsroot basepath board dir/});
 }
 
 sub new_id {
@@ -39,34 +33,33 @@ sub new_id {
         if $chrono > $chronos{$self->{board}};
 
     while ($id = "D.$chrono.A") {
-        $file = join('/', $self->basedir(), $id);
+        $file = join('/', $self->basedir, $id);
         last unless -e $file;
         $chrono = ++$chronos{$self->{board}};
     }
 
-    mkdir join('/', $self->basedir(), $self->{name});
+    mkdir join('/', $self->basedir, $self->{name});
     return $id;
 }
 
 sub refresh_id {
     my ($self, $key) = @_;
 
-    $self->{name} ||= $self->new_id();
+    $self->{name} ||= $self->new_id;
 
-    my $file = join('/', $self->basedir(), '.DIR');
+    if (defined $self->{recno}) {
+	my $file = join('/', $self->basedir, $self->{name}, '.DIR');
+	$self->filestamp($file, 'btime');
+    }
 
-    return if $self->{btime} and (stat($file))[9] == $self->{btime}
-              and defined $self->{recno};
-
-    $self->{btime} = (stat($file))[9];
-
+    my $file = join('/', $self->basedir, '.DIR');
     local $/ = \$packsize;
     open(my $DIR, $file) or die "can't read DIR file for $self->{board}: $!";
 
     if (defined $self->{recno}) {
         seek $DIR, $packsize * $self->{recno}, 0;
-        @{$self->{_cache}}{@packlist} = unpack($packstring, <$DIR>);
-        if ($self->{_cache}{id} ne $self->{name}) {
+        @{$self->{_hash}}{@packlist} = unpack($packstring, <$DIR>);
+        if ($self->{_hash}{id} ne $self->{name}) {
             undef $self->{recno};
             seek $DIR, 0, 0;
         }
@@ -74,57 +67,67 @@ sub refresh_id {
 
     unless (defined $self->{recno}) {
         $self->{recno} = 0;
+
         while (my $data = <$DIR>) {
-            @{$self->{_cache}}{@packlist} = unpack($packstring, $data);
-            # print "$self->{_cache}{id} versus $self->{name}\n";
-            last if ($self->{_cache}{id} eq $self->{name});
+            @{$self->{_hash}}{@packlist} = unpack($packstring, $data);
+            # print "$self->{_hash}{id} versus $self->{name}\n";
+            last if ($self->{_hash}{id} eq $self->{name});
             $self->{recno}++;
         }
-        if ($self->{_cache}{id} ne $self->{name}) {
-            # die "not supposed to be here: $self->{_cache}{id}, $self->{name}";
-            $self->{_cache}{id} = $self->{name};
-            $self->{_cache}{author}   ||= 'guest.';
-            $self->{_cache}{date}     = sprintf(
+
+	no warnings 'uninitialized';
+
+        if ($self->{_hash}{id} ne $self->{name}) {
+            $self->{_hash}{id} = $self->{name};
+            $self->{_hash}{author}   ||= 'guest.';
+            $self->{_hash}{date}     = sprintf(
 		"%2d/%02d", (localtime)[4] + 1, (localtime)[3]
 	    );
-            $self->{_cache}{title}    = '¡» (untitled)';
-            $self->{_cache}{filemode} = 0;
+            $self->{_hash}{title}    = '¡» (untitled)';
+            $self->{_hash}{filemode} = 0;
 
             open($DIR, '+>>', $file) 
 		or die "can't write DIR file for $self->{board}: $!";
-            print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
+            print $DIR pack($packstring, @{$self->{_hash}}{@packlist});
             close $DIR;
 
-            mkdir join('/', $self->basedir(), $self->{name});
-            open($DIR, '>', join('/', $self->basedir(), '.DIR'));
+            mkdir join('/', $self->basedir, $self->{name});
+            open($DIR, '>', join('/', $self->basedir, '.DIR'));
             close $DIR;
-
-            # print "Recno: ".$self->{recno}."\n";
         }
     }
 
     return 1;
 }
 
+sub FETCHSIZE {
+    my $self = $_[0]->ego;
+
+    no warnings 'uninitialized';
+    return int((stat(
+	join('/', @{$self}{qw/bbsroot basepath board dir name/}, '.DIR')
+    ))[7] / $packsize);
+}
+
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
-    my ($self, $key) = @_;
+    my ($self, $key, $flag) = @_;
 
     no warnings qw/uninitialized numeric/;
 
-    my $file = join('/', $self->basedir(), $self->{name}, '.DIR');
+    my $file = join('/', $self->basedir, $self->{name}, '.DIR');
     my $name;
 
-    if ($self->contains($key) or $key eq 'recno') {
+    if ($self->contains($key) or $key eq 'recno' or $key eq 'btime') {
         goto &refresh_id;
     }
     elsif (!defined($key) and $self->{dir}) {
         $self->refresh_id;
     }
 
-    if ($key and $key ne int($key)) {
+    if ($key and $flag == HASH) {
         # hash key -- no recaching needed
-        return if $self->{_phash}[0][0]{$key};
+        return if $self->{_hash}{$key};
 
         my $obj = $self->module(substr($key, 0, 2) eq 'D.'
             ? 'ArticleGroup' : 'Article')->new(
@@ -135,8 +138,7 @@ sub refresh_meta {
                 "$self->{dir}/$self->{name}",
             );
 
-        $self->{_phash}[0][0]{$key} = $obj->recno+1;
-        $self->{_phash}[0][$obj->recno+1] = $obj;
+        $self->{_hash}{$key} = $self->{_array}[$obj->recno] = $obj;
 
         return 1;
     }
@@ -144,16 +146,16 @@ sub refresh_meta {
     open(my $DIR, $file)
 	or (warn "can't read DIR file for $file: $!", return);
 
-    if ($key) {
+    if (defined($key) and $flag == ARRAY) {
         # out-of-bound check
-        return if $key < 1 or $key > int((stat($file))[7] / $packsize);
+        return if $key < 0 or $key >= int((stat($file))[7] / $packsize);
 
-        seek $DIR, $packsize * ($key-1), 0;
+        seek $DIR, $packsize * $key, 0;
         read $DIR, $name, 33;
         $name = unpack('Z33', $name);
-        # print "$name unpacked\n";
 
-        return if $self->{_phash}[0][0]{$name} == $key;
+        return if exists $self->{_hash}{$name}
+		and $self->{_hash}{$name}== $self->{_array}[$key];
 
         my $obj = $self->module(substr($name, 0, 2) eq 'D.'
             ? 'ArticleGroup' : 'Article')->new(
@@ -162,34 +164,35 @@ sub refresh_meta {
                 $self->{basepath},
                 $name,
                 "$self->{dir}/$self->{name}",
-                $key-1,
+                $key,
             );
 
-        $self->{_phash}[0][0]{$name} = $key;
-        $self->{_phash}[0][$key] = $obj;
+        $self->{_hash}{$name} = $self->{_array}[$key] = $obj;
 
         close $DIR;
         return 1;
     }
 
-    return if $self->timestamp($file);
+    return if $self->filestamp($file);
 
-    $self->{_phash}[0] = fields::phash(map {
-        seek $DIR, $packsize * $_, 0;
-        read $DIR, $name, 33;
-        $name = unpack('Z33', $name);
+    seek $DIR, 0, 0;
+
+    foreach my $key (0 .. int((stat($file))[7] / $packsize) - 1) {
+        read $DIR, $name, $packsize;
+        $name = unpack('Z33x95', $name);
 
         # return the thing
-        ($name, $self->module(substr($name, 0, 2) eq 'D.'
-            ? 'ArticleGroup' : 'Article')->new(
-                $self->{bbsroot},
-                $self->{board},
-                $self->{basepath},
-                $name,
-                "$self->{dir}/$self->{name}",
-                $_,
-        ));
-    } (0..int((stat($file))[7] / $packsize)-1));
+        $self->{_hash}{$name} = $self->{_array}[$key] = $self->module(
+	    substr($name, 0, 2) eq 'D.' ? 'ArticleGroup' : 'Article'
+	)->new(
+	    $self->{bbsroot},
+	    $self->{board},
+	    $self->{basepath},
+	    $name,
+	    "$self->{dir}/$self->{name}",
+	    $key,
+	);
+    }
 
     close $DIR;
 
@@ -198,89 +201,89 @@ sub refresh_meta {
 
 sub STORE {
     my ($self, $key, $value) = @_;
+    ($self, my $flag) = @{${$self}};
 
     no warnings 'uninitialized';
 
-    if ($self->contains($key) or $key eq 'recno') {
-        $self->refresh($key);
-        $self->{_cache}{$key} = $value;
+    if ($flag == HASH) {
+	if ($self->contains($key)) {
+	    $self->refresh($key, $flag);
+	    $self->{_hash}{$key} = $value;
 
-        my $file = join('/', $self->basedir(), '.DIR');
+	    my $file = join('/', $self->basedir, '.DIR');
 
-        open(my $DIR, '+<', $file) or die "cannot open $file for writing";
-        # print "seeeking to ".($packsize * $self->{recno});
-        seek $DIR, $packsize * $self->{recno}, 0;
-        print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
-        close $DIR;
+	    open(my $DIR, '+<', $file) or die "cannot open $file for writing";
+	    seek $DIR, $packsize * $self->{recno}, 0;
+	    print $DIR pack($packstring, @{$self->{_hash}}{@packlist});
+	    close $DIR;
+	    return 1;
+	}
 
-	$self->timestamp($file);
+	# special case: hash without key becomes PUSH.
+	die 'arbitary storage of message-ids condered harmful.' if $key;
+	$key = $#{$self->{_array}} + 1;
+	$flag = ARRAY;
+    }
+    elsif (!$self->{_array}) {
+    	$self->refresh_meta;
+    }
+
+    my $obj;
+
+    if ($self->{_array}[$key]) {
+	$obj = $self->{_array}[$key];
     }
     else {
-	my $obj;
-
-	no warnings 'numeric';
-        if ($key > 0 and exists $self->{_phash}[0][$key]) {
-            $obj = $self->{_phash}[0][$key];
-        }
-        else {
-            my $class = (UNIVERSAL::isa($value, "UNIVERSAL"))
-                ? ref($value) : $self->module('Article');
-
-            my $module = "$class.pm";
-            $module =~ s|::|/|g;
-            require $module;
-
-            $obj = $class->new(
-                $self->{bbsroot},
-                $self->{board},
-                $self->{basepath},
-                undef,
-                "$self->{dir}/$self->{name}",
-                int($key) ? $key - 1 : undef,
-            );
-        }
-
-        use Mail::Address;
-        use Date::Parse;
-        use Date::Format;
-        
-        if (exists $value->{header}) {
-            my $adr = (Mail::Address->parse($value->{header}{From}))[0];
-            if (ref($adr)) {
-                $value->{author} = $adr->address;
-		$value->{author} =~ s|\@.+$|.|;
-                $value->{nick}   = $adr->comment;
-		$value->{nick}   =~ s,^\(|\)$,,g;
-            }
-
-            $value->{date}  = time2str(
-		'%m/%d', str2time($value->{header}{Date})
-	    );
-            $value->{date} =~ s/^0/ /; # how crude!
-            $value->{title} = $value->{header}{Subject};
-        }
-
-        while (my ($k, $v) = each %{$value}) {
-            $obj->{$k} = $v unless $k eq 'body' or $k eq 'id';
-        };
-
-        $obj->{body} = $value->{body} if ($value->{body});
-        $self->refresh($key);
+	$obj = $self->module('Article', $value)->new(
+	    $self->{bbsroot},
+	    $self->{board},
+	    $self->{basepath},
+	    undef,
+	    "$self->{dir}/$self->{name}",
+	    $flag == ARRAY ? $key : undef,
+	);
     }
+
+    use Date::Parse;
+    use Date::Format;
+
+    if (ref($value) and $value->{header}) {
+	@{$value}{qw/author nick/} = ($1, $2)
+	    if $value->{header}{From} =~ m/^\s*(.+?)\s*(?:\((.*)\))?$/g;
+
+	@{$value}{qw/author nick/} = ($2, $1)
+	    if $value->{header}{From} =~ m/^\s*\"?(.*?)\"?\s*\<(.*)\>$/g;
+
+	$value->{date}  = time2str(
+	    '%m/%d', str2time($value->{header}{Date})
+	);
+	$value->{date}  =~ s/^0/ /; # how crude!
+	$value->{title} = $value->{header}{Subject};
+    }
+
+    while (my ($k, $v) = each %{$value}) {
+	$obj->{$k} = $v unless $k eq 'body' or $k eq 'id';
+    };
+
+    $obj->{body} = $value->{body} if ($value->{body});
+    $self->refresh($key, $flag);
 }
 
 sub EXISTS {
     my ($self, $key) = @_;
-    return 1 if exists ($self->{_cache}{$key});
+    $self = $self->ego;
 
-    my $file = join('/', $self->basedir(), $self->{name}, '.DIR');
-    return 0 if $self->timestamp($file, 0);
+    return unless defined $self->{name};
+    return 1 if exists ($self->{_hash}{$key});
+
+    my $file = join('/', $self->basedir, $self->{name}, '.DIR');
+    return 0 if $self->filestamp($file, 'mtime', 1);
 
     open(my $DIR, $file) or die "can't read DIR file $file: $!";
 
     my $board;
-    foreach (0..int((stat($file))[7] / $packsize)-1) {
-        print '.';
+
+    foreach (0 .. int((stat($file))[7] / $packsize)-1) {
         seek $DIR, $packsize * $_, 0;
         read $DIR, $board, 33;
         return 1 if unpack('Z33', $board) eq $key;

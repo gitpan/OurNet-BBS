@@ -1,79 +1,81 @@
+# $File: //depot/OurNet-BBS/BBS/MELIX/Session.pm $ $Author: autrijus $
+# $Revision: #7 $ $Change: 1573 $ $DateTime: 2001/08/28 00:56:53 $
+
 package OurNet::BBS::MELIX::Session;
-$VERSION = "0.1";
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/recno shmid shm chatid chatport registered userid passwd _cache/;
-use POSIX;
+use fields qw/recno shmid shm chatid chatport registered userid passwd/,
+           qw/_ego _hash/;
+use OurNet::BBS::Base (
+    'SessionGroup' => [qw/$packsize $packstring @packlist/],
+);
 
-BEGIN {
-    __PACKAGE__->initvars(
-        'SessionGroup' => [qw/$packsize $packstring @packlist/],
-    );
-}
+use POSIX;
 
 sub refresh_meta {
     my ($self, $key) = @_;
 
     my $buf;
-    shmread($self->{shmid}, $buf, $packsize*$self->{recno}, $packsize)
+    shmread($self->{shmid}, $buf, $packsize * $self->{recno}, $packsize)
         or die "shmread: $!";
-    @{$self->{_cache}}{@packlist} = unpack($packstring, $buf);
-    @{$self->{_cache}{pmsgs}} = unpack('S9', $self->{_cache}{msgs});
+
+    @{$self->{_hash}}{@packlist} = unpack($packstring, $buf);
+    @{$self->{_hash}{pmsgs}} = unpack('S9', $self->{_hash}{msgs});
 }
 
 sub refresh_chat {
     my $self = shift;
-    return if exists $self->{_cache}{chat};
+    return if exists $self->{_hash}{chat};
 
     require OurNet::BBS::SocketScalar;
     $self->refresh_meta('userid');
 
     die 'need passwd for session chat' unless $self->{passwd};
 
-    tie $self->{_cache}{chat}, 'OurNet::BBS::SocketScalar',
+    tie $self->{_hash}{chat}, 'OurNet::BBS::SocketScalar',
         (index($self->{chatport}, ':') > -1) ? $self->{chatport}
              : ('localhost', $self->{chatport});
 
-    $self->{_cache}{chat} = "/! $self->{_cache}{userid} ".
-			       "$self->{_cache}{userid} ".
+    $self->{_hash}{chat} = "/! $self->{_hash}{userid} ".
+			       "$self->{_hash}{userid} ".
                                "$self->{passwd}\n";
 
-    $self->{_cache}{chatid} = $self->{_cache}{userid};
+    $self->{_hash}{chatid} = $self->{_hash}{userid};
 
 #   $self->_shmwrite();
 }
 
 sub _shmwrite {
     my $self = shift;
-    shmwrite($self->{shmid}, pack($packstring, @{$self->{_cache}}{@packlist}),
+    shmwrite($self->{shmid}, pack($packstring, @{$self->{_hash}}{@packlist}),
 	     $packsize*$self->{recno}, $packsize);
 }
 
 sub dispatch {
     my ($self, $from, $message) = @_;
 
-    $self->{_cache}{msgs} = pack('S9', 0);
-    $self->_shmwrite();
-    $self->{_cache}{cb_msg} ($from, $message) if $self->{_cache}{cb_msg};
+    $self->{_hash}{msgs} = pack('S9', 0);
+    $self->_shmwrite;
+    $self->{_hash}{cb_msg} ($from, $message) if $self->{_hash}{cb_msg};
 }
 
 sub remove {
     my $self = shift;
-    $self->{_cache}{pid} = 0;
-    $self->_shmwrite();
+    $self->{_hash}{pid} = 0;
+    $self->_shmwrite;
     --$self->{shm}{number};
 }
 
 sub STORE {
     my ($self, $key, $value) = @_;
+    $self = $self->ego;
 
     no warnings 'uninitialized';
 
     if ($key eq 'msg') {
 	my $head = $self->{shm}{mbase};
 	my ($sendername, $senderid);
-	while ($self->{shm}{mpool}[$head][0] > time()-60) {
+	while ($self->{shm}{mpool}[$head][0] > time() - 60) {
 	    ++$head;
 	}
 	$self->{shm}{mbase} = $head;
@@ -85,10 +87,12 @@ sub STORE {
 	else {
 	    $sendername = $value->[0];
 	}
-	$self->{shm}{mpool}[$head] = [time(), 0, $senderid, $self->{_cache}{uid}, $sendername, $value->[1]];
-	$self->{_cache}{msgs} =pack('S', $head+1);
-	$self->_shmwrite();
-	kill SIGUSR2, $self->{_cache}{pid};
+	$self->{shm}{mpool}[$head] = [
+	    time, 0, $senderid, $self->{_hash}{uid}, $sendername, $value->[1]
+	];
+	$self->{_hash}{msgs} = pack('S', $head + 1);
+	$self->_shmwrite;
+	kill SIGUSR2, $self->{_hash}{pid};
 
 	return;
     }
@@ -103,18 +107,20 @@ sub STORE {
     }
 
     $self->refresh_meta($key);
-    $self->{_cache}{$key} = $value;
+    $self->{_hash}{$key} = $value;
 
-    return if (index(' '.join(' ', @packlist).' ', " $key ") == -1);
+    $self->_shmwrite if $self->contains($key);
 
-    $self->_shmwrite();
 }
 
 sub DESTROY {
-    my $self = shift;
-    return unless $self->{_cache}{flag};
-    $self->{_cache}{pid} = $self->{_cache}{uid} = 0;
-    $self->_shmwrite();
+    my $self = shift->ego;
+    return unless $self->{_hash}{flag};
+
+    $self->{_hash}{pid} = $self->{_hash}{uid} = 0;
+    $self->_shmwrite;
     --$self->{shm}{number};
     delete $self->{registered}{$self->{recno}};
 }
+
+1;

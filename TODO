@@ -1,9 +1,3 @@
-TODO for 1.5x:
-
-- better-polished bin/bbscomd, including the ability to serve as proxy.
-- A better README and overall documentation.
-- add locating, security and session to BBSCOM-RPC.
-- XML-RPC support.
+See the MILESTONES section of OurNet::BBS manpage.
 
 Please mail your ideas to autrijus@autrijus.org.
-

@@ -1,29 +1,25 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/SessionGroup.pm $ $Author: autrijus $
-# $Revision: #4 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+# $Revision: #7 $ $Change: 1575 $ $DateTime: 2001/08/28 01:26:00 $
 
 package OurNet::BBS::MAPLE2::SessionGroup;
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot shmkey maxsession chatport passwd shmid shm _cache/;
+use fields qw/bbsroot shmkey maxsession chatport passwd shmid shm _ego _hash/;
+
+use OurNet::BBS::Base (
+    '%registered' => {},
+    '%instances'  => {},
+    '$packstring' => 'LLLLLCCCx1LCCCCZ13Z11Z20Z24Z29Z11a256a64LCx3a1000LL',
+    '$packsize'   => 1476,
+    '@packlist'   => [
+        qw/uid pid sockaddr destuid destuip active invisible
+           sockactive userlevel mode pager in_chat sig userid
+           chatid realname username from tty friends reject
+           uptime msgcount msgs mood site/
+    ],
+);
+
 use OurNet::BBS::ShmScalar;
-use POSIX;
-
-our %registered; # registered callbacks
-our %instances;  # object instances
-
-BEGIN {
-    __PACKAGE__->initvars(
-        '$packstring' => 'LLLLLCCCx1LCCCCZ13Z11Z20Z24Z29Z11a256a64LCx3a1000LL',
-        '$packsize'   => 1476,
-        '@packlist'   => [
-            qw/uid pid sockaddr destuid destuip active invisible
-               sockactive userlevel mode pager in_chat sig userid
-               chatid realname username from tty friends reject
-               uptime msgcount msgs mood site/
-        ],
-    );
-}
 
 sub message_handler {
     # we don't handle multiple messages in the queue yet.
@@ -33,13 +29,13 @@ sub message_handler {
             foreach (0..$instance->{maxsession}-1);
 
         foreach my $session (values %{$registered{$instance}}) {
-            print "check for $session->{_cache}{pid}\n" if $OurNet::BBS::DEBUG;
+            print "check for $session->{_hash}{pid}\n" if $OurNet::BBS::DEBUG;
             $session->refresh_meta();
-            if ($session->{_cache}{msgcount}) {
+            if ($session->{_hash}{msgcount}) {
                 my ($pid, $userid, $message) =
-                    unpack('LZ13Z80x3', $session->{_cache}{msgs});
+                    unpack('LZ13Z80x3', $session->{_hash}{msgs});
                 my $from = $pid && (grep {$_->{pid} == $pid}
-                    @{$instance->{_cache}}{0..$instance->{maxsession}-1})[0];
+                    @{$instance->{_hash}}{0..$instance->{maxsession}-1})[0];
                 print "pid $pid, from $from\n" if $OurNet::BBS::DEBUG;
                 $session->dispatch($from || $userid, $message);
             }
@@ -61,7 +57,7 @@ sub shminit {
 				($self->{maxsession})*$packsize+36, 0)) {
       tie $self->{shm}{uptime}, 'OurNet::BBS::ShmScalar',
 	$self->{shmid}, $self->{maxsession}*$packsize, 4, 'L';
-      tie $self->{_cache}{number}, 'OurNet::BBS::ShmScalar',
+      tie $self->{_hash}{number}, 'OurNet::BBS::ShmScalar',
 	$self->{shmid}, $self->{maxsession}*$packsize+4, 4, 'L';
       tie $self->{shm}{busystate}, 'OurNet::BBS::ShmScalar',
 	$self->{shmid}, $self->{maxsession}*$packsize+8, 4, 'L';
@@ -76,9 +72,9 @@ sub refresh_meta {
 
     if ($key eq int($key)) {
         print "new toy called $key\n" 
-	    if !$self->{_cache}{$key} and $OurNet::BBS::DEBUG;
+	    if !$self->{_hash}{$key} and $OurNet::BBS::DEBUG;
 
-        $self->{_cache}{$key} ||= $self->module('Session')->new({
+        $self->{_hash}{$key} ||= $self->module('Session')->new({
 	      recno	=> $key,
 	      shmid	=> $self->{shmid},
 	      shm	=> $self->{shm},
@@ -103,16 +99,16 @@ sub STORE {
         undef $key;
         for my $newkey (0..$self->{maxsession}-1) {
             $self->refresh_meta($newkey);
-            ($key ||= $newkey, last) if $self->{_cache}{$newkey}{pid} < 2;
+            ($key ||= $newkey, last) if $self->{_hash}{$newkey}{pid} < 2;
         }
         print "new key $key...\n" if $OurNet::BBS::DEBUG;
     }
 
     die "no more session $key" unless defined $key;
 
-    ++$self->{_cache}{number};
+    ++$self->{_hash}{number};
     $self->refresh_meta($key);
-    %{$self->{_cache}{$key}} = %{$value};
+    %{$self->{_hash}{$key}} = %{$value};
 
 }
 

@@ -1,65 +1,74 @@
 # $File: //depot/OurNet-BBS/BBS/CVIC/Group.pm $ $Author: autrijus $
-# $Revision: #7 $ $Change: 1296 $ $DateTime: 2001/06/25 22:25:50 $
+# $Revision: #10 $ $Change: 1600 $ $DateTime: 2001/08/29 23:35:16 $
 
 package OurNet::BBS::CVIC::Group;
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot group title mtime _cache/;
-
-BEGIN { __PACKAGE__->initvars() }
+use fields qw/bbsroot brdobj group mtime _ego _hash/;
+use OurNet::BBS::Base;
 
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
     my ($self, $key) = @_;
-    my $file = "$self->{bbsroot}/group/$self->{group}";
-    my $board;
 
     return unless $self->{group};
-    return if $self->timestamp($file);
+
+    if (!$key or index(' owner title id ', " $key ") > -1) {
+	@{$self->{_hash}}{qw/owner title id/} = 
+	    @{$self->{brdobj}}{qw/bm title id/};
+	return 1 unless $key;
+    }
+
+    my $file = "$self->{bbsroot}/group/$self->{group}";
+    return if $self->filestamp($file);
 
     my $GROUP;
     open($GROUP, $file) or open($GROUP, '+>>', $file)
         or die("Cannot read group file $file: $!");
 
-    my %remain = %{$self->{_cache} || {}};
+    my %remain = %{$self->{_hash} || {}};
+
     while ($key = <$GROUP>) {
         $key = $1 if $key =~ m/([\w\-\.]+)/;
 	delete $remain{$key};
-        next if exists $self->{_cache}{$key};
+        next if exists $self->{_hash}{$key};
 
         if (-e "$self->{bbsroot}/group/$key") {
-            $self->{_cache}{$key} = $self->module('Group')->new(
-                $self->{bbsroot}, $key
+            $self->{_hash}{$key} = $self->module('Group')->new(
+                @{$self}{qw/bbsroot bbsego/}, $key
             );
         }
         elsif (substr($key, 0, 1) eq '+' and
                -e "$self->{bbsroot}/group/".($key = substr($key, 1))) {
-            %{$self->{_cache}} = (
-                %{$self->{_cache}},
-                %{$self->module('Group')->new($self->{bbsroot}, $key)},
+            %{$self->{_hash}} = (
+                %{$self->{_hash}},
+                %{$self->module('Group')->new( 
+		    @{$self}{qw/bbsroot bbsego/}, $key
+		)},
             );
         }
         elsif (-e "$self->{bbsroot}/boards/$key/.DIR") {
-            $self->{_cache}{$key} = $self->module('Board')->new(
-                $self->{bbsroot}, $key
+            $self->{_hash}{$key} = $self->module('Board')->new(
+                @{$self}{qw/bbsroot bbsego/}, $key
             );
         }
     }
 
     foreach my $del (keys(%remain)) {
-	delete $self->{_cache}{$del};
+	delete $self->{_hash}{$del};
     }
+
     close $GROUP;
 }
 
 sub DELETE {
     my ($self, $key) = @_;
-    my $file = "$self->{bbsroot}/group/$self->{group}";
+    $self = $self->ego;
 
     $self->refresh($key);
-    return unless delete($self->{_cache}{$key});
+    return unless delete($self->{_hash}{$key});
 
+    my $file = "$self->{bbsroot}/group/$self->{group}";
     open(my $GROUP, $file) or die "Cannot read group file $file: $!";
     my $content = join ('', grep { not m/\b$key\b/ } <$GROUP>);
     close $GROUP;
@@ -71,9 +80,11 @@ sub DELETE {
 
 sub STORE {
     my ($self, $key, $value) = @_;
+    $self = $self->ego;
+
     my $file = "$self->{bbsroot}/group/$self->{group}";
 
-    return if exists $self->{_cache}{$key}; # doesn't make sense yet
+    return if exists $self->{_hash}{$key}; # doesn't make sense yet
 
     die "doesn't exists such group or board $key: panic!"
         unless (-e "$self->{bbsroot}/group/$key" or

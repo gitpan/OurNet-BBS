@@ -1,26 +1,23 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/BoardGroup.pm $ $Author: autrijus $
-# $Revision: #6 $ $Change: 1254 $ $DateTime: 2001/06/21 10:39:30 $
+# $Revision: #11 $ $Change: 1623 $ $DateTime: 2001/08/31 03:00:50 $
 
 package OurNet::BBS::MAPLE2::BoardGroup;
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot shmkey maxboard shmid shm mtime _cache/;
+use fields qw/bbsroot shmkey maxboard shmid shm mtime _ego _hash/;
 use OurNet::BBS::ShmScalar;
 
-BEGIN {
-    __PACKAGE__->initvars(
-        '$packstring'    => 'Z13Z49Z39Z11LZ3CLL',
-        '$packsize'      => 128,
-        '@packlist'      => [
-	    qw/id title bm pad bupdate pad2 bvote vtime level/
-	],
-        '$BRD'           => '.BOARDS',
-	'$PATH_BRD'      => 'boards',
-	'$PATH_GEM'      => 'man/boards',
+use OurNet::BBS::Base (
+    '$packstring'    => 'Z13Z49Z39Z11LZ3CLL',
+    '$packsize'      => 128,
+    '@packlist'      => [
+        qw/id title bm pad bupdate pad2 bvote vtime level/
+    ],
+    '$BRD'           => '.BOARDS',
+    '$PATH_BRD'      => 'boards',
+    '$PATH_GEM'      => 'man/boards',
 
-    );
-}
+);
 
 sub shminit {
     my $self = shift;
@@ -39,24 +36,25 @@ sub shminit {
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
     my ($self, $key) = @_;
+
     my $file = "$self->{bbsroot}/$BRD";
     my $board;
 
     $self->shminit unless ($self->{shmid} || !$self->{shmkey});
 
     if ($key) {
-        $self->{_cache}{$key} ||= $self->module('Board')->new({
+        $self->{_hash}{$key} ||= $self->module('Board')->new({
             bbsroot => $self->{bbsroot},
             board   => $key,
             shmid   => $self->{bbsroot},
             shm     => $self->{shm},
         });
 
-	print $self->{_cache}{$key}->shmid if $OurNet::BBS::DEBUG;
+	print $self->{_hash}{$key}->shmid if $OurNet::BBS::DEBUG;
         return;
     }
 
-    return if $self->timestamp($file);
+    return if $self->filestamp($file);
 
     open(my $DIR, $file) or die "can't read DIR file $file $!";
 
@@ -66,7 +64,7 @@ sub refresh_meta {
         $board = unpack('Z13', $board);
         next unless $board and substr($board,0,1) ne "\0";
 
-        $self->{_cache}{$board} ||= $self->module('Board')->new({
+        $self->{_hash}{$board} ||= $self->module('Board')->new({
             bbsroot => $self->{bbsroot},
             board   => $board,
             shmid   => $self->{shmid},
@@ -80,15 +78,16 @@ sub refresh_meta {
 
 sub EXISTS {
     my ($self, $key) = @_;
-    return 1 if exists ($self->{_cache}{$key});
+    $self = $self->ego;
+    return 1 if exists ($self->{_hash}{$key});
 
     my $file = "$self->{bbsroot}/$BRD";
-    return 0 if $self->timestamp($file, 0);
+    return 0 if $self->filestamp($file, 'mtime', 1);
 
     open(my $DIR, $file) or die "can't read DIR file $file: $!";
 
     my $board;
-    foreach (0..int((stat($file))[7] / 128)-1) {
+    foreach (0 .. int((stat($file))[7] / 128)-1) {
         seek $DIR, 128 * $_, 0;
         read $DIR, $board, 13;
         return 1 if unpack('Z13', $board) eq $key;
@@ -99,31 +98,19 @@ sub EXISTS {
 }
 
 sub STORE {
-    my $self = shift;
-    my $key  = shift;
+    my ($self, $key, $value) = @_;
+    $self = $self->ego;
 
     die "Need key for STORE" unless $key;
 
-    foreach my $value (@_) {
-        die "STORE: attempt to store non-hash value ($value) into ".ref($self)
-            unless UNIVERSAL::isa($value, 'HASH');
+    %{$self->module('Board', $value)->new({
+	bbsroot => $self->{bbsroot},
+	board   => $key,
+	shmid   => $self->{shmid},
+	shm     => $self->{shm},
+    })} = (%{$value}, bstamp => CORE::time);
 
-        my $class  = (UNIVERSAL::isa($value, "UNIVERSAL"))
-            ? ref($value) : $self->module('Board');
-        my $module = "$class.pm";
-
-        $module =~ s|::|/|g;
-        require $module;
-
-	$self->shminit unless ($self->{shmid} || !$self->{shmkey});
-
-        %{$class->new({
-            bbsroot => $self->{bbsroot},
-            board   => $key,
-            shmid   => $self->{shmid},
-            shm     => $self->{shm},
-        })} = (%{$value}, bstamp => time());
-    }
+    $self->shminit unless ($self->{shmid} || !$self->{shmkey});
 
     return 1;
 }

@@ -1,18 +1,24 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/User.pm $ $Author: autrijus $
-# $Revision: #13 $ $Change: 1468 $ $DateTime: 2001/07/20 19:49:34 $
+# $Revision: #16 $ $Change: 1607 $ $DateTime: 2001/08/30 03:01:38 $
 
 package OurNet::BBS::MAPLE3::User;
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot id recno _cache/;
+use fields qw/bbsroot id recno _ego _hash/;
 use subs qw/writeok readok/;
-use open IN => ':raw', OUT => ':raw';
+use OurNet::BBS::Base (
+    '$packstring' => 'iZ13Z14CZ20Z24IiiILLLLZ32iLZ60Z60Z60Z60Z120L',
+    '$packsize'   => 512,
+    '@packlist'   => [ qw(
+	userno userid passwd signature realname username userlevel 
+	numlogins numposts ufo firstlogin lastlogin staytime tcheck 
+	lasthost numemail tvalid email address justify vmail ident 
+	vtime
+    ) ],
+);
 
-BEGIN { __PACKAGE__->initvars() }
-
-sub writeok { 0 }
-sub readok { 1 }
+use constant IsWin32 => ($^O eq 'MSWin32');
+use open (IsWin32 ? (IN => ':raw', OUT => ':raw') : ());
 
 use enum 'BITMASK:PERM_',
     qw/BASIC CHAT PAGE POST VALID MBOX CLOAK XEMPT/,		# Basic
@@ -37,16 +43,25 @@ use constant GEM_RECYCLE     => 1;
 use constant GEM_MANAGER     => 2;
 use constant GEM_SYSOP       => 3;
 
-BEGIN {
-    __PACKAGE__->initvars(
-	'$packstring' => 'iZ13Z14CZ20Z24IiiILLLLZ32iLZ60Z60Z60Z60Z120L',
-	'$packsize'   => 512,
-	'@packlist'   => [ qw(
-	    userno userid passwd signature realname username userlevel 
-	    numlogins numposts ufo firstlogin lastlogin staytime tcheck 
-	    lasthost numemail tvalid email address justify vmail ident 
-	    vtime
-	) ],
+use constant WRITEOK	=> ' username address realname email ';
+use constant READOK	=> ' numlogin numposts justify lastlogin vmail'.
+			   ' username userid mailbox ';
+
+sub writeok {
+    my ($self, $user, $op, $param) = @_;
+
+    return (
+	index(WRITEOK, $param->[0]) > -1
+	and ($self->id eq $user->id)
+    );
+}
+
+sub readok {
+    my ($self, $user, $op, $param) = @_;
+
+    return (
+	index(READOK, $param->[0]) > -1
+	or ($self->id eq $user->id)
     );
 }
 
@@ -56,10 +71,8 @@ sub has_perm {
 }
 
 sub refresh_meta {
-    my $self = shift;
-    my $key  = shift;
-
-    return if $key and exists $self->{_cache}{$key};
+    my ($self, $key) = @_;
+    return if defined $key and exists $self->{_hash}{$key};
 
     my $path = "$self->{bbsroot}/usr/".
               lc(substr($self->{id}, 0, 1)."/$self->{id}");
@@ -71,11 +84,11 @@ sub refresh_meta {
 
         open(my $USR, '>', "$path/.ACCT") or die "cannot open: $path/.ACCT";
 
-        $self->{_cache}{userno} = (stat("$self->{bbsroot}/.USR"))[7] / 16;
-        $self->{_cache}{userid} = $self->{id};
-        $self->{_cache}{userlevel} = 15;
-        $self->{_cache}{ufo} = 15;
-        print $USR pack($packstring, @{$self->{_cache}}{@packlist});
+        $self->{_hash}{userno} = (stat("$self->{bbsroot}/.USR"))[7] / 16;
+        $self->{_hash}{userid} = $self->{id};
+        $self->{_hash}{userlevel} = 15;
+        $self->{_hash}{ufo} = 15;
+        print $USR pack($packstring, @{$self->{_hash}}{@packlist});
         close $USR;
 
         open($USR, '>>', "$self->{bbsroot}/.USR")
@@ -86,22 +99,22 @@ sub refresh_meta {
 
     if (!defined($key) or $self->contains($key)) {
 	open my $USR, "$path/.ACCT" or die "cannot: open $path/.ACCT";
-	@{$self->{_cache}}{@packlist} = unpack($packstring, <$USR>);
+	@{$self->{_hash}}{@packlist} = unpack($packstring, <$USR>);
 	close $USR;
 
 	no warnings 'numeric';
 
-	$self->{recno} ||= $self->{_cache}{userno} + 1;
-	$self->{_cache}{uid} ||= $self->{recno} - 1;
-	$self->{_cache}{name} ||= $self->{id};
+	$self->{recno} ||= $self->{_hash}{userno} + 1;
+	$self->{_hash}{uid} ||= $self->{recno} - 1;
+	$self->{_hash}{name} ||= $self->{id};
 
 	return 1;
     }
     else {
-	die "malicious intent stopped cold" if index($key, '../') > -1;
+	die "malicious intent stopped cold" if index($key, '..') > -1;
 
 	require OurNet::BBS::ScalarFile;
-	tie $self->{_cache}{$key}, 'OurNet::BBS::ScalarFile',
+	tie $self->{_hash}{$key}, 'OurNet::BBS::ScalarFile',
 	    "$path/$key";
     }
 
@@ -112,40 +125,40 @@ sub refresh_mailbox {
     my $self = shift;
     my $PATH_USR = 'usr'; # XXX should be in inivars
 
-    return $self->{_cache}{mailbox} ||= $self->module('ArticleGroup')->new({
+    return $self->{_hash}{mailbox} ||= $self->module('ArticleGroup')->new({
 	basepath	=> "$self->{bbsroot}/$PATH_USR/".
 			   lc(substr($self->{id}, 0, 1)),
 	board		=> lc($self->{id}),
 	idxfile	 	=> '.DIR',
 	bm		=> $self->{id},
-	readlevel	=> 0,
-	postlevel	=> 0,
+	readlevel	=> -1,
+	postlevel	=> -1,
     });
 }
 
 sub STORE {
     my ($self, $key, $value) = @_;
-
+    $self = $self->ego;
     $self->refresh_meta($key);
 
     my $path = "$self->{bbsroot}/usr/".
 		lc(substr($self->{id}, 0, 1)."/$self->{id}");
 
     if ($self->contains($key)) {
-	$self->{_cache}{$key} = $value;
+	$self->{_hash}{$key} = $value;
 
 	open my $USR, '>', "$path/.ACCT";
-	print $USR pack($packstring, @{$self->{_cache}}{@packlist});
+	print $USR pack($packstring, @{$self->{_hash}}{@packlist});
 	close $USR;
     }
     else {
-	die "malicious intent stopped cold" if index($key, '../') > -1;
+	die "malicious intent stopped cold" if index($key, '..') > -1;
 
 	require OurNet::BBS::ScalarFile;
-	tie $self->{_cache}{$key}, 'OurNet::BBS::ScalarFile',
-	    "$path/$key" unless $self->{_cache}{$key};
+	tie $self->{_hash}{$key}, 'OurNet::BBS::ScalarFile',
+	    "$path/$key" unless $self->{_hash}{$key};
 
-	$self->{_cache}{$key} = $value;
+	$self->{_hash}{$key} = $value;
     }
 }
 

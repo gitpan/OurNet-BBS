@@ -1,25 +1,22 @@
 # $File: //depot/OurNet-BBS/BBS/BBSAgent/BoardGroup.pm $ $Author: autrijus $
-# $Revision: #6 $ $Change: 1131 $ $DateTime: 2001/06/14 16:30:21 $
+# $Revision: #8 $ $Change: 1542 $ $DateTime: 2001/08/19 03:33:19 $
 
 package OurNet::BBS::BBSAgent::BoardGroup;
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot bbsobj mtime _cache/;
-
-BEGIN { __PACKAGE__->initvars() }
+use fields qw/bbsroot bbsobj mtime _ego _hash/;
+use OurNet::BBS::Base;
 
 sub refresh_meta {
     my ($self, $key) = @_;
 
-    if ($key) {
-        $self->{_cache}{$key} ||= $self->module('Board')->new(
-	    $self->{bbsobj}, $key
-        );
-        return;
-    }
+    die 'board listing not implemented' unless $key;
 
-    die 'board listing not implemented';
+    $self->{_hash}{$key} ||= $self->module('Board')->new(
+	@{$self}{qw/bbsroot bbsobj/}, $key,
+    );
+
+    return 1;
 }
 
 1;

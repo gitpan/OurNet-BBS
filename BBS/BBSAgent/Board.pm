@@ -1,25 +1,20 @@
 # $File: //depot/OurNet-BBS/BBS/BBSAgent/Board.pm $ $Author: autrijus $
-# $Revision: #2 $ $Change: 1131 $ $DateTime: 2001/06/14 16:30:21 $
+# $Revision: #4 $ $Change: 1542 $ $DateTime: 2001/08/19 03:33:19 $
 
 package OurNet::BBS::BBSAgent::Board;
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsobj board recno mtime _cache/;
-
-# TODO: vote, man, note, etc...
-
-BEGIN { __PACKAGE__->initvars() }
+use fields qw/bbsroot bbsobj board _ego _hash/;
+use OurNet::BBS::Base;
 
 sub refresh_articles {
     my $self = shift;
 
-    require OurNet::BBS::BBSAgent::ArticleGroup;
+    $self->{_hash}{articles} ||= $self->module('ArticleGroup')->new(
+	@{$self}{qw/bbsroot bbsobj board/}, 'articles',
+    );
 
-    return $self->{_cache}{articles} ||=
-        OurNet::BBS::BBSAgent::ArticleGroup->new(
-            $self->{bbsobj}, $self->{board}, 'article'
-        );
+    return 1;
 }
 
 sub refresh_archives {
@@ -31,7 +26,7 @@ sub refresh_meta {
 }
 
 sub STORE {
-    die 'storage not implemented (!)';
+    die 'storage not implemented';
 }
 
 1;

@@ -1,7 +1,11 @@
 # $File: //depot/OurNet-BBS/BBS/ScalarFile.pm $ $Author: autrijus $
-# $Revision: #5 $ $Change: 1265 $ $DateTime: 2001/06/23 16:52:45 $
+# $Revision: #6 $ $Change: 1527 $ $DateTime: 2001/08/17 22:51:34 $
 
 package OurNet::BBS::ScalarFile;
+use strict;
+
+use constant IsWin32 => ($^O eq 'MSWin32');
+use open (IsWin32 ? (IN => ':raw', OUT => ':raw') : ());
 
 sub TIESCALAR {
     my ($class, $filename) = @_;
@@ -19,9 +23,9 @@ sub FETCH {
         $self->[1] = (stat($filename))[9];
         
         local $/;
-        open FILE, $filename or die "cannot read $filename: $!";
-        $self->[2] = <FILE>;
-        close FILE;
+        open my $FILE, $filename or die "cannot read $filename: $!";
+        $self->[2] = <$FILE>;
+        close $FILE;
         
         return $self->[2];
     }
@@ -61,7 +65,7 @@ sub STORE {
     else {
         # store undef: kill the file
         undef $self->[1];
-        unlink $filename or die "cannot delete $file: $!" if -e $filename;
+        unlink $filename or die "cannot delete $filename: $!" if -e $filename;
     }
 
     return $self->[2];

@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Server.pm $ $Author: autrijus $
-# $Revision: #32 $ $Change: 1477 $ $DateTime: 2001/07/22 23:14:15 $
+# $Revision: #38 $ $Change: 1628 $ $DateTime: 2001/08/31 03:47:07 $
 
 package OurNet::BBS::Server;
 
@@ -7,13 +7,14 @@ use strict;
 use OurNet::BBS::Authen;
 use base qw/RPC::PlServer/;
 
-our ($Port, $Mode, $Childs);
+our ($Port, $Mode, $Childs, $LocalAddr);
 
 $OurNet::BBS::Server::VERSION = $OurNet::BBS::Authen::VERSION; 
 
-$Port   = 7978;
-$Mode   = 'fork';
-$Childs = undef; # max. concurrent connections.
+$Port      = 7979;
+$Mode      = 'fork';
+$Childs    = undef; # max. concurrent connections.
+$LocalAddr = 'localhost';
 
 sub daemonize {
     my ($class, $root, $port) = splice(@_, 0, 3);
@@ -23,6 +24,7 @@ sub daemonize {
     __::daemonize($root, __PACKAGE__->new({
         pidfile     => 'none',
         facility    => 'daemon', # Default
+	localaddr   => $LocalAddr,
         localport   => $port || $Port,
         methods     => {
 	    'OurNet::BBS::Server' => {
@@ -53,9 +55,9 @@ sub daemonize {
 		locate		=> 0,
 		relay		=> 0,
 		## Connected ########
-		__		=> 0,
+		__		=> $OurNet::BBS::BYPASS_NEGOTIATION,
 		####################
-		quit		=> 0,
+		quit		=> $OurNet::BBS::BYPASS_NEGOTIATION,
 		####################
 	    },
         },    
@@ -76,7 +78,7 @@ my $OPREV  = $OurNet::BBS::Authen::OPREV;
 my @OPTREE = ('');
 
 my ($ROOT, $Server, $Auth, @CipherSuites, %Cache, %Perm);
-my ($CipherLevel, $AuthLevel, $CipherMode, $AuthMode);
+my ($CipherLevel, $AuthLevel, $CipherMode, $AuthMode, $GuestId);
 
 use enum qw/BITMASK:CIPHER_ NONE BASIC PGP/;
 use enum qw/BITMASK:AUTH_ NONE CRYPT PGP/;
@@ -86,7 +88,7 @@ use constant OP_IGNORE => ' daemonize DESTROY initvars writeok readok '.
 			  ' new timestamp fillmod fillin remove ';
 sub daemonize {
     ($ROOT, $Server, my (
-	$keyid, $passphrase, $cipher_level, $auth_level
+	$keyid, $passphrase, $cipher_level, $auth_level, $guest_id
     )) = @_;
 
     ($CipherLevel, $AuthLevel) = OurNet::BBS::Authen->adjust(
@@ -105,21 +107,28 @@ sub daemonize {
 
     if ($AuthLevel & (AUTH_CRYPT | AUTH_PGP)) {
 	if (UNIVERSAL::isa($ROOT, 'OurNet::BBS')) {
-	    no warnings; local $@;
+	    local $@;
+	    no warnings;
+
+	    my $sysop = eval { $ROOT->{users}{SYSOP} } || [];
 
 	    $AuthLevel &= ~AUTH_CRYPT unless eval{
-		$ROOT->{users}{SYSOP}{passwd} 
+		$sysop->{passwd} 
 	    } and !$@;
 
 	    undef $@;
 
 	    $AuthLevel &= ~AUTH_PGP unless eval{
-		$ROOT->{users}{SYSOP}{plans} 
+		$sysop->{plans} 
 	    } or !$@;
 	}
 	else {
 	    $AuthLevel &= ~(AUTH_CRYPT | AUTH_PGP)
 	}
+    }
+
+    if ($AuthLevel & AUTH_NONE and $GuestId = $guest_id) {
+	$AuthLevel &= ~AUTH_NONE unless exists $ROOT->{users}{$guest_id};
     }
 
     if ($CipherLevel & (CIPHER_PGP | CIPHER_BASIC)) {
@@ -321,7 +330,13 @@ sub set_crypted {
 sub auth_none {
     return unless $AuthLevel & AUTH_NONE;
 
-    undef $Auth->{user}; # clean up previous auth
+    if ($Auth->{login} = $GuestId) {
+	$Auth->{user} = $ROOT->{users}{$GuestId} or return $OP->{NO_USER};
+    }
+    else {
+	undef $Auth->{user};  # clean up previous auth
+	undef $Auth->{login}; # clean up previous auth
+    }
 
     nextstate('locate', 'relay');
     return ($OP->{STATUS_ACCEPTED}, $AuthMode = AUTH_NONE); 
@@ -331,12 +346,12 @@ sub auth_none {
 
 sub locate {
     nextstate('__', 'quit');
-    return \$ROOT;
+    return "$ROOT";
 }
 
 sub relay {
     nextstate('__', 'quit');
-    return \$ROOT; # XXX unimplemented
+    return "$ROOT"; # XXX unimplemented
 }
 
 ## Connected ##########################################################
@@ -346,17 +361,25 @@ sub __ {
     my $parent = $_[2];
     my ($op, $param, @ret);
 
-    @_[2, 3] = ([@_[3..$#_]], $_[2]); $#_ = 3;
+    @_[2, 3] = ([map {
+	ref($_) eq __PACKAGE__ ? __($_[0], undef, ${$_}, undef) : $_ 
+    } @_[3..$#_]], $_[2]); $#_ = 3;
 
     while ($_[-1]) {
 	@_[$#_ .. $#_ + 2] = @OPTREE[$_[-1] .. $_[-1] + 2];
     }
 
     foreach my $i (2 .. (scalar @_ / 2)) { return eval { 
+	no warnings 'exiting'; # intended! arbitary! 
+
 	my ($op, $param) = @_[
 	    ($#_ - ($i * 2)) + 2,
 	    ($#_ - ($i * 2)) + 3,
 	];
+
+	unless (defined $op) {
+	    return $obj;
+	}
 
 	my $action = $OPREV->{$op};
 	$op        = $OP->{$op} if $action; # do name translation
@@ -386,62 +409,55 @@ sub __ {
 	    return ref($obj)   if $action eq 'REF';
 
             my @ret = $obj->$action(@{$param});
-            $obj = $ret[0] and next unless $#ret; # return if single arg
-            return @ret;
+            $obj = $ret[0] and next unless $#ret; 
+            return @ret; # return unless single arg
 	}
 
         my $arg = $param->[0] if @{$param};
 
         if ($op eq 'HASH_FETCH') {
-	    return delete($Cache{$obj}{$arg}) 
-		if exists $Cache{$obj}{$arg};
-
-	    $obj = $obj->{$arg};
+	    # perl uses fetch to get val from 2-arg each.
+	    $obj = exists $Cache{$obj}{$arg} 
+		? delete($Cache{$obj}{$arg}) : $obj->{$arg};
         } elsif ($op eq 'HASH_FIRSTKEY') {
-	    if (UNIVERSAL::can($obj, 'ego')) {
-		@ret = $obj->ego->FIRSTKEY;
-	    }
-	    else {
-		scalar keys(%$obj);
-		@ret = each(%$obj);
-	    }
+	    my @ret = UNIVERSAL::can($obj, 'FIRSTKEY')
+		? $obj->FIRSTKEY
+		: (scalar keys(%$obj) ? each(%$obj) : undef);
+
 	    $Cache{$obj}{$ret[0]} = $ret[1] if defined $ret[0];
-	    return @ret;
+	    return $ret[0];
         } elsif ($op eq 'HASH_NEXTKEY') {
-	    if (UNIVERSAL::can($obj, 'ego')) {
-		@ret = $obj->ego->NEXTKEY;
-	    }
-	    else {
-		@ret = each(%$obj);
-	    }
+	    my @ret = UNIVERSAL::can($obj, 'ego') 
+		? $obj->NEXTKEY
+		: each(%$obj);
+
 	    $Cache{$obj}{$ret[0]} = $ret[1] if defined $ret[0];
-	    return @ret;
+	    return $ret[0];
 	} elsif ($op eq 'HASH_DESTROY') {
             return;
         } elsif ($op eq 'ARRAY_DESTROY') {
             return;
-        } elsif ($op eq 'HASH_FETCHARRAY') {
-            $obj = $obj->[$arg];
         } elsif ($op eq 'ARRAY_FETCH') {
-	    return unless $arg;
             $obj = $obj->[$arg];
+	    # print "$op $obj $arg\n"; 
         } elsif ($op eq 'ARRAY_FETCHSIZE') {
-            return $#{$obj} + 1;
+            return scalar @{$obj};
         } elsif ($op eq 'ARRAY_DEREFERENCE') {
             return @{$obj};
         } elsif ($op eq 'HASH_DEREFERENCE') {
             return %{$obj};
         } elsif ($op eq 'ARRAY_STORE') {
-	    return unless $arg;
-            return ($obj->[$arg] = $param->[1]);
+            $obj = $obj->[$arg] = $param->[1];
+            # return $obj->[$arg] = $param->[1] ? 1 : undef;
         } elsif ($op eq 'HASH_STORE') {
-	    return ($obj->{$arg} = $param->[1]);
+	    $obj = $obj->{$arg} = $param->[1];
+	    # return $obj->{$arg} = $param->[1] ? 1 : undef;
         } elsif ($op eq 'ARRAY_DELETE') {
-            return (delete $obj->[$arg]);
+            $obj = (delete $obj->[$arg]);
         } elsif ($op eq 'HASH_DELETE') {
-            return (delete $obj->{$arg});
+            $obj = (delete $obj->{$arg});
         } elsif ($op eq 'ARRAY_PUSH') {
-            return (push @{$obj->{$arg}}, @{$param}[1..$#{$param}]);
+            $obj = push(@{$obj}, @{$param});
         } elsif ($op eq 'ARRAY_POP') {
             $obj = pop(@{$obj->{$arg}});
         } elsif ($op eq 'ARRAY_SHIFT') {
@@ -451,13 +467,12 @@ sub __ {
         } elsif ($op eq 'ARRAY_EXISTS') {
             return exists ($obj->[$arg]);
         } elsif ($op eq 'ARRAY_UNSHIFT') {
-            return (unshift @{$obj->{$arg}}, @{$param}[1..$#{$param}]);
+            return (unshift @{$obj}, @{$param});
         } else {
             warn "Unknown OP: $op (@{$param})\n";
 	    return ('', $OP->{STATUS_UNKNOWN_OP}, '', '');
         }
 
-	no warnings 'exiting'; # intended! arbitary! 
 	next;
     };
 
@@ -467,12 +482,12 @@ sub __ {
 	}
     };
 
-    if (UNIVERSAL::isa($obj, 'UNIVERSAL')) { # is it an object?
+    if (UNIVERSAL::isa(ref($obj), 'UNIVERSAL')) { # is it an overloaded object?
 	push @OPTREE, $_[1], $_[2], $parent;
-	return ('', $OP->{OBJECT_SPAWN}, scalar $obj, $#OPTREE - 2);
+	return ('', $OP->{OBJECT_SPAWN}, "$obj", $#OPTREE - 2);
     }
     else {
-	return ($obj);
+	return $obj;
     }
 }
 

@@ -1,8 +1,8 @@
 # $File: //depot/OurNet-BBS/BBS/Authen.pm $ $Author: autrijus $
-# $Revision: #16 $ $Change: 1481 $ $DateTime: 2001/07/23 01:14:33 $
+# $Revision: #18 $ $Change: 1526 $ $DateTime: 2001/08/17 22:51:14 $
 
 package OurNet::BBS::Authen;
-$OurNet::BBS::Authen::VERSION = '0.22';
+$OurNet::BBS::Authen::VERSION = '0.3';
 
 use strict;
 use GnuPG::Interface;
@@ -78,8 +78,8 @@ sub suites {
     my ($self, @ciphers) = @_;
 
     @ciphers = map { "Crypt::$_" } (
-	qw/Rijndael Twofish2 Twofish Blowfish IDEA DES/, 
-	qw/TEA GOST Blowfish_PP DES_PP/
+	qw/Rijndael Twofish2 Twofish Blowfish IDEA DES/,
+	qw/TEA GOST Blowfish_PP DES_PP/,
     ) unless @ciphers;
 
     my @suites;
@@ -88,7 +88,7 @@ sub suites {
 	no warnings;
 
 	local $@;
-	eval "use $cipher";
+	eval "use $cipher ()";
 	next if $@;
 
 	return $cipher if $#_;
@@ -110,8 +110,8 @@ sub adjust {
     $auth_level   ||= (AUTH_NONE | AUTH_CRYPT | AUTH_PGP);
 
     if ($cipher_level & CIPHER_PGP || $auth_level & AUTH_PGP) {
-    	if (substr($0, -4) eq '.exe') {
-	    # running under PerlApp
+    	if ($^O eq 'MSWin32') {
+	    # pgp support broken, so...
 	    $cipher_level &= ~CIPHER_PGP;
 	    $auth_level   &= ~AUTH_PGP;
 	}
@@ -366,6 +366,7 @@ sub Read($) {
 	}
 	$msg = substr($msg, 0, $encodedSize) if $readSize != $encodedSize;
     }
+
     Storable::thaw($msg);
 }
 

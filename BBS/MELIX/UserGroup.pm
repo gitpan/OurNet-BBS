@@ -1,11 +1,11 @@
 # $File: //depot/OurNet-BBS/BBS/MELIX/UserGroup.pm $ $Author: autrijus $
-# $Revision: #3 $ $Change: 1136 $ $DateTime: 2001/06/14 18:12:19 $
+# $Revision: #4 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
 
 package OurNet::BBS::MELIX::UserGroup;
 
 use base qw/OurNet::BBS::MAPLE3::UserGroup/;
-use fields qw/_cache _phash/;
+use fields qw/_ego _hash _array/;
 
-BEGIN { __PACKAGE__->initvars() }
+use OurNet::BBS::Base;
 
 1;

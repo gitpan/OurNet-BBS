@@ -1,17 +1,14 @@
-# $File: //depot/OurNet-BBS/BBS/Base.pm $ $Author: autrijus $
-# $Revision: #16 $ $Change: 1132 $ $DateTime: 2001/06/14 16:34:13 $
+# $File: //depot/OurNet-BBS/BBS/RAM/Session.pm $ $Author: autrijus $
+# $Revision: #2 $ $Change: 1662 $ $DateTime: 2001/09/02 05:54:09 $
 
-package OurNet::BBS::DBI::Session;
+package OurNet::BBS::RAM::Session;
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/recno chatport _cache/;
+use fields qw/recno chatport _ego _hash/;
 
-BEGIN {
-    __PACKAGE__->initvars(
-        'SessionGroup' => [qw/@packlist/],
-    );
-}
+use OurNet::BBS::Base (
+    'SessionGroup' => [qw/@packlist/],
+);
 
 sub refresh_meta {
     my ($self, $key) = @_;
@@ -42,7 +39,7 @@ sub STORE {
     }
 
     $self->refresh_meta($key);
-    $self->{_cache}{$key} = $value;
+    $self->{_hash}{$key} = $value;
 
     return unless $self->contains($key);
     # XXX SESSION UPDATE
@@ -52,7 +49,7 @@ sub DESTROY {
     my $self = shift;
 
     # XXX SESSION DESTROY
-    return unless $self->{_cache}{flag};
+    return unless $self->{_hash}{flag};
 }
 
 1;

@@ -1,71 +1,84 @@
 # $File: //depot/OurNet-BBS/BBS/Client.pm $ $Author: autrijus $
-# $Revision: #18 $ $Change: 1255 $ $DateTime: 2001/06/21 10:57:45 $
+# $Revision: #21 $ $Change: 1581 $ $DateTime: 2001/08/28 07:27:35 $
 
 package OurNet::BBS::Client;
 
 use strict;
+use OurNet::BBS::Base;
+
+our $Ego;
+
+use overload (
+    '""'   => sub { overload::AddrRef($_[0]) },
+    '<=>'  => sub { "$_[0]" cmp "$_[1]" },
+    'cmp'  => sub { "$_[0]" cmp "$_[1]" },
+    'bool' => sub { 1 },
+    '0+'   => sub { 0 },
+    map {
+	my $type = $_; 
+	( SIGILS->[$type].'{}' => sub {
+	    my $self = ${$_[0]};
+	    $Ego = $self->[0];
+	    return $self->[$type];
+	} );
+    } ( HASH .. GLOB ) 
+);
+
 use RPC::PlClient;
 use Digest::MD5 qw/md5/;
 use OurNet::BBS::Authen;
 
-use fields qw/id remote_ref optree _phash/;
+use enum qw/id remote_ref optree/;
 use enum qw/BITMASK:CIPHER_ NONE BASIC PGP/;
 use enum qw/BITMASK:AUTH_   NONE CRYPT PGP/;
 
 our ($AUTOLOAD, $Port);
 
-$Port = 7978;
+$Port = 7979;
 
 my $OP = $OurNet::BBS::Authen::OP;
 my (%Cache, @delegators);
 
-sub new {
-    my $class = shift;
-    my ($self, $proxy);
+tie my %obj  => __PACKAGE__, 'HASH_';
+tie my @obj  => __PACKAGE__, 'ARRAY_';
+tie my $code => __PACKAGE__, 'CODE_'; # XXX: not working
+tie my $glob => __PACKAGE__, 'GLOB_'; # XXX: not working
 
-    tie %{$self}, $class, @_;
-    tie @{$proxy}, 'OurNet::BBS::ClientArrayProxy', $self;
-    return bless($proxy, $class);
-}
+sub TIEHASH   { bless(\[$_[1]], $_[0]) }
+sub TIEARRAY  { bless(\[$_[1]], $_[0]) }
+sub TIESCALAR { bless(\[$_[1]], $_[0]) }
 
 # spawn (optree_id)
-sub spawn {
-    my $parent = shift;
-    my ($self, $proxy);
+sub _spawn {
+    my $self = [ $Ego->[id], @_ ];
 
     show("SPAWN: @_\n");
 
-    tie %{$self}, ref($parent);
-    tied(%{$self})->{id} = $parent->{id};
-    tied(%{$self})->{remote_ref} = shift;
-    tied(%{$self})->{optree} = shift;
-
-    tie @{$proxy}, 'OurNet::BBS::ClientArrayProxy', $self;
-    
-    return bless($proxy, ref($parent));
+    # warning: one-arg bless!
+    return bless(\[$self, \%obj, \@obj, \$code, \$glob, 'OBJECT_']);
 }
 
-sub TIEHASH {
+sub new {
     my ($class, $peeraddr, $peerport, 
 	$keyid, $user, $pass, $cipher_level, $auth_level) = @_; 
 
-    my $self = fields::new($class);
+    my $self = [];
 
-    if ($#_) { # if not only class...
-        $self->{id} = scalar @delegators; # 1 more than max
+    $self->[id] = scalar @delegators; # 1 more than max
 
-        $delegators[$self->{id}] = RPC::PlClient->new(
-            peeraddr    => $peeraddr,
-            peerport    => $peerport || $Port,
-            application => 'OurNet::BBS::Server',
-            version     => $OurNet::BBS::Authen::VERSION,
-        )->ClientObject('__', 'spawn');
+    $delegators[$self->[id]] = RPC::PlClient->new(
+	peeraddr    => $peeraddr,
+	peerport    => $peerport || $Port,
+	application => 'OurNet::BBS::Server',
+	version     => $OurNet::BBS::Authen::VERSION,
+    )->ClientObject('__', 'spawn');
 
-	my $client = $delegators[$self->{id}];
+    my $client = $delegators[$self->[id]];
 
 ## Initialization #####################################################
 # spawn a handle and get server's accepted modes.
 
+    unless ($OurNet::BBS::BYPASS_NEGOTIATION) {
 	($cipher_level, $auth_level) = $client->handshake(
 	    OurNet::BBS::Authen->adjust(
 		$cipher_level, $auth_level, $keyid, 1
@@ -78,14 +91,13 @@ sub TIEHASH {
 	negotiate_auth($client, $auth_level, $auth, $keyid, $user, $pass)
 	    or print "[Client] authentication failed.\n" and die;
 
-	$self->{remote_ref} = negotiate_locate($client)
+	$self->[remote_ref] = negotiate_locate($client)
 	    or print "[Client] object location failed.\n" and die;
-
-	show("done!\n");
     }
+
+    show("done!\n");
     
-    bless ($self, $class);
-    return $self;
+    return bless(\[$self, \%obj, \@obj, \$code, \$glob, 'OBJECT_'], $class);
 }
 
 sub negotiate_locate {
@@ -93,7 +105,6 @@ sub negotiate_locate {
 
     return $client->locate(@_);
 }
-
 
 sub make_auth {
     my ($keyid, $pubkey) = @_;
@@ -290,110 +301,41 @@ sub AUTOLOAD {
 	(rindex($AUTOLOAD, ':') + 1) || return
     ));
 
-    # special-casing the FETCH method
-    if (rindex($action, '__') > -1) {
-	chop $action; chop $action;
-    }
-
     # install a closure-based handler for future use instead of AUTOLOAD
 *{$AUTOLOAD} = sub {
-    my $self = shift;
+    no warnings 'uninitialized';
 
-    if (tied(%{$self})) {
-        $op = "OBJECT_$action";
-        $ego = tied(%{tied(%{$self})->{_hash}});
-    }
-    elsif (exists $self->{_hash}) {
-        $op = "ARRAY_$action";
-        $ego = tied(%{$self->{_hash}});
-    }
-    else {
-        $op = "HASH_$action";
-        $ego = $self;
-    }
+    my ($self, $op) = @{${+shift}}[0, -1];
 
-    my @result = $delegators[$ego->{id}]->__(
-	$OP->{$op} || $op, $ego->{optree}, @_
+    local $Ego = $self if ($op eq 'OBJECT_');
+
+    $op .= $action;
+
+    my @result = $delegators[$Ego->[id]]->__(
+	$OP->{$op} || $op, $Ego->[optree], map { 
+	    ref($_) eq __PACKAGE__ ? bless(\(${$_}->[0][optree]), '__') : $_ 
+	} @_
     );
 
     if (@result == 4 and !$result[0] and my $opcode = $result[1]) {
-        return $ego->spawn(@result[2, 3])
+        return ($Cache{$result[2]} ||= _spawn(@result[2, 3]))
 	    if $OP->{$opcode} eq 'OBJECT_SPAWN';
 
-	return undef if $OP->{$opcode} eq 'STATUS_IGNORED';
+	return @result if $OP->{$opcode} eq 'STATUS_IGNORED';
 
         die "@result[2, 3] [$OP->{$opcode}]\n";
     }
 
+#   print ("<==:  ".(wantarray ? "@result" : $result[0]), "\n");
     return wantarray ? @result : $result[0];
 } unless exists(&{$AUTOLOAD});
 
     goto &{$AUTOLOAD};
 }
 
-sub FETCH {
-    my ($self, $key) = @_;
-
-    ${$self->{_phash}} = $key;
-
-    return 1;
-}
-
 # couldn't care less
-sub UNTIE {}
-sub DESTROY {}
+sub UNTIE() {}
+sub DESTROY() {}
 
 1;
 
-## ArrayProxy #########################################################
-# Resolves the second level tie intelligently
-
-package OurNet::BBS::ClientArrayProxy;
-
-# delegate FETCHSIZE etc to OurNet::BBS::Client's handler
-*OurNet::BBS::ClientArrayProxy::AUTOLOAD = *OurNet::BBS::Client::AUTOLOAD;
-
-# constructor; $flag is usually undef
-sub TIEARRAY {
-    my ($class, $hash, $flag) = @_;
-    my $self = {_flag => \$flag, _hash => $hash};
-
-    (tied %$hash)->{_phash} = (\$flag);
-    return bless($self, $class);
-}
-
-sub STORE {
-    my ($self, $key) = splice(@_, 0, 2);
-    my $hash = $self->{_hash};
-    return $hash if $key == 0;
-
-    if (defined ${$self->{_flag}}) {
-        $key = ${$self->{_flag}};
-        undef ${$self->{_flag}};
-    }
-
-    return scalar(tied(%{$hash})->STORE($key, @_));
-}
-
-sub FETCH {
-    my ($self, $key) = @_;
-    my $hash = $self->{_hash};
-    return $hash if $key == 0;
-
-    if (defined ${$self->{_flag}}) {
-        $key = ${$self->{_flag}};
-        undef ${$self->{_flag}};
-
-	return scalar(tied(%{$hash})->FETCH__($key));
-    }
-    else {
-	return scalar(tied(%{$hash})->FETCHARRAY($key));
-    }
-}
-
-# couldn't care less
-sub UNTIE {}
-sub EXTEND {}
-sub DESTROY {}
-
-1;

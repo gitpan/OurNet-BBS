@@ -1,8 +1,8 @@
 package OurNet::BBS::CVIC::UserGroup;
 
 use base qw/OurNet::BBS::MAPLE2::UserGroup/;
-use fields qw/_cache _phash/;
+use fields qw/_ego _hash _array/;
 
-BEGIN { __PACKAGE__->initvars() }
+use OurNet::BBS::Base;
 
 1;

@@ -1,15 +1,14 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/Board.pm $ $Author: autrijus $
-# $Revision: #5 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+# $Revision: #6 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
 
 package OurNet::BBS::MAPLE3::Board;
 
 use strict;
 use base qw/OurNet::BBS::MAPLE2::Board/;
-use fields qw/_cache/;
+use fields qw/_ego _hash/;
 use subs qw/post_new_board refresh_articles refresh_archives 
             shmtouch readok writeok/;
-
-BEGIN { __PACKAGE__->initvars() };
+use OurNet::BBS::Base;
 
 sub writeok { 0 }
 
@@ -18,20 +17,24 @@ sub readok {
 
     my $readlevel = $self->{readlevel};
 
-    return ((!$readlevel or $readlevel & $user->{userlevel})
-	or ($user->id() eq $self->bm())
-	or $user->has_perm('PERM_SYSOP'));
+    return (
+	!$readlevel
+	or $readlevel & $user->{userlevel}
+	or $user->id eq $self->bm
+	or $user->has_perm('PERM_SYSOP')
+    );
 }
 
 sub post_new_board {
     my $self = shift;
+
     foreach my $dir (
         "$self->{bbsroot}/$PATH_BRD/$self->{board}/",
         "$self->{bbsroot}/$PATH_GEM/$self->{board}/",
     ) {
         mkdir $dir;
 
-        foreach my $subdir (0..9, 'A'..'V', '@') {
+        foreach my $subdir (0 .. 9, 'A' .. 'V', '@') {
             mkdir "$dir$subdir";
         }
     }
@@ -40,31 +43,30 @@ sub post_new_board {
 sub refresh_articles {
     my $self = shift;
 
-    return $self->{_cache}{articles} ||= $self->module('ArticleGroup')->new({
+    return $self->{_hash}{articles} ||= $self->module('ArticleGroup')->new({
 	basepath	=> "$self->{bbsroot}/$PATH_BRD",
 	board		=> $self->{board},
 	idxfile	 	=> '.DIR',
-	bm		=> $self->{_cache}{bm},
-	readlevel	=> $self->{_cache}{readlevel},
-	postlevel	=> $self->{_cache}{postlevel},
+	bm		=> $self->{_hash}{bm},
+	readlevel	=> $self->{_hash}{readlevel},
+	postlevel	=> $self->{_hash}{postlevel},
     });
 }
 
 sub shmtouch {
-    my $self = $_[0]->ego();
-    $self->{shm}{uptime} = 0;
+    $_[0]->ego->{shm}{uptime} = 0;
 }
 
 sub refresh_archives {
     my $self = shift;
 
-    return $self->{_cache}{archives} ||= $self->module('ArticleGroup')->new({
+    return $self->{_hash}{archives} ||= $self->module('ArticleGroup')->new({
 	basepath	=> "$self->{bbsroot}/$PATH_GEM",
 	board		=> $self->{board},
 	idxfile		=> '.DIR',
-	bm		=> $self->{_cache}{bm},
-	readlevel	=> $self->{_cache}{readlevel} || 0xffffffff,
-	postlevel	=> $self->{_cache}{postlevel} || 0xffffffff,
+	bm		=> $self->{_hash}{bm},
+	readlevel	=> $self->{_hash}{readlevel} || 0xffffffff,
+	postlevel	=> $self->{_hash}{postlevel} || 0xffffffff,
     });
 }
 

@@ -1,71 +1,82 @@
 # $File: //depot/OurNet-BBS/BBS/NNTP/ArticleGroup.pm $ $Author: autrijus $
-# $Revision: #6 $ $Change: 1181 $ $DateTime: 2001/06/17 22:14:27 $
+# $Revision: #10 $ $Change: 1546 $ $DateTime: 2001/08/21 00:56:27 $
 
 package OurNet::BBS::NNTP::ArticleGroup;
 
+# FIXME: use first/last update to determine refresh result
+
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/nntp board groupname first num last _cache _phash/;
+use fields qw/nntp board first num last _ego _hash _array/;
+use OurNet::BBS::Base;
+
 use Date::Parse;
 use Date::Format;
 
-# FIXME: use first/last update to determine refresh result
-
-BEGIN {
-    __PACKAGE__->initvars(
-        '@packlist'   => [qw//],
-    );
-}
-
 sub refresh_meta {
-    my ($self, $key, $arrayfetch) = @_;
+    my ($self, $key, $flag) = @_;
 
-    no warnings; # XXX: why?
+    @{$self}{qw/num first last/} = $self->{nntp}->group($self->{board})
+	unless $self->{board} eq $self->{nntp}->group;
 
-    # for compatibility.
-    $self->{board} ||= $self->{groupname};
-    @{$self}{qw/num first last/} = $self->{nntp}->group($self->{groupname})
-	unless $self->{groupname} eq $self->{nntp}->group();
+    return unless $flag;
 
-    if ($arrayfetch) {
-        die "$key out of range"
-	    if $key < $self->{first} || $key > $self->{last};
+    if ($flag == ARRAY or !defined($key)) {
+	die "$key out of range" if defined($key) 
+	    and $key < $self->{first} - 1 || $key >= $self->{last};
 
-	my $head = $self->{nntp}->head($key);
+	my @keys = (
+	    defined($key) ? $key : ($self->{first} - 1 .. $self->{last} - 1)
+	);
 
-	die "no such article $key" unless defined $head;
+	foreach my $key (@keys) {
+	    next if $self->{_array}[$key]; # XXX: blind cache
 
-        return if $self->{_phash}[0][$key];
+	    my $msgid = $self->{nntp}->nntpstat($key + 1) or next;
 
-        my $obj = $self->module('Article')->new({
-	    nntp	=> $self->{nntp},
-	    groupname	=> $self->{groupname},
-	    recno	=> $key
-	});
-
-        $self->{_phash}[0][0]{$key} = $key;
-        $self->{_phash}[0][$key] = $obj;
+	    $self->{_hash}{$msgid} = $self->{_array}[$key] = 
+		$self->module('Article')->new({
+		    nntp	=> $self->{nntp},
+		    board	=> $self->{board},
+		    recno	=> $key + 1,
+		});
+	}
     }
     elsif ($key) {
-	die 'no key fetch yet';
+        return if $self->{_hash}{$key};
+
+	my $msgid = $self->{nntp}->nntpstat($key)
+	    or die "no such article $key";
+
+	$self->{_hash}{$key} = $self->module('Article')->new({
+	    nntp	=> $self->{nntp},
+	    board	=> $self->{groupname},
+	    recno	=> $key,
+	});
     }
 
     return 1;
 }
 
+sub FETCHSIZE {
+    my $self = $_[0]->ego;
+
+    @{$self}{qw/num first last/} = $self->{nntp}->group($self->{board})
+	unless defined($self->{last});
+
+    return $self->{last} + 1;
+}
+
 sub STORE {
     my ($self, $key, $value) = @_;
+    $self = $self->ego;
 
-    die "STORE: attempt to store non-hash value ($value) into ".ref($self)
-	unless UNIVERSAL::isa($value, 'HASH');
+    @{$self}{qw/num first last/} = $self->{nntp}->group($self->{board})
+	unless $self->{board} eq $self->{nntp}->group;
 
-    @{$self}{qw/first num last/} = $self->{nntp}->group($self->{groupname})
-	unless $self->{groupname} eq $self->{nntp}->group();
-
-    my %header = %{$value->{header}};
+    my %header = %{$value->{header}} or die "must specify header to post";
 
     $header{Date} = time2str('%d %b %Y %T %Z', str2time($header{Date}));
-    $header{Newsgroups} ||= $self->{groupname};
+    $header{Newsgroups} ||= $self->{board};
     $header{'Message-ID'} =~ s/^([^<].*[^>])$/<$1>/;
     delete $header{Board};
 
@@ -74,15 +85,8 @@ sub STORE {
 	"\n", 
 	$value->{body},
     );
-    print "post returns: ".$self->{nntp}->message if $OurNet::BBS::DEBUG;
 
     return 1;
-}
-
-sub EXISTS {
-    my ($self, $key) = @_;
-
-    return 1 if exists ($self->{_cache}{$key});
 }
 
 1;

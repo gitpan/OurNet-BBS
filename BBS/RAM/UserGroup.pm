@@ -1,24 +1,23 @@
-package OurNet::BBS::DBI::UserGroup;
+package OurNet::BBS::RAM::UserGroup;
 $VERSION = "0.1";
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/dbh _cache _phash/;
+use fields qw/dbh _ego _hash _array/;
 
-BEGIN { __PACKAGE__->initvars() };
+use OurNet::BBS::Base;
 
 sub refresh_meta {
-    my ($self, $key, $arrayfetch) = @_;
+    my ($self, $key, $flag) = @_;
     my $name;
 
-    if ($arrayfetch) {
+    if (defined($key) and $flag == ARRAY) {
         # XXX: ARRAY FETCH
-        return if $self->{_phash}[0][0]{$name} == $key;
+        return if $self->{_array}[$key];
     }
-    elsif ($key) {
+    elsif ($key and $flag == HASH) {
         # XXX: KEY FETCH
         $name = $key;
-        return if $self->{_phash}[0][0]{$name};
+        return if $self->{_hash}{$name};
         $key = 0;
     }
     else {
@@ -33,8 +32,7 @@ sub refresh_meta {
 
     $key ||= $obj->{userno};
 
-    $self->{_phash}[0][0]{$name} = $key;
-    $self->{_phash}[0][$key] = $obj;
+    $self->{_hash}{$name} = $self->{_array}[$key] = $obj;
 
     return 1;
 }
@@ -54,7 +52,7 @@ sub EXISTS {
     my ($self, $key) = @_;
 
     # XXX: USER EXISTS
-    return exists ($self->{_cache}{$key});
+    return exists ($self->{_hash}{$key});
 }
 
 1;

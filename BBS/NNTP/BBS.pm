@@ -1,13 +1,14 @@
 # $File: //depot/OurNet-BBS/BBS/NNTP/BBS.pm $ $Author: autrijus $
-# $Revision: #2 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+# $Revision: #4 $ $Change: 1531 $ $DateTime: 2001/08/18 01:03:39 $
 
 package OurNet::BBS::NNTP::BBS;
 
 use strict;
 use base qw/OurNet::BBS/;
-use fields qw/backend bbsroot brdshmkey maxboard sessionshmkey maxsession
-              usershmkey maxuser chatport passwd _cache/;
+use fields qw/backend bbsroot nntp _ego _hash/;
 
-BEGIN { __PACKAGE__->initvars() }
+use OurNet::BBS::Base (
+    '@BOARDS' => [qw/bbsroot nntp/],
+);
 
 1;

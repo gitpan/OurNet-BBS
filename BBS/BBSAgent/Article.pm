@@ -1,28 +1,25 @@
 # $File: //depot/OurNet-BBS/BBS/BBSAgent/Article.pm $ $Author: autrijus $
-# $Revision: #11 $ $Change: 1215 $ $DateTime: 2001/06/19 01:21:04 $
+# $Revision: #13 $ $Change: 1542 $ $DateTime: 2001/08/19 03:33:19 $
 
 package OurNet::BBS::BBSAgent::Article;
 
 use strict;
-use base qw/OurNet::BBS::Base/;
-use fields qw/bbsobj board basepath name dir recno mtime btime _cache/;
+use fields qw/bbsroot bbsobj board recno basepath name _ego _hash/;
+use OurNet::BBS::Base;
 
 use Date::Parse;
 use Date::Format;
 
-BEGIN { __PACKAGE__->initvars() }
-
 sub new_id {
     my $self = shift;
-
-    return int($self->{bbsobj}->board_list_last($self->{board}));
+    return int($self->{bbsobj}->board_list_last($self->{board})) - 1;
 }
 
 sub refresh_meta {
     my $self = shift;
-    my %var = %{$self->{bbsobj}{var}};
 
     # setting up defaults
+    my %var = %{$self->{bbsobj}{var}};
     $var{headansi}    ||= '47;34m';
     $var{headansiend} ||= '44;37m';
     $var{separator}   ||= '\x0d(?:\e\[[0-9;]+m)?(?:¢w)+';
@@ -35,10 +32,10 @@ sub refresh_meta {
     $self->{name} ||= $self->new_id;
 
     if (defined $self->{recno}) {
-	return if $self->{_cache}{header}; # already exists
+	return if $self->{_hash}{header}; # already exists
 
         my ($head, $body) = split(
-	    /$var{separator}/o, $self->_refresh_body, 2
+	    /$var{separator}/o, $self->_fetch_body, 2
 	);
 
         $body ||= $head; # fallback unless in expected format
@@ -60,13 +57,13 @@ sub refresh_meta {
 
 	_adjust_body($body);
 
-        @{$self->{_cache}}{qw/title author nick body date datetime/} = (
+        @{$self->{_hash}}{qw/title author nick body date datetime/} = (
 	    $title, $author, $nick, $body, time2str(
                 '%y/%m/%d', str2time($date)
             ), $date,
 	);
 
-        $self->{_cache}{header} = {
+        $self->{_hash}{header} = {
             From	=> $author . (defined $nick ? " ($nick)" : ''),
             Subject	=> $title,
             Date	=> $date,
@@ -74,7 +71,7 @@ sub refresh_meta {
 	};
 
 	OurNet::BBS::Utils::set_msgid(
-	    $self->{_cache}{header}, 
+	    $self->{_hash}{header}, 
 	    $self->{bbsobj}{bbsaddr},
 	);
 
@@ -90,8 +87,7 @@ sub refresh_meta {
 sub _adjust_body {
     # XXX: this should rule out most ANSI codes but not all
 
-    $_[0] =~ s/\015//g; # cf. 'Unix brain damage' in jargon file.
-    $_[0] =~ s/\x00//g; # trim all nulls
+    $_[0] =~ tr/\015\x00//d; # cf. 'Unix brain damage' in jargon file.
 
     $_[0] =~ s/\x1b\[[KHJ]//g; 
     $_[0] =~ s/\x1b\[;H.+\n//g;
@@ -103,7 +99,7 @@ sub _adjust_body {
     $_[0] =~ s/\n\x1b\[0m\n\n+/\n\n/g; # this is not good. needs tuning.
 }
 
-sub _refresh_body {
+sub _fetch_body {
     my ($self) = @_;
     my ($body, $chunk, $precent) = ('');
 
@@ -129,7 +125,7 @@ sub _refresh_body {
 sub STORE {
     my ($self, $key, $value) = @_;
 
-    die "Modify article attributes is unimplemented.";
+    die "modification of article attributes is unimplemented.";
 }
 
 1;
