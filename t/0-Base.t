@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # $File: //depot/OurNet-BBS/t/0-Base.t $ $Author: autrijus $
-# $Revision: #1 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
+# $Revision: #2 $ $Change: 2040 $ $DateTime: 2001/10/13 08:01:59 $
 
 package Derived;
 
@@ -43,7 +43,7 @@ package main;
 
 use strict;
 use Test::More tests => 9;
-use OurNet::BBS::Base;
+use constant GLOB => Derived::GLOB;
 
 my $pkg = 'Derived';
 my $obj = $pkg->new(qw/goo gar gaz/);

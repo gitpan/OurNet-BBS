@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MELIX/Session.pm $ $Author: autrijus $
-# $Revision: #7 $ $Change: 1573 $ $DateTime: 2001/08/28 00:56:53 $
+# $Revision: #8 $ $Change: 1954 $ $DateTime: 2001/10/02 13:05:22 $
 
 package OurNet::BBS::MELIX::Session;
 
@@ -10,7 +10,7 @@ use OurNet::BBS::Base (
     'SessionGroup' => [qw/$packsize $packstring @packlist/],
 );
 
-use POSIX;
+use POSIX qw/SIGUSR2/;
 
 sub refresh_meta {
     my ($self, $key) = @_;
@@ -41,12 +41,11 @@ sub refresh_chat {
                                "$self->{passwd}\n";
 
     $self->{_hash}{chatid} = $self->{_hash}{userid};
-
-#   $self->_shmwrite();
 }
 
 sub _shmwrite {
     my $self = shift;
+
     shmwrite($self->{shmid}, pack($packstring, @{$self->{_hash}}{@packlist}),
 	     $packsize*$self->{recno}, $packsize);
 }
@@ -61,6 +60,7 @@ sub dispatch {
 
 sub remove {
     my $self = shift;
+
     $self->{_hash}{pid} = 0;
     $self->_shmwrite;
     --$self->{shm}{number};
@@ -75,10 +75,13 @@ sub STORE {
     if ($key eq 'msg') {
 	my $head = $self->{shm}{mbase};
 	my ($sendername, $senderid);
+
 	while ($self->{shm}{mpool}[$head][0] > time() - 60) {
 	    ++$head;
 	}
+
 	$self->{shm}{mbase} = $head;
+
 	# qw/btime caller sender reciever userid message/}
 	if (ref($value->[0])) {
 	    $senderid = $value->[0]->{uid};
@@ -87,18 +90,22 @@ sub STORE {
 	else {
 	    $sendername = $value->[0];
 	}
+
 	$self->{shm}{mpool}[$head] = [
 	    time, 0, $senderid, $self->{_hash}{uid}, $sendername, $value->[1]
 	];
+
 	$self->{_hash}{msgs} = pack('S', $head + 1);
 	$self->_shmwrite;
+
 	kill SIGUSR2, $self->{_hash}{pid};
 
 	return;
     }
     elsif ($key eq 'cb_msg') {
 	if (ref($value) eq 'CODE') {
-	    print "register callback from $self->{registered}\n";
+	    print "register callback from $self->{registered}\n"
+		if $OurNet::BBS::DEBUG;
 	    $self->{registered}{$self->{recno}} = $self;
 	}
 	else {
@@ -120,6 +127,7 @@ sub DESTROY {
     $self->{_hash}{pid} = $self->{_hash}{uid} = 0;
     $self->_shmwrite;
     --$self->{shm}{number};
+
     delete $self->{registered}{$self->{recno}};
 }
 

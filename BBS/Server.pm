@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Server.pm $ $Author: autrijus $
-# $Revision: #44 $ $Change: 1913 $ $DateTime: 2001/09/28 00:49:16 $
+# $Revision: #50 $ $Change: 2064 $ $DateTime: 2001/10/15 07:20:27 $
 
 package OurNet::BBS::Server;
 
@@ -89,8 +89,8 @@ my ($CipherLevel, $AuthLevel, $CipherMode, $AuthMode, $GuestId);
 use enum qw/BITMASK:CIPHER_ NONE BASIC PGP/;
 use enum qw/BITMASK:AUTH_ NONE CRYPT PGP/;
 
-use constant OP_WRITE  => ' STORE DELETE ';
-use constant OP_IGNORE => ' daemonize DESTROY initvars writeok readok '.
+use constant OP_WRITE  => ' STORE DELETE PUSH POP SHIFT UNSHIFT ';
+use constant OP_IGNORE => ' DESTROY daemonize initvars writeok readok '.
 			  ' new timestamp fillmod fillin remove ';
 sub daemonize {
     ($ROOT, $Server, my (
@@ -199,8 +199,9 @@ sub cipher_basic {
     my ($self, $cipher) = @_;
     return unless $CipherLevel & CIPHER_BASIC and $cipher;
 
-    $cipher = OurNet::BBS::Authen->suites($cipher)
-	or nextstate() and return;
+    $cipher = OurNet::BBS::Authen->suites($cipher);
+
+    nextstate() and return unless UNIVERSAL::isa($cipher, 'UNIVERSAL');
 
     my $keysize = $cipher->keysize || (
 	$cipher eq 'Crypt::Blowfish' ? 56 : 8
@@ -285,9 +286,9 @@ sub set_pubkey {
 sub compare_keys {
     my ($key1, $key2) = @_;
 
-    # strip version info
-    $key1 =~ s/.*\n\n+//s; 
-    $key2 =~ s/.*\n\n+//s;
+    # strip version info and final checksum
+    $key1 =~ s/.*\n\n+//s; $key1 =~ s/\n.*//s; 
+    $key2 =~ s/.*\n\n+//s; $key2 =~ s/\n.*//s; 
 
     return ($key1 eq $key2);
 }
@@ -380,7 +381,16 @@ sub __ {
     my ($op, $param, @ret);
 
     @_[2, 3] = ([map {
-	ref($_) eq __PACKAGE__ ? __($_[0], undef, ${$_}, undef) : $_ 
+	my $proxy;
+	ref($_) eq __PACKAGE__ 
+	    ? __($_[0], undef, ${$_}, undef) : 
+	ref($_) eq '__CODE__'  
+	    ? (($proxy = "${$_}") and sub {
+		push @RPC::PlServer::Comm::CallQueue, [ $proxy, map {
+		    _sanitize($_, 'OBJECT_CACHE', "$_", 0, 1)
+		} @_ ];
+	    })
+	: $_;
     } @_[3..$#_]], $_[2]); $#_ = 3;
 
     while ($_[-1]) {
@@ -409,13 +419,17 @@ sub __ {
 	}
 
         if ($op =~ m/^OBJECT_/) {
-	    return { %{$obj} } if $action eq 'SPAWN';
-	    return ref($obj)   if $action eq 'REF';
+	    return { %{$obj} }	   if $action eq 'SPAWN';
+	    return ref($obj)	   if $action eq 'REF';
+	    # return undef($obj)   if $action eq 'DESTROY';
+            $obj = $Cache{__}{$param} and next if $action eq 'CACHE';
 
             my @ret = $obj->$action(@{$param});
             $obj = $ret[0] and next unless $#ret; 
             return @ret; # return unless single arg
 	}
+
+	return $obj->(@$param) if $op eq 'CODE_EXECUTE';
 
 	if (not $Perm{"$obj $op $param->[0]"} and $Auth->{user}
 	    and substr(ref($obj), 0, 11) eq 'OurNet::BBS'
@@ -452,10 +466,10 @@ sub __ {
 
 	    $Cache{$obj}{$ret[0]} = $ret[1] if defined $ret[0];
 	    return $ret[0];
-	} elsif ($op eq 'HASH_DESTROY') {
-            return;
-        } elsif ($op eq 'ARRAY_DESTROY') {
-            return;
+	# } elsif ($op eq 'HASH_DESTROY') {
+	#     return undef($obj);
+        # } elsif ($op eq 'ARRAY_DESTROY') {
+	#     return undef($obj);
         } elsif ($op eq 'ARRAY_FETCH') {
             $obj = $obj->[$arg];
 	    # print "$op $obj $arg\n"; 
@@ -466,11 +480,11 @@ sub __ {
         } elsif ($op eq 'HASH_DEREFERENCE') {
             return %{$obj};
         } elsif ($op eq 'ARRAY_STORE') {
-            $obj = $obj->[$arg] = $param->[1];
-            # return $obj->[$arg] = $param->[1] ? 1 : undef;
+            # $obj = $obj->[$arg] = $param->[1];
+            return (($obj->[$arg] = $param->[1]) ? 1 : undef);
         } elsif ($op eq 'HASH_STORE') {
-	    $obj = $obj->{$arg} = $param->[1];
-	    # return $obj->{$arg} = $param->[1] ? 1 : undef;
+	    # $obj = $obj->{$arg} = $param->[1];
+            return (($obj->{$arg} = $param->[1]) ? 1 : undef);
         } elsif ($op eq 'ARRAY_DELETE') {
             $obj = (delete $obj->[$arg]);
         } elsif ($op eq 'HASH_DELETE') {
@@ -501,13 +515,25 @@ sub __ {
 	}
     };
 
-    if (UNIVERSAL::isa(ref($obj), 'UNIVERSAL')) { # is it an overloaded object?
-	push @OPTREE, $_[1], $_[2], $parent;
-	return ('', $OP->{OBJECT_SPAWN}, "$obj", $#OPTREE - 2);
-    }
-    else {
-	return $obj;
-    }
+    return _sanitize($obj, @_[1, 2], $parent, 0);
+}
+
+sub _sanitize {
+    my $obj     = shift;
+    my $blessed = pop;
+
+    return $obj unless UNIVERSAL::isa(ref($obj), 'UNIVERSAL') 
+		or ref($obj) eq 'CODE';
+
+    # so, here's an overloaded object / coderef.
+
+    push @OPTREE, @_;
+    $Cache{__}{"$obj"} = $obj if $blessed;
+
+    return $blessed ?  bless(
+	['', $OP->{OBJECT_SPAWN}, "$obj", $#OPTREE - 2],
+	'__SPAWN__'
+    ) : ('', $OP->{OBJECT_SPAWN}, "$obj", $#OPTREE - 2);
 }
 
 sub quit {
@@ -535,9 +561,11 @@ package OurNet::BBS::Server;
 
 #######################################################################
 # The following section is a modified version of RPC::PlServer code, 
-# with added support on changing cipher mode *after* a CallMethod
-# has been made, as well as passing the actual server instance instead
-# of the registered object.
+# with added support for following features:
+#
+# - Changing cipher mode *after* a CallMethod has been made
+# - Passing the actual server instance instead of the registered object.
+# - Special hooks for package-based handlers for the '__' package.
 #
 # Because this makes the new server's behaviour incompatible from
 # existing PlRPC's, I choose to fork a specific version just for

@@ -1,11 +1,10 @@
 # $File: //depot/OurNet-BBS/BBS/Authen.pm $ $Author: autrijus $
-# $Revision: #19 $ $Change: 1912 $ $DateTime: 2001/09/28 00:39:17 $
+# $Revision: #27 $ $Change: 2060 $ $DateTime: 2001/10/15 03:45:40 $
 
 package OurNet::BBS::Authen;
-$OurNet::BBS::Authen::VERSION = '0.3';
+$OurNet::BBS::Authen::VERSION = '0.4';
 
 use strict;
-use GnuPG::Interface;
 use RPC::PlServer::Comm;
 use fields qw/gnupg who pass login keyid user challenge/;
 
@@ -34,6 +33,11 @@ our $OP = {
     (map { ("OBJECT_$_" => $i++ ) } (
         qw/SPAWN DESTROY new refresh refresh_meta board id/,
 	qw/backend remove purge name ego writeok readok daemonize/,
+	qw/CACHE/,
+    )),
+    # CODE Operators
+    (map { ("CODE_$_" => $i++ ) } (
+	qw/EXECUTE/,
     )),
 };
 
@@ -46,17 +50,23 @@ our $Pubkey;
 
 $OP = { %{$OP}, reverse %{$OP} };
 
+sub load_ok {
+    return ($^O ne 'MSWin32' and eval("use $_[-1]; 1"));
+}
 
 sub new {
     my ($class, $who, $pass) = @_;
     my $self = fields::new($class);
 
-    $self->{who}   = $who or die "need recipients";
-    $self->{gnupg} = GnuPG::Interface->new();
-    $self->{gnupg}->options->hash_init(armor => 1, always_trust => 1);
-    $self->{gnupg}->options->meta_interactive(0);
-    $self->{gnupg}->options->push_recipients($who);
-    $self->{gnupg}->passphrase($self->{pass} = $pass) if defined $pass;
+    $self->{who} = $who or die "need recipients";
+
+    if (load_ok('GnuPG::Interface')) {
+	$self->{gnupg} = GnuPG::Interface->new;
+	$self->{gnupg}->options->hash_init(armor => 1, always_trust => 1);
+	$self->{gnupg}->options->meta_interactive(0);
+	$self->{gnupg}->options->push_recipients($who);
+	$self->{gnupg}->passphrase($self->{pass} = $pass) if defined $pass;
+    }
 
     return $self;
 }
@@ -70,7 +80,7 @@ sub export_key {
 sub test {
     my $self = shift;
 
-    return $self->{gnupg}->test_default_key_passphrase();
+    return $self->{gnupg} and $self->{gnupg}->test_default_key_passphrase;
 }
 
 # query for existing BCB ciphers
@@ -110,7 +120,7 @@ sub adjust {
     $auth_level   ||= (AUTH_NONE | AUTH_CRYPT | AUTH_PGP);
 
     if ($cipher_level & CIPHER_PGP || $auth_level & AUTH_PGP) {
-    	if ($^O eq 'MSWin32') {
+    	if (!load_ok('GnuPG::Interface')) {
 	    # pgp support broken, so...
 	    $cipher_level &= ~CIPHER_PGP;
 	    $auth_level   &= ~AUTH_PGP;
@@ -249,7 +259,9 @@ sub clearsign {
     print $FH $message;
     close $FH;
 
-    return if system("gpg --yes --clearsign -u $self->{keyid} -o encrypt.gpg encrypt");
+    return if system(
+	"gpg --yes --clearsign -u $self->{keyid} -o encrypt.gpg encrypt"
+    );
     
     local $/;
     open $FH, 'encrypt.gpg' or die "$!";
@@ -269,8 +281,11 @@ sub clearsign {
 
 #######################################################################
 # The following section is a modified version of RPC::PlServer::Comm 
-# code, with added support over Twofish2 and Rijndael ciphers, which 
-# could handle things much quickly with their built-in BCB support.
+# code, with following added features:
+#
+# - Utilize ciphers with built-in BCB supports (Twofish2, Rijndael).
+# - Out-of-band communication via callbacks.
+# - Message queues allowing several packets be transferred at once.
 #
 # Because this makes the new server's behaviour incompatible from
 # existing PlRPC's, I choose to fork a specific version just for
@@ -309,26 +324,39 @@ use strict;
 no warnings 'redefine';
 
 my ($WholeCipher, $Blocksize);
+our (%Callback, @CallQueue);
 
-sub Read($) {
-    my $self = shift;
+use constant OUT_OF_BAND => 2 ** 31; # out-of-band size indicator
+
+sub Read($) {{
+    my $self = $_[0];
     my $socket = $self->{'socket'};
     my $result;
 
     my($encodedSize, $readSize, $blockSize);
+    my $out_of_band = 0;
+
     $readSize = 4;
     $encodedSize = '';
+
     while ($readSize > 0) {
 	my $result = $socket->read($encodedSize, $readSize,
-				   length($encodedSize));
+				    length($encodedSize));
 	if (!$result) {
 	    return undef if defined($result);
-	    die "Error while reading socket: $!";
+	    die "Error while reading socket: $!" if $!;
 	}
 	$readSize -= $result;
     }
 
     $encodedSize = unpack("N", $encodedSize);
+
+    # handles OOB (out of band) data
+    if ($encodedSize & OUT_OF_BAND) {
+	$encodedSize ^= OUT_OF_BAND;
+	$out_of_band  = 1;
+    }
+
     $readSize = $encodedSize;
 
     if ($self->{'cipher'}) {
@@ -337,6 +365,7 @@ sub Read($) {
 	    $readSize += ($blockSize - $addSize);
 	}
     }
+
     my $msg = '';
     my $rs = $readSize;
 
@@ -367,12 +396,36 @@ sub Read($) {
 	$msg = substr($msg, 0, $encodedSize) if $readSize != $encodedSize;
     }
 
-    Storable::thaw($msg);
-}
+    return Storable::thaw($msg) unless $out_of_band;
 
-sub Write ($$) {
-    my($self, $msg) = @_;
-    my $socket = $self->{'socket'};
+    # OOB calback code
+    my $payload = Storable::thaw($msg);
+    my $coderef = shift(@$payload);
+
+    $coderef = $Callback{$coderef} or redo;
+
+    print "out-of-band data received: $coderef->(@$payload)\n"
+	if $OurNet::BBS::DEBUG;
+
+    $coderef->(map {
+	(ref($_) eq '__SPAWN__')
+	    ? OurNet::BBS::Client::_spawn(@{$_}[2, 3])
+	    : $_
+    } @$payload) if UNIVERSAL::isa($coderef, 'CODE');
+    
+    redo; # resume to the next chunk
+}}
+
+use constant IsBroken => ($^V le v5.6.1);
+
+sub Write ($$) {{
+    my $self        = $_[0];
+    my $out_of_band = scalar @CallQueue;
+    my $msg         = $out_of_band ? shift(@CallQueue) : $_[1];
+    my $socket      = $self->{'socket'};
+
+    # works around broken GC code prior to v5.7.0.
+    exit if IsBroken and (caller(1) eq 'RPC::PlClient::Object');
 
     my $encodedMsg = Storable::nfreeze($msg);
     my($encodedSize) = length($encodedMsg);
@@ -400,10 +453,19 @@ sub Write ($$) {
 	}
     }
 
+    if ($out_of_band) {
+	print "Writting out-of-band data: $encodedSize bytes"
+	    if $OurNet::BBS::DEBUG;
+
+	$encodedSize += OUT_OF_BAND;
+    }
+
     if ($socket and !$socket->print(pack("N", $encodedSize), $encodedMsg) ||
 	!$socket->flush()) {
-	die "Error while writing socket: $!";
+	die "Error while writing socket: $!" if $!;
     }
-}
+
+    redo if $out_of_band;
+}}
 
 1;

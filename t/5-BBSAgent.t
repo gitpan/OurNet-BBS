@@ -1,11 +1,17 @@
 #!/usr/bin/perl -w
 # $File: //depot/OurNet-BBS/t/5-BBSAgent.t $ $Author: autrijus $
-# $Revision: #4 $ $Change: 1646 $ $DateTime: 2001/09/01 19:43:12 $
+# $Revision: #5 $ $Change: 2069 $ $DateTime: 2001/10/15 08:02:05 $
 
 use strict;
 my ($addr, %sites);
 
 BEGIN {
+    unless (eval "use OurNet::BBSAgent; 1;") {
+	eval "use Test::More tests => 1;";
+	SKIP: { skip('OurNet::BBSAgent not installed', 1) };
+	exit;
+    }
+
     %sites = map { 
         open(my $SITE, $_) or die "cannot open $_";
 	scalar <$SITE>;

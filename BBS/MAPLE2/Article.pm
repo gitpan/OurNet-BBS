@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/Article.pm $ $Author: autrijus $
-# $Revision: #27 $ $Change: 1883 $ $DateTime: 2001/09/21 09:37:13 $
+# $Revision: #29 $ $Change: 1928 $ $DateTime: 2001/09/29 13:27:30 $
 
 package OurNet::BBS::MAPLE2::Article;
 
@@ -17,9 +17,7 @@ my %chronos;
 
 sub basedir {
     my $self = shift;
-    print join('/', $self->{bbsroot}, $self->{basepath},
-                     $self->{board}, $self->{dir}, "\n")
-    if !$self->{bbsroot};
+
     return join('/', $self->{bbsroot}, $self->{basepath},
                      $self->{board}, $self->{dir});
 }

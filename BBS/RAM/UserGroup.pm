@@ -29,7 +29,7 @@ sub refresh_meta {
         recno => $key,
     });
 
-    $key ||= $obj->{userno};
+    $key ||= $obj->{userno} ||= 0;
 
     $self->{_hash}{$name} = $self->{_array}[$key] = $obj;
 
@@ -51,7 +51,7 @@ sub EXISTS {
     my ($self, $key) = @_;
 
     # XXX: USER EXISTS
-    return exists ($self->{_hash}{$key});
+    return exists ($self->ego->{_hash}{$key});
 }
 
 1;

@@ -1,6 +1,16 @@
 # $File: //depot/OurNet-BBS/TODO $ $Author: autrijus $
-# $Revision: #7 $ $Change: 1914 $ $DateTime: 2001/09/28 00:57:47 $
+# $Revision: #9 $ $Change: 2067 $ $DateTime: 2001/10/15 07:48:14 $
 
-See the MILESTONES section in theOurNet::BBS manpage.
+See the MILESTONES section in the OurNet::BBS manpage.
+
+Known issues for 1.62:
+- bin/bbscomd still disables CIPH_PGP due to occasional unstability.
+- GC-over-callback hasn't been made to work. I wonder if it could be at all.
+- although there's plenty of new comments, the promised documentations are
+  still sorely lacking.
+- various applets: echo-agent, ournet-icq/-irc, sob2melix, etc are not there.
+- callback events are only checked on each calls to Client; there are no
+  ways to say 'loop for this many seconds' yet.
+- using of RPC inside callback events are guaranteed not to work.
 
 Please mail your ideas to <autrijus@autrijus.org>.

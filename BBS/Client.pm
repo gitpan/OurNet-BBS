@@ -1,12 +1,12 @@
 # $File: //depot/OurNet-BBS/BBS/Client.pm $ $Author: autrijus $
-# $Revision: #23 $ $Change: 1889 $ $DateTime: 2001/09/23 22:31:24 $
+# $Revision: #27 $ $Change: 2060 $ $DateTime: 2001/10/15 03:45:40 $
 
 package OurNet::BBS::Client;
 
 use strict;
 use OurNet::BBS::Base;
 
-our $Ego;
+our ($AUTOLOAD, $Ego, $Port, $NoCache);
 
 use overload (
     '""'   => sub { overload::AddrRef($_[0]) },
@@ -14,6 +14,14 @@ use overload (
     'cmp'  => sub { "$_[0]" cmp "$_[1]" },
     'bool' => sub { 1 },
     '0+'   => sub { 0 },
+    '&{}'  => sub {
+	my $self = ${$_[0]};
+	$Ego = $self->[0];
+	return sub {
+	    $AUTOLOAD = 'OurNet::BBS::Client::EXECUTE';
+	    EXECUTE(bless(\[$self, 'CODE_'], __PACKAGE__), @_);
+	};
+    },
     map {
 	my $type = $_; 
 	( SIGILS->[$type].'{}' => sub {
@@ -21,7 +29,7 @@ use overload (
 	    $Ego = $self->[0];
 	    return $self->[$type];
 	} );
-    } ( HASH .. GLOB ) 
+    } ( HASH .. ARRAY ),
 );
 
 use RPC::PlClient;
@@ -31,8 +39,6 @@ use OurNet::BBS::Authen;
 use enum qw/id remote_ref optree/;
 use enum qw/BITMASK:CIPHER_ NONE BASIC PGP/;
 use enum qw/BITMASK:AUTH_   NONE CRYPT PGP/;
-
-our ($AUTOLOAD, $Port, $NoCache);
 
 $Port = 7979;
 
@@ -256,7 +262,7 @@ sub auth_pgp {
     }
 
     my $signature = $auth->clearsign($challenge)
-	or show('cannot make signature! ') and return;
+	or (show('cannot make signature! ') and return);
 
     if ($client->set_sign($signature) eq $OP->{STATUS_BAD_SIGNATURE}) {
 	show('signature rejected! ');
@@ -298,6 +304,16 @@ sub show {
     print $_[0] if $OurNet::BBS::DEBUG;
 }
 
+sub register_callback {
+    my $coderef = shift;
+    my $proxy   = bless(\"$coderef", '__CODE__');
+
+    show("$coderef registered for callback\n");
+
+    $RPC::PlServer::Comm::Callback{"$coderef"} = $coderef;
+    return $proxy;
+}
+
 ## Connected ##########################################################
 # do the real job via AUTOLOAD passing and ArrayHashMonster magic
 
@@ -322,7 +338,11 @@ sub AUTOLOAD {
 
     my @result = $delegators[$Ego->[id]]->__(
 	$OP->{$op} || $op, $Ego->[optree], map { 
-	    ref($_) eq __PACKAGE__ ? bless(\(${$_}->[0][optree]), '__') : $_ 
+	    ref($_) eq __PACKAGE__ 
+		? bless(\(${$_}->[0][optree]), '__') :
+	    ref($_) eq 'CODE'
+		? register_callback($_) 
+	    : $_;
 	} @_
     );
 
@@ -348,4 +368,3 @@ sub UNTIE() {}
 sub DESTROY() {}
 
 1;
-

@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 # $File: //depot/OurNet-BBS/bin/bbscomd $ $Author: autrijus $
-# $Revision: #24 $ $Change: 1914 $ $DateTime: 2001/09/28 00:57:47 $
+# $Revision: #28 $ $Change: 2068 $ $DateTime: 2001/10/15 07:50:03 $
 
-$VERSION = '1.61';
+$VERSION = '1.62';
 $REVISION = "rev$1\[\@$2\]" 
-    if ('$Revision: #24 $ $Change: 1914 $' =~ /(\d+)[^\d]+(\d+)/);
+    if ('$Revision: #28 $ $Change: 2068 $' =~ /(\d+)[^\d]+(\d+)/);
 
 =head1 NAME
 
@@ -64,7 +64,6 @@ node, with debugging output:
 use strict;
 use warnings;
 use Getopt::Std;
-use Term::ReadKey;
 use OurNet::BBS;
 use OurNet::BBS::Server;
 
@@ -77,7 +76,7 @@ if (!@ARGV) {
 
 OurNet BBS Remote Access Daemon v$main::VERSION-$main::REVISION
 
-Usage: $0 [ -acdfghx] [-b <addr>] [-p <port>] [-u <key>] 
+Usage: $0 [-acdfghx] [-b <addr>] [-p <port>] [-u <key>] 
        <backend> [ <argument>... ]
 
 Type '$0 -h' to see available argument and options.
@@ -100,7 +99,7 @@ my ($auth, $ciph, $port, $key, $fork, $debug, $addr, $guest) =
 
 $guest = $guest ? 'guest' : undef;
 $auth  = defined($auth) ? $guest ? 7 : 6 : 0;
-$ciph  = $key ? 6 : 2 if defined $ciph;
+$ciph  = $key ? 2 : 2 if defined $ciph;
 $port  ||= 7979;
 
 if ($args{x}) {
@@ -123,10 +122,11 @@ print "entering in debug mode, expect lots of outputs\n"
 my $pass = '';
 
 if ($key) {
-    ReadMode('noecho');
+    require Term::ReadKey;
+    Term::ReadKey::ReadMode('noecho');
     print "enter passphrase for <$key>: ";
     $pass = scalar <STDIN>;
-    ReadMode('restore');
+    Term::ReadKey::ReadMode('restore');
     print "\n";
 }
 

@@ -1,11 +1,11 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/Session.pm $ $Author: autrijus $
-# $Revision: #7 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
+# $Revision: #8 $ $Change: 1954 $ $DateTime: 2001/10/02 13:05:22 $
 
 package OurNet::BBS::MAPLE2::Session;
 
 use strict;
 use fields qw/bbsroot recno shmid shm chatport registered myshm _ego _hash/;
-use POSIX;
+use POSIX qw/SIGUSR2/;
 
 use OurNet::BBS::Base (
     'SessionGroup' => [qw/$packsize $packstring @packlist/],
@@ -15,7 +15,7 @@ sub refresh_meta {
     my ($self, $key) = @_;
 
     my $buf;
-    shmread($self->{shmid}, $buf, $packsize*$self->{recno}, $packsize)
+    shmread($self->{shmid}, $buf, $packsize * $self->{recno}, $packsize)
         or die "shmread: $!";
     @{$self->{_hash}}{@packlist} = unpack($packstring, $buf);
 }

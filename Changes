@@ -1,4 +1,308 @@
 ____________________________________________________________________________
+[  2069] By: autrijus@autricvic                    on 2001/10/15 08:02:05
+	Log: * stop the press! *this* is v1.62 release.
+	     * modified t/ so partially installed users could pass tests.
+       Path: t
+	   ! 5-BBSAgent.t 6-MailBox.t stdtests
+____________________________________________________________________________
+[  2068] By: autrijus@autricvic                    on 2001/10/15 07:50:03
+	Log: * okay, this be OurNet::BBS v1.62.
+       Path: bin
+	   ! bbscomd
+       Path: .
+	   ! BBS.pm BBS.pod
+____________________________________________________________________________
+[  2067] By: autrijus@autricvic                    on 2001/10/15 07:48:14
+	Log: * getting ready for release. the reason for this hasty release
+	     is 1) change of protocol number and 2) testing CPAN install.
+       Path: .
+	   ! TODO
+____________________________________________________________________________
+[  2066] By: autrijus@autrixor                     on 2001/10/15 07:35:24
+	Log: * preparing for splitting out HISTORY.
+       Path: .
+	   ! HISTORY
+____________________________________________________________________________
+[  2065] By: autrijus@autrixor                     on 2001/10/15 07:34:43
+	Log: * updates what've been done in 1.62.
+	     * nits.
+       Path: .
+	   HISTORY
+	   ! BBS.pod MANIFEST TODO
+____________________________________________________________________________
+[  2064] By: autrijus@autricvic                    on 2001/10/15 07:20:27
+	Log: * fixed incorrect cachje and reftype test.
+       Path: BBS
+	   ! Server.pm
+____________________________________________________________________________
+[  2063] By: autrijus@autrixor                     on 2001/10/15 06:58:18
+	Log: * uses Sort::Versions to compare versions where available.
+       Path: ExtUtils
+	   ! AutoInstall.pm
+____________________________________________________________________________
+[  2061] By: autrijus@autrixor                     on 2001/10/15 06:43:00
+	Log: * ExtUtil::AutoInstall, a new module handling customized
+	     install.
+	     * modified Makefile.PL to take advantage of it.
+	     * bbscomd now uses Term::ReadKey only when needed.
+       Path: ExtUtils
+	   + AutoInstall.pm
+       Path: bin
+	   ! bbscomd
+       Path: .
+	   ! MANIFEST Makefile.PL
+____________________________________________________________________________
+[  2060] By: autrijus@autribsd                     on 2001/10/15 03:45:40
+	Log: * updated OurNet protocol to v0.4, which allows callback and
+	     coderefs.
+	     * new op code: CODE_EXECUTE
+	     * updated diff-against-PlRPC comments
+	     * updated tests for callback + coderef feature
+	     * changed STORE semantic to avoid unnecessary loops
+       Path: BBS
+	   ! Authen.pm Client.pm Server.pm
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  2054] By: autrijus@autribsd                     on 2001/10/14 01:20:11
+	Log: * enables non-reentrant (i.e. callback inside callback) OOB.
+	     * introduces OBJECT_CACHE to directly access a cached object.
+	     * Client now automagically registers callback when sending a
+	     code ref.
+	     * 
+       Path: BBS
+	   ! Authen.pm Client.pm Server.pm
+____________________________________________________________________________
+[  2053] By: autrijus@autribsd                     on 2001/10/13 23:46:19
+	Log: * Client now does rough (shallow) check for CODE refs.
+	     * MELIX auto-supplies $$ if pid not given to new sessions.
+	     * implements a crude hack of lastref() equivalent to
+	     $value->{ref}
+	     * turns everything to procedural and updates echo-agent
+	     accordingly
+       Path: BBS
+	   ! Client.pm MELIX/SessionGroup.pm
+____________________________________________________________________________
+[  2052] By: autrijus@autribsd                     on 2001/10/13 21:32:51
+	Log: * the complementary Write code for OOB.
+       Path: BBS
+	   ! Authen.pm
+____________________________________________________________________________
+[  2051] By: autrijus@autribsd                     on 2001/10/13 21:24:35
+	Log: * Callback-based out of band communiaction extension to PlRPC.
+       Path: BBS
+	   ! Authen.pm
+____________________________________________________________________________
+[  2050] By: autrijus@autricvic                    on 2001/10/13 19:06:05
+	Log: * OurNet::Client back to life.
+       Path: BBS
+	   ! Base.pm
+____________________________________________________________________________
+[  2047] By: autrijus@autribsd                     on 2001/10/13 14:17:55
+	Log: * keeps warnings happy
+       Path: BBS
+	   ! MELIX/SessionGroup.pm
+____________________________________________________________________________
+[  2043] By: autrijus@autribsd                     on 2001/10/13 08:03:47
+	Log: * avoids the local \* bug in Base. this is only temporary
+	     measure.
+	     * MELIX SessionGroup now handles its own refresh_meta.
+       Path: BBS
+	   ! MELIX/SessionGroup.pm
+____________________________________________________________________________
+[  2040] By: autrijus@autribsd                     on 2001/10/13 08:01:59
+	Log: * works around esoteric bug in 5.6.x optree optimizer.
+	     * disables imports into main; updates test.
+       Path: BBS
+	   ! Base.pm
+       Path: t
+	   ! 0-Base.t
+____________________________________________________________________________
+[  2038] By: clkao@claptop                         on 2001/10/13 05:26:11
+	Log: initialize shm before STORE. (refresh melix for new board
+	     creation)
+       Path: BBS
+	   ! MAPLE2/BoardGroup.pm
+____________________________________________________________________________
+[  2037] By: clkao@claptop                         on 2001/10/13 05:23:11
+	Log: a more efficient way passing new session result
+       Path: BBS
+	   ! MELIX/SessionGroup.pm
+____________________________________________________________________________
+[  2035] By: autrijus@autricvic                    on 2001/10/13 02:40:58
+	Log: * fixed a bug that skips normal header processing
+       Path: bin
+	   ! bbsboard
+____________________________________________________________________________
+[  2034] By: autrijus@autribsd                     on 2001/10/13 02:10:49
+	Log: * strips header tag.
+       Path: bin
+	   ! bbsboard
+____________________________________________________________________________
+[  2033] By: autrijus@autricvic                    on 2001/10/12 22:17:47
+	Log: * allows '-' in board names.
+       Path: bin
+	   ! bbsboard
+____________________________________________________________________________
+[  2032] By: autrijus@autricvic                    on 2001/10/12 21:43:13
+	Log: * discards pgp signature info until a better way is invented
+	     * perserves header.
+       Path: bin
+	   ! bbsboard
+____________________________________________________________________________
+[  2030] By: autrijus@autricvic                    on 2001/10/12 18:44:55
+	Log: * introduces ${var=something} interpolation to External
+	     backend.
+	     * bbsboard should explicitly exit with 0 status.
+       Path: BBS
+	   ! External/ArticleGroup.pm
+       Path: bin
+	   ! bbsboard
+____________________________________________________________________________
+[  2028] By: autrijus@autricvic                    on 2001/10/12 18:10:12
+	Log: * there's no article.pm for external backend. at least for
+	     now.
+       Path: .
+	   ! MANIFEST
+____________________________________________________________________________
+[  2027] By: autrijus@autribsd                     on 2001/10/12 17:53:19
+	Log: * separate doc into a POD file; fix milestones.
+       Path: .
+	   ! BBS.pm MANIFEST
+	   + BBS.pod
+____________________________________________________________________________
+[  2026] By: autrijus@autricvic                    on 2001/10/12 07:47:26
+	Log: * updates sample with the real-world scenario.
+       Path: bin
+	   ! bbsboard bbsmail
+____________________________________________________________________________
+[  2024] By: autrijus@autribsd                     on 2001/10/12 06:58:37
+	Log: * completes the mailing list support jigsaw.
+       Path: BBS
+	   ! External/ArticleGroup.pm
+       Path: bin
+	   ! bbsboard
+____________________________________________________________________________
+[  2023] By: autrijus@autricvic                    on 2001/10/12 05:30:19
+	Log: * MAPLE3 boards now checks actual directory for EXIST even
+	     when cached
+	     * untaints keys().
+       Path: BBS
+	   ! MAPLE2/BoardGroup.pm MAPLE3/BoardGroup.pm
+____________________________________________________________________________
+[  2022] By: autrijus@autricvic                    on 2001/10/12 05:29:18
+	Log: * oops, wrong files.
+	     * this (and previous) change fixes tainting problem for
+	     bbsboard.
+	     * added list compatibility
+       Path: bin
+	   ! bbscomd bbsmail
+____________________________________________________________________________
+[  2021] By: autrijus@autricvic                    on 2001/10/12 05:28:28
+	Log: * temporary measure to fix pubkey auth
+       Path: bin
+	   ! bbsboard
+____________________________________________________________________________
+[  2020] By: autrijus@autricvic                    on 2001/10/12 05:27:38
+	Log: * the sketch of 'External' backend, an interface to external
+	     programs
+       Path: BBS
+	   + External/ArticleGroup.pm External/BBS.pm External/Board.pm
+	   + External/BoardGroup.pm
+____________________________________________________________________________
+[  1957] By: autrijus@autricvic                    on 2001/10/02 14:50:55
+	Log: * check for the proper value for PUSH operations.
+       Path: BBS
+	   ! MAPLE3/ArticleGroup.pm
+____________________________________________________________________________
+[  1956] By: autrijus@autricvic                    on 2001/10/02 14:19:00
+	Log: * enforces write-to-board access more cleanly.
+	     * fix random precedence flitch.
+       Path: BBS
+	   ! Client.pm MAPLE3/ArticleGroup.pm
+____________________________________________________________________________
+[  1955] By: autrijus@autribsd                     on 2001/10/02 14:18:11
+	Log: * adds other OP Codes that should consult writeok().
+       Path: BBS
+	   ! Server.pm
+____________________________________________________________________________
+[  1954] By: autrijus@autriegb                     on 2001/10/02 13:05:22
+	Log: * no longer imports POSIX constant table and conflicts with
+	     remove().
+	     * cleared up several warnings.
+       Path: BBS
+	   ! CVIC/FileGroup.pm MAPLE2/Session.pm MELIX/Session.pm
+	   ! RAM/UserGroup.pm
+____________________________________________________________________________
+[  1953] By: autrijus@autribsd                     on 2001/10/02 12:54:21
+	Log: * tests compilation for 'local' modules, suggested by clkao.
+       Path: t
+	   ! stdtests
+____________________________________________________________________________
+[  1949] By: clkao@claptop                         on 2001/10/02 06:20:39
+	Log: fix for compilation
+       Path: BBS
+	   ! MELIX/SessionGroup.pm
+____________________________________________________________________________
+[  1944] By: autrijus@autribsd                     on 2001/10/01 04:37:56
+	Log: * inlines the GC detection code.
+       Path: BBS
+	   ! Authen.pm
+____________________________________________________________________________
+[  1943] By: autrijus@autricvic                    on 2001/10/01 03:59:00
+	Log: * rejects malicious ciphers.
+       Path: BBS
+	   ! Server.pm
+____________________________________________________________________________
+[  1942] By: autrijus@autricvic                    on 2001/10/01 03:58:48
+	Log: * RAM Usergroup code.
+       Path: BBS
+	   ! RAM/BBS.pm RAM/UserGroup.pm
+____________________________________________________________________________
+[  1941] By: autrijus@autricvic                    on 2001/10/01 03:58:36
+	Log: * solved the incomplete DESTROY handler bug with v5.6.x.
+       Path: BBS
+	   ! Authen.pm
+____________________________________________________________________________
+[  1940] By: autrijus@autricvic                    on 2001/10/01 02:53:17
+	Log: * relax the compare_keys routine to allow for subkey
+	     differences.
+	     * correctly identify gpg support now.
+       Path: BBS
+	   ! Authen.pm Server.pm
+____________________________________________________________________________
+[  1928] By: autrijus@autricvic                    on 2001/09/29 13:27:30
+	Log: * fix 1916, which breaks everything.
+       Path: BBS
+	   ! MAPLE2/Article.pm
+____________________________________________________________________________
+[  1920] By: autrijus@autriegb                     on 2001/09/28 12:54:02
+	Log: * mv the bundle to the main distribution
+       Path: lib
+	   - Bundle/OurNet.pm
+____________________________________________________________________________
+[  1919] By: autrijus@autriegb                     on 2001/09/28 12:33:00
+	Log: * version bump and POD nitpick.
+       Path: bin
+	   ! bbscomd
+       Path: .
+	   ! BBS.pm
+____________________________________________________________________________
+[  1918] By: autrijus@autriegb                     on 2001/09/28 12:31:20
+	Log: * Authen now working even without GnuPG::Interface installed.
+       Path: BBS
+	   ! Authen.pm
+____________________________________________________________________________
+[  1916] By: clkao@claptop                         on 2001/09/28 03:30:36
+	Log: remove unnecessary and annoying debug message.
+       Path: BBS
+	   ! MAPLE2/Article.pm
+____________________________________________________________________________
+[  1915] By: autrijus@autricvic                    on 2001/09/28 00:59:20
+	Log: * Changes.
+       Path: .
+	   ! Changes
+____________________________________________________________________________
 [  1914] By: autrijus@autricvic                    on 2001/09/28 00:57:47
 	Log: * This be OurNet::BBS v1.61.
        Path: bin

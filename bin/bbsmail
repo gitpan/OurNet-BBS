@@ -1,10 +1,10 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -T
 # $File: //depot/OurNet-BBS/bin/bbsmail $ $Author: autrijus $
-# $Revision: #5 $ $Change: 1882 $ $DateTime: 2001/09/21 08:30:51 $
+# $Revision: #7 $ $Change: 2026 $ $DateTime: 2001/10/12 07:47:26 $
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 $REVISION = "rev$1\[\@$2\]" 
-    if ('$Revision: #5 $ $Change: 1882 $' =~ /(\d+)[^\d]+(\d+)/);
+    if ('$Revision: #7 $ $Change: 2026 $' =~ /(\d+)[^\d]+(\d+)/);
 
 =head1 NAME
 
@@ -15,8 +15,8 @@ bbsmail - Internet to BBS email-gateway handler
 In F</usr/local/etc/bbs.rc> or F</etc/bbs.rc>;
 
     # $DUMP       = '/tmp/msgdump.tmp';         # Dump message to disk; halt
-    $MAIL_LOG   = '/var/logs/bbsmail.log';    # Log of bbsmail
-    $BOARD_LOG  = '/var/logs/bbsboard.log';   # Log of bbsboard
+    $MAIL_LOG   = '/var/log/bbsmail.log';    # Log of bbsmail
+    $BOARD_LOG  = '/var/log/bbsboard.log';   # Log of bbsboard
     $SIZE_LIMIT = 204800; # size limit of attachments
 
     # Set virutal hosts; The C<bbs.> prefix of keys should be omitted.
@@ -47,8 +47,11 @@ In F</usr/local/etc/bbs.rc> or F</etc/bbs.rc>;
     );
 
     # multiple domains, same IP
-    $DOMAINS{'m543.org'}    = $DOMAINS{'music543.org'} =
-    $DOMAINS{'music543.com'}= $DOMAINS{'m543.com'};
+    $DOMAINS{'m543.org'}       = $DOMAINS{'music543.org'} =
+    $DOMAINS{'music543.com'}   = $DOMAINS{'m543.com'};
+
+    # fallback using the 'true' hostname
+    $DOMAINS{'geb.elixus.org'} = $DOMAINS{'elixus.org'};
 
 To configure it with sendmail, modify F<sendmail.cf> like this:
 

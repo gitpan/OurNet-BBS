@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/ArticleGroup.pm $ $Author: autrijus $
-# $Revision: #33 $ $Change: 1815 $ $DateTime: 2001/09/15 03:48:40 $
+# $Revision: #35 $ $Change: 1957 $ $DateTime: 2001/10/02 14:50:55 $
 
 package OurNet::BBS::MAPLE3::ArticleGroup;
 
@@ -47,11 +47,14 @@ sub writeok {
     return unless $op eq 'PUSH' or ($op eq 'STORE' and $param->[0] eq '');
 
     # actually you can store your own article, no big deal
-    my $value = $param->[1];
-    return 1 if $value->{author} and $value->{author} eq $id;
+    my $value = $param->[-1]; # 0 for PUSH, 1 for STORE
+    my $author = $value->{author};
+    return if $author and $author ne $id;
 
-    my $header = $value->{header} if $value->{header};
-    return $header and $header->{From} =~ /^\Q$id\E\b/;
+    my $header = $value->{header};
+    return if $header and $header->{From} !~ /^\Q$id\E\b/;
+
+    return ($author or $header); # at least one of author bits must exist
 }
 
 sub readok {

@@ -1,12 +1,17 @@
 #!/usr/bin/perl -w
 # $File: //depot/OurNet-BBS/t/6-MailBox.t $ $Author: autrijus $
-# $Revision: #2 $ $Change: 1562 $ $DateTime: 2001/08/26 03:16:24 $
+# $Revision: #3 $ $Change: 2069 $ $DateTime: 2001/10/15 08:02:05 $
 
 use strict;
-use Test::More tests => 1;
-use OurNet::BBS;
+use Test::More tests => 3;
 
-my $BBS = OurNet::BBS->new(MailBox => '.');
-is(ref($BBS), $BBS->module('BBS'), 'constructor');
+SKIP: {
+    skip('Mail::Box not installed', 3) unless (eval "use Mail::Box; 1;");
+
+    require_ok('OurNet::BBS');
+    my $BBS = OurNet::BBS->new(MailBox => '.');
+    isa_ok($BBS, 'OurNet::BBS');
+    is(ref($BBS), $BBS->module('BBS'), 'constructor');
+}
 
 __END__

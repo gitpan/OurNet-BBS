@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/BoardGroup.pm $ $Author: autrijus $
-# $Revision: #6 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
+# $Revision: #7 $ $Change: 2023 $ $DateTime: 2001/10/12 05:30:19 $
 
 package OurNet::BBS::MAPLE3::BoardGroup;
 
@@ -53,7 +53,6 @@ sub EXISTS {
     my ($self, $key) = @_;
     $self = $self->ego;
 
-    return 1 if exists ($self->{_hash}{$key});
     return ((-d "$self->{bbsroot}/$PATH_BRD/$key") ? 1 : 0);
 }
 

@@ -1,5 +1,5 @@
-# $File: //depot/OurNet-BBS/BBS/MAPLE2/BoardGroup.pm $ $Author: autrijus $
-# $Revision: #11 $ $Change: 1623 $ $DateTime: 2001/08/31 03:00:50 $
+# $File: //depot/OurNet-BBS/BBS/MAPLE2/BoardGroup.pm $ $Author: clkao $
+# $Revision: #13 $ $Change: 2038 $ $DateTime: 2001/10/13 05:26:11 $
 
 package OurNet::BBS::MAPLE2::BoardGroup;
 
@@ -46,7 +46,7 @@ sub refresh_meta {
         $self->{_hash}{$key} ||= $self->module('Board')->new({
             bbsroot => $self->{bbsroot},
             board   => $key,
-            shmid   => $self->{bbsroot},
+            shmid   => $self->{shmid},
             shm     => $self->{shm},
         });
 
@@ -58,11 +58,12 @@ sub refresh_meta {
 
     open(my $DIR, $file) or die "can't read DIR file $file $!";
 
-    foreach (0..int((stat($file))[7] / 128)-1) {
+    foreach (0 .. int((stat($file))[7] / 128)-1) {
         seek $DIR, 128 * $_, 0;
         read $DIR, $board, 13;
-        $board = unpack('Z13', $board);
-        next unless $board and substr($board,0,1) ne "\0";
+
+	unpack('Z13', $board) =~ /^([^\0].*)$/ or next;
+	$board = $1; # untaint
 
         $self->{_hash}{$board} ||= $self->module('Board')->new({
             bbsroot => $self->{bbsroot},
@@ -103,14 +104,13 @@ sub STORE {
 
     die "Need key for STORE" unless $key;
 
-    %{$self->module('Board', $value)->new({
+    $self->shminit unless ($self->{shmid} || !$self->{shmkey});
+    %{$self->module('Board')->new({
 	bbsroot => $self->{bbsroot},
 	board   => $key,
 	shmid   => $self->{shmid},
 	shm     => $self->{shm},
     })} = (%{$value}, bstamp => CORE::time);
-
-    $self->shminit unless ($self->{shmid} || !$self->{shmkey});
 
     return 1;
 }

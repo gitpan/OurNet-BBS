@@ -1,14 +1,14 @@
 # $File: //depot/OurNet-BBS/BBS/MELIX/SessionGroup.pm $ $Author: autrijus $
-# $Revision: #6 $ $Change: 1575 $ $DateTime: 2001/08/28 01:26:00 $
+# $Revision: #11 $ $Change: 2053 $ $DateTime: 2001/10/13 23:46:19 $
 
 package OurNet::BBS::MELIX::SessionGroup;
 
 use strict;
 use base qw/OurNet::BBS::MAPLE3::SessionGroup/;
-use fields qw/_ego _hash/;
-use subs qw/shminit/;
+use fields qw/lastref _ego _hash/;
+use subs qw/refresh_meta shminit STORE message_handler DESTROY/;
 
-use OurNet::BBS (
+use OurNet::BBS::Base (
      '$packstring'	=> 'LLLLLLLLa18Z13Z13Z24Z34x2',
      '$packsize'	=> 136,
      '@packlist'	=> [
@@ -18,6 +18,28 @@ use OurNet::BBS (
 );
 
 use OurNet::BBS::ShmArray;
+
+sub refresh_meta {
+    my ($self, $key) = @_;
+
+    $self->shminit unless ($self->{shmid} || !$self->{shmkey});
+
+    if ($key eq int($key)) {
+        print "new toy called $key\n" 
+	    if !$self->{_hash}{$key} and $OurNet::BBS::DEBUG;
+
+        $self->{_hash}{$key} ||= $self->module('Session')->new({
+	      recno	=> $key,
+	      shmid	=> $self->{shmid},
+	      shm	=> $self->{shm},
+	      chatport	=> $self->{chatport},
+	      registered=> $registered{$self} ||= {},
+	      passwd	=> $self->{passwd},
+	});
+
+        return;
+    }
+}
 
 sub shminit {
     my $self = shift;
@@ -60,8 +82,6 @@ sub message_handler {
 
 		@msg{qw/btime caller sender reciever userid message/} =
 		    @{$instance->{shm}{mpool}[$which - 1]};
-
-		print join(',', %msg);
 
                 my $from = $msg{sender} && ( grep {
 		    $_->{pid} && $_->{uid} == $msg{sender}
@@ -106,10 +126,16 @@ sub STORE {
     die "no more session $key" unless defined $key;
 
     $self->refresh_meta($key);
+    $value->{pid} ||= $$;
     %{$self->{_hash}{$key}} = %{$value};
     $self->{_hash}{$key}{flag} = 1;
     ++$self->{shm}{number};
+
+    $self->{lastref} = $value->{ref} = $self->{_hash}{$key};
 }
+
+# XXX crude hack; returns the previous created session.
+sub lastref { shift->ego->{lastref} }
 
 sub DESTROY {
     my $self = shift->ego;

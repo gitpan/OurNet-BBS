@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # $File: //depot/OurNet-BBS/t/stdtests $ $Author: autrijus $
-# $Revision: #19 $ $Change: 1732 $ $DateTime: 2001/09/06 07:13:05 $
+# $Revision: #22 $ $Change: 2069 $ $DateTime: 2001/10/15 08:02:05 $
 
 sub BEGIN {
     # XXX kluge against insufficient granularity on file timestamps
@@ -14,19 +14,42 @@ sub BEGIN {
 	    if ($^O eq 'MSWin32');
 
     if (ref($::BBS) eq 'ARRAY') {
+	unless (eval "use RPC::PlServer; 1;") {
+	    eval "use Test::More tests => 1;";
+	    SKIP: { skip('Bundle::PlRPC not installed', 1) };
+	    exit;
+	}
+
 	$OurNet::BBS::BYPASS_NEGOTIATION = 1;
 	OurNet::BBS->new(@{$::BBS})->daemonize(7977) if $ARGV[0];
     }
+    else {
+	# local BBS: test for compliation
+	my $manifest = $0; $manifest =~ s'[\\/][^\\/]+$'/../MANIFEST';
+	open $::MANIFEST, $manifest or die "cannot open $manifest";
+    }
+
 }
 
 use strict; $|++;
-use Test::More tests => 42;
 
 our $pid;
 
 my $BBS = $::BBS;
+my $backend = $1 if $BBS =~ m/OurNet::BBS::([^:]+)::/;
+my @modules = grep { m|BBS/$backend| } <$::MANIFEST> and close $::MANIFEST
+    if $backend and $::MANIFEST;
+
+eval 'use Test::More tests => 43 + @modules';
+
+# tests compilation
+require_ok("OurNet::$_") foreach map { 
+    chomp; s'/'::'g; s'.pm''; $_ 
+} @modules;
 
 if (ref($BBS) eq 'ARRAY') {
+    # OurNet connectivity
+
     if ($^O eq 'MSWin32') {
         eval "use Win32::Process; 1;" or die $^E;
         Win32::Process::Create($pid, $^X, qq($^X "$0" 1), 0, 32, '.');
@@ -54,6 +77,10 @@ $BBS->{boards}{test} = {
     title => 'test board',
     bm    => 'sysop',
 };
+
+$brd->{title} = sub { 1 };
+is($brd->{title}->(), 1, 'callback');
+$brd->{title} = 'test board';
 
 # BOARDS test
 is(join(',', keys(%{$BBS->{boards}})), 'test', 'board: all keys');
@@ -143,7 +170,7 @@ while (my ($k, $v) = each (%{$brd->{articles}})) {
 }
 
 SKIP: {
-    skip 'todo: push array via OurNet', 1
+    skip('todo: push array via OurNet', 1)
 	if $brd->isa('OurNet::BBS::Client');
 
     # archiving
@@ -171,7 +198,7 @@ is($brd->{archives}[-1]->name, $brd->{archives}[-1]{id},
    'archive: by-name fetch');
 
 SKIP: {
-    skip 'todo: push array via OurNet', 1
+    skip('todo: push array via OurNet', 1)
 	if $brd->isa('OurNet::BBS::Client');
 
     like($brd->{archives}[4][0]{title}, qr/turandot/, 'archive: new dir');
@@ -182,7 +209,7 @@ like($brd->{archives}[-1][0]{title}, qr/turandot/, 'archive: negative index');
 my $grp;
 
 SKIP: {
-    skip 'Group not supported for this backend', 2
+    skip('Group not supported for this backend', 2)
 	unless eval { $BBS->{groups}{home} = {
 	    owner => 'autrijus',
 	    title => 'home sweet home',
@@ -200,8 +227,8 @@ SKIP: {
 }
 
 SKIP: {
-    skip 'Group not supported for this backend', 1 unless $grp;
-    skip 'todo: OurNet-CVIC deletion', 1
+    skip('Group not supported for this backend', 1) unless $grp;
+    skip('todo: OurNet-CVIC deletion', 1)
 	if $brd->isa('OurNet::BBS::Client') and $BBS->backend eq 'CVIC';
 
 
@@ -225,7 +252,7 @@ my $path_brd = ${$BBS->module('BoardGroup').'::PATH_BRD'}
 	    || $brdmap{$BBS->backend};
 
 SKIP: {
-    skip 'no $PATH_BRD for physical board deletion', 1
+    skip('no $PATH_BRD for physical board deletion', 1)
 	unless $path_brd;
 
     # delete board
@@ -238,16 +265,16 @@ sub _dump {
 
     print '$BBS:                     '."$BBS\n";
     print ' ${$BBS}:                 '."${$BBS}\n";
-    print '  ${$BBS}->[EGO]:         '."${$BBS}->[EGO]\n";
+    print '  ${$BBS}->[EGO]:         '."${$BBS}->[EGO()]\n";
     print '   ${$BBS}->[0]{_ego}:    '."${$BBS}->[0]{_ego} # top\n";
     print '   ${$BBS}->[0][0]:       '."${$BBS}->[0][0] # phash keys\n";
     print '   ${$BBS}->[0][1]:       '."${$BBS}->[0][1] # phash: backend\n";
     print '  ${$BBS}->[HASH]:        '."${$BBS}->[1] # hash accessor\n";
     print '   tied(%{${$BBS}->[1]}): '."$T # \$T\n";
     print '    ${$T}:                '."${$T}\n";
-    print '     ${$T}->[EGO]:        '."${$T}->[EGO] # same as above\n";
+    print '     ${$T}->[EGO]:        '."${$T}->[EGO()] # same as above\n";
     print '      ${$T}->[0]{_ego}:   '."${$T}->[0]{_ego} # top\n";
-    print '     ${$T}->[FLAG]:       '."${$T}->[FLAG] # HASH\n";
+    print '     ${$T}->[FLAG]:       '."${$T}->[FLAG()] # HASH\n";
 }
 
 1;

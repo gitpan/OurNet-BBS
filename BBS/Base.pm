@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Base.pm $ $Author: autrijus $
-# $Revision: #31 $ $Change: 1819 $ $DateTime: 2001/09/16 20:02:51 $
+# $Revision: #33 $ $Change: 2050 $ $DateTime: 2001/10/13 19:06:05 $
 
 package OurNet::BBS::Base;
 use 5.006;
@@ -67,9 +67,12 @@ sub import {
     no strict 'refs';
     no warnings 'once';
 
-    *{"$pkg\::$_"}  = \&{$_} foreach qw/EGO FLAG HASH ARRAY CODE GLOB/;
-    return *{"$pkg\::SIGILS"}  = \&{SIGILS} if $pkg eq 'OurNet::BBS::Client';
-    return unless $class eq __PACKAGE__;
+    # in non-direct usage, only ournet client gets symbols and sigils.
+    my $is_client = ($pkg eq 'OurNet::BBS::Client');
+    return unless $class eq __PACKAGE__ or $is_client;
+
+    *{"$pkg\::$_"} = \&{$_} foreach qw/EGO FLAG HASH ARRAY CODE GLOB/;
+    return *{"$pkg\::SIGILS"} = \&{SIGILS} if $is_client;
 
     *{"$pkg\::ego"} = sub { ${$_[0]}->[0] };
 
