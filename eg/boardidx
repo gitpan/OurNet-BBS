@@ -1,6 +1,6 @@
 #!/usr/bin/perl
-# $File: //depot/OurNet-BBS/eg/boardidx $ $Author: autrijus $
-# $Revision: #2 $ $Change: 2995 $ $DateTime: 2002/02/04 14:38:09 $
+# $File: //depot/libOurNet/BBS/eg/boardidx $ $Author: autrijus $
+# $Revision: #2 $ $Change: 3803 $ $DateTime: 2003/01/24 22:02:43 $
 
 $VERSION  = '0.01';
 
@@ -27,8 +27,9 @@ You may specify an alternate BBS location using the F<-r> option.
 
 use strict;
 use warnings;
-use constant (IsWin32 =>$^O eq 'MSWin32');
-use open IsWin32 ? (IN => ':raw', OUT => ':raw') : ();
+
+use if ($^O eq 'MSWin32'), open => (IN => ':bytes', OUT => ':bytes');
+use if $OurNet::BBS::Encoding, open => ":encoding($OurNet::BBS::Encoding)";
 
 use Getopt::Std;
 use OurNet::BBS;

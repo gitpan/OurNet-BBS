@@ -1,10 +1,11 @@
 #!/usr/bin/perl -w
-# $File: //depot/OurNet-BBS/t/0-Base.t $ $Author: autrijus $
-# $Revision: #2 $ $Change: 2040 $ $DateTime: 2001/10/13 08:01:59 $
+# $File: //depot/libOurNet/BBS/t/0-Base.t $ $Author: autrijus $
+# $Revision: #2 $ $Change: 3793 $ $DateTime: 2003/01/24 19:40:04 $
 
 package Derived;
 
 use strict;
+no warnings 'deprecated';
 use fields qw/foo bar baz _ego _array _hash _code _glob/;
 use OurNet::BBS::Base;
 

@@ -1,868 +1,301 @@
 ____________________________________________________________________________
-[  3045] By: autrijus                              on 2002/02/06  13:08:28
-        Log: * This be OurNet::BBS 1.64.
-	   ! BBS.pod HISTORY
+[  5039] By: autrijus                              on 2003/03/30  15:34:38
+        Log: * turns out it needs binmode.
+	   ! lib/OurNet/BBS/MELIX/Article.pm
 ____________________________________________________________________________
-[  3019] By: autrijus                              on 2002/02/05  13:08:59
-        Log: * win95 eventlog, take two
-	   ! BBS/Client.pm
+[  5038] By: autrijus                              on 2003/03/30  15:21:21
+        Log: * graceful decoding as requested by honeypie.
+	   ! lib/OurNet/BBS/MELIX/Article.pm
 ____________________________________________________________________________
-[  3004] By: autrijus                              on 2002/02/04  15:42:16
-        Log: * firebird3's mailbox works.
-             * fixes hash indexing for Usergroup.
-	   ! BBS/Firebird3/User.pm BBS/MAPLE2/UserGroup.pm
+[  4823] By: autrijus                              on 2003/03/19  19:35:32
+        Log: * another try.
+	   ! lib/OurNet/BBS/MAPLE2/ArticleGroup.pm
+	   ! lib/OurNet/BBS/MAPLE3/ArticleGroup.pm
 ____________________________________________________________________________
-[  3001] By: autrijus                              on 2002/02/04  15:06:31
-        Log: * updated assorted docs.
-             * MailBox support now disabled by default.
-	   ! MANIFEST Makefile.PL README TODO
+[  4822] By: autrijus                              on 2003/03/19  19:24:22
+        Log: * a dir of '/' is not better than nothing.
+	   ! lib/OurNet/BBS/MAPLE2/ArticleGroup.pm
+	   ! lib/OurNet/BBS/MAPLE3/ArticleGroup.pm
 ____________________________________________________________________________
-[  3000] By: autrijus                              on 2002/02/04  15:05:33
-        Log: * document the recent changes into BBS.pod.
-             * duplicate the section into HISTORY.
-	   ! BBS.pod HISTORY
+[  4820] By: autrijus                              on 2003/03/19  18:51:58
+        Log: * fix archive problem reported by honeypie.
+	   ! lib/OurNet/BBS/MAPLE2/ArticleGroup.pm
+	   ! lib/OurNet/BBS/MAPLE3/ArticleGroup.pm
 ____________________________________________________________________________
-[  2999] By: autrijus                              on 2002/02/04  15:00:28
-        Log: * accepts hashref-style input.
-	   ! BBS/OurNet/BBS.pm
+[  4602] By: clkao                                 on 2003/03/05  12:55:04
+        Log: obiwan bug in maple3::user creation
+	   ! lib/OurNet/BBS/MAPLE3/User.pm
 ____________________________________________________________________________
-[  2998] By: autrijus                              on 2002/02/04  15:00:07
-        Log: * version bump and minor style changes.
-	   ! BBS.pm
+[  4012] By: autrijus                              on 2003/01/29  11:06:24
+        Log: * refactor open.pm and open() to consistently avoid
+	       binmode()
+             and adopt 2-arg open.
+	   ! lib/OurNet/BBS/CVIC/Group.pm
+	   ! lib/OurNet/BBS/CVIC/GroupGroup.pm
+	   ! lib/OurNet/BBS/MAPLE2/Article.pm
+	   ! lib/OurNet/BBS/MAPLE2/ArticleGroup.pm
+	   ! lib/OurNet/BBS/MAPLE2/Board.pm
+	   ! lib/OurNet/BBS/MAPLE2/BoardGroup.pm
+	   ! lib/OurNet/BBS/MAPLE2/User.pm
+	   ! lib/OurNet/BBS/MAPLE2/UserGroup.pm
+	   ! lib/OurNet/BBS/MAPLE3/Article.pm
+	   ! lib/OurNet/BBS/MAPLE3/ArticleGroup.pm
+	   ! lib/OurNet/BBS/MAPLE3/User.pm
+	   ! lib/OurNet/BBS/MAPLE3/UserGroup.pm
+	   ! lib/OurNet/BBS/MELIX/Group.pm
+	   ! lib/OurNet/BBS/ScalarFile.pm
 ____________________________________________________________________________
-[  2997] By: autrijus                              on 2002/02/04  14:59:27
-        Log: * POD rework - new BBS::Roadmap.
-	   + BBS/Roadmap.pod
-	   ! BBS.pod BBS/Tutorial.pod
+[  3987] By: autrijus                              on 2003/01/28  19:32:48
+        Log: * minor open tweaks.
+	   ! lib/OurNet/BBS/MAPLE3/ArticleGroup.pm
 ____________________________________________________________________________
-[  2996] By: autrijus                              on 2002/02/04  14:59:01
-        Log: * copyright year.
-	   ! bin/bbsboard bin/bbscomd bin/bbsmail
+[  3978] By: autrijus                              on 2003/01/28  12:07:29
+        Log: * omg.
+	   ! lib/OurNet/BBS/OurNet/BBS.pm
 ____________________________________________________________________________
-[  2995] By: autrijus                              on 2002/02/04  14:38:09
-        Log: * allows for boards/ in other backends.
-	   ! eg/boardidx
+[  3972] By: autrijus                              on 2003/01/28  11:41:10
+        Log: * do not autovivify group members.
+	   ! lib/OurNet/BBS/MELIX/GroupGroup.pm
 ____________________________________________________________________________
-[  2994] By: autrijus                              on 2002/02/04  14:34:05
-        Log: * new example scripts.
-	   + eg/bbsget eg/boardidx eg/echo-agent
+[  3970] By: autrijus                              on 2003/01/28  11:29:20
+        Log: * revert to the old groups behaviour.
+	   ! lib/OurNet/BBS/MELIX/Group.pm
+	   ! lib/OurNet/BBS/MELIX/GroupGroup.pm
 ____________________________________________________________________________
-[  2993] By: autrijus                              on 2002/02/04  13:55:33
-        Log: * advocatges the hashref constructor syntax.
-	   ! t/1-RAM.t t/2-CVIC.t t/3-MAPLE3.t t/4-MELIX.t t/5-BBSAgent.t
-	   ! t/6-MailBox.t t/7-OurNet-RAM.t t/8-OurNet-CVIC.t
-	   ! t/9-OurNet-MELIX.t t/stdtests
+[  3967] By: autrijus                              on 2003/01/28  10:32:09
+        Log: * implement dynamic toplevel as required by m543.
+	   ! lib/OurNet/BBS/MELIX/GroupGroup.pm
 ____________________________________________________________________________
-[  2992] By: autrijus                              on 2002/02/04  12:27:50
-        Log: * move the packstring et al to UserGroup for consistency.
-	   ! BBS/MAPLE3/User.pm BBS/MAPLE3/UserGroup.pm
+[  3960] By: autrijus                              on 2003/01/28  03:06:18
+        Log: * revert back to 1.64 behaviour.
+	   ! lib/OurNet/BBS/MELIX/GroupGroup.pm
 ____________________________________________________________________________
-[  2935] By: autrijus                              on 2002/01/29  00:44:59
-        Log: * warnings.
-	   ! BBS/RAM/ArticleGroup.pm
+[  3958] By: autrijus                              on 2003/01/28  02:21:52
+        Log: * ournet protocol back to work
+	   ! lib/OurNet/BBS/Client.pm
 ____________________________________________________________________________
-[  2916] By: autrijus                              on 2002/01/26  23:37:01
-        Log: * the Firebird3 backend, and shm-less MAPLE2 User*.
-	   + BBS/Firebird3/Article.pm BBS/Firebird3/ArticleGroup.pm
-	   + BBS/Firebird3/BBS.pm BBS/Firebird3/Board.pm
-	   + BBS/Firebird3/BoardGroup.pm BBS/Firebird3/FileGroup.pm
-	   + BBS/Firebird3/User.pm BBS/Firebird3/UserGroup.pm
-	   ! BBS.pod BBS/Base.pm BBS/MAPLE2/BoardGroup.pm
-	   ! BBS/MAPLE2/User.pm BBS/MAPLE2/UserGroup.pm MANIFEST
+[  3957] By: autrijus                              on 2003/01/28  02:17:08
+        Log: * let require() not die horribly on OurNet::BBS::Client.
+	   ! lib/OurNet/BBS/Client.pm
 ____________________________________________________________________________
-[  2853] By: autrijus                              on 2002/01/12  19:16:25
-        Log: * cut win32 warnings.
-	   ! BBS/MAPLE2/SessionGroup.pm
+[  3956] By: autrijus                              on 2003/01/28  02:16:54
+        Log: * fix group encodings.
+	   ! lib/OurNet/BBS/MELIX/Group.pm
+	   ! lib/OurNet/BBS/MELIX/GroupGroup.pm
 ____________________________________________________________________________
-[  2709] By: autrijus                              on 2001/12/22  11:49:46
-        Log: * relax makefile requirements.
+[  3858] By: autrijus                              on 2003/01/26  07:18:45
+        Log: * correct authen.
+	   ! lib/OurNet/BBS.pm lib/OurNet/BBS/OurNet/BBS.pm
+____________________________________________________________________________
+[  3857] By: autrijus                              on 2003/01/26  07:17:02
+        Log: * renewed files
+	   ! MANIFEST TODO t/stdtests
+____________________________________________________________________________
+[  3852] By: autrijus                              on 2003/01/25  22:39:28
+        Log: * a first cut at connection-less authen.
+	   ! lib/OurNet/BBS/OurNet/BBS.pm
+	   ! lib/OurNet/BBS/Server.pm
+____________________________________________________________________________
+[  3851] By: autrijus                              on 2003/01/25  20:03:38
+        Log: * that will require the lexwrap module
 	   ! Makefile.PL
 ____________________________________________________________________________
-[  2705] By: autrijus                              on 2001/12/22  09:15:30
-        Log: * experimental: add KEYS support or base objects.
-             * introduces -s (single connection) to bbscomd.
-	   ! BBS/Base.pm BBS/Server.pm bin/bbscomd
+[  3850] By: autrijus                              on 2003/01/25  20:03:29
+        Log: * a draft of on-disk authen.
+	   ! lib/OurNet/BBS/Base.pm
+	   ! lib/OurNet/BBS/OurNet/BBS.pm
 ____________________________________________________________________________
-[  2701] By: autrijus                              on 2001/12/21  10:13:04
-        Log: * oops.
-	   ! BBS/Server.pm
+[  3849] By: autrijus                              on 2003/01/25  19:36:01
+        Log: * more cleanup
+	   ! lib/OurNet/BBS/Authen.pm
+	   ! lib/OurNet/BBS/Server.pm
 ____________________________________________________________________________
-[  2700] By: autrijus                              on 2001/12/21  09:57:26
-        Log: * bbscomd accepts -G now.
-             * skip validity check of '*'.
-	   ! BBS/Server.pm bin/bbscomd
+[  3848] By: autrijus                              on 2003/01/25  19:19:48
+        Log: * fold-friendly view.
+	   ! lib/OurNet/BBS/Client.pm
 ____________________________________________________________________________
-[  2698] By: autrijus                              on 2001/12/21  09:33:15
-        Log: * implements -G, enabling the optional auth_none wide-open hole
-             * guestid at '*' is now special: permits everybody enter the party
-	   ! BBS/Client.pm BBS/Server.pm bin/bbscomd
+[  3844] By: autrijus                              on 2003/01/25  18:08:48
+        Log: * unicodification of User.
+	   ! lib/OurNet/BBS/Base.pm
+	   ! lib/OurNet/BBS/MAPLE3/User.pm
 ____________________________________________________________________________
-[  2677] By: autrijus                              on 2001/12/19  04:49:49
-        Log: * nix the local patch.
-             * finally worked.
-	   ! bin/bbsboard
+[  3819] By: autrijus                              on 2003/01/25  08:54:33
+        Log: * now pack(), too.
+	   ! lib/OurNet/BBS/Base.pm
 ____________________________________________________________________________
-[  2676] By: autrijus                              on 2001/12/19  04:38:15
-        Log: * ditch header.
-             * versoin bump.
-             * some special code that will be removed.
-	   ! bin/bbsboard
+[  3815] By: autrijus                              on 2003/01/25  00:54:33
+        Log: * actually no utf8ize is needed; we only need encoding on
+             the source stream, no need to impose them on STDIN and
+	     STDOUT.
+	   ! lib/OurNet/BBS/Cola/Article.pm
+	   ! lib/OurNet/BBS/Firebird3/Article.pm
+	   ! lib/OurNet/BBS/MAPLE2/Article.pm
+	   ! lib/OurNet/BBS/MAPLE3/Article.pm
 ____________________________________________________________________________
-[  2675] By: autrijus                              on 2001/12/19  04:34:04
-        Log: * introduces PERMIT setting to disable posting by default.
-	   ! bin/bbsboard
+[  3814] By: autrijus                              on 2003/01/25  00:45:49
+        Log: * because modperl can't accept 'use encoding' we
+	       temporarily utf8ize them.
+	   ! lib/OurNet/BBS/Cola/Article.pm
+	   ! lib/OurNet/BBS/Firebird3/Article.pm
+	   ! lib/OurNet/BBS/MAPLE2/Article.pm
+	   ! lib/OurNet/BBS/MAPLE3/Article.pm
+	   ! lib/OurNet/BBS/Utils.pm
 ____________________________________________________________________________
-[  2674] By: autrijus                              on 2001/12/19  04:17:32
-        Log: * M2 now places the full From into the header portion of body.
-             * bbsboard permission setting now respects wildcards and works.
-	   ! BBS/MAPLE2/Article.pm bin/bbsboard
+[  3810] By: autrijus                              on 2003/01/24  23:41:28
+        Log: * unicodification continues -- but we don't want to use
+	       utf8 hash key -- oh god.
+	   ! lib/OurNet/BBS/Base.pm
+	   ! lib/OurNet/BBS/MAPLE2/Board.pm
+	   ! lib/OurNet/BBS/MAPLE2/BoardGroup.pm
 ____________________________________________________________________________
-[  2673] By: autrijus                              on 2001/12/19  02:46:16
-        Log: * added CVIC-style {permit} back.
-             * abstracted messages.
-	   ! bin/bbsboard bin/bbsmail
+[  3809] By: autrijus                              on 2003/01/24  23:22:29
+        Log: * intercepting unpack.
+	   ! lib/OurNet/BBS/Base.pm
+	   ! lib/OurNet/BBS/MAPLE2/Board.pm
+	   ! lib/OurNet/BBS/MAPLE2/BoardGroup.pm
 ____________________________________________________________________________
-[  2645] By: autrijus                              on 2001/12/17  17:01:31
-        Log: * this should (hopefully) cure the win9x EventLog problem.
-	   ! BBS/Client.pm
+[  3808] By: autrijus                              on 2003/01/24  23:17:35
+        Log: * the hard part of unicodification begins.
+	   ! lib/OurNet/BBS/Base.pm
+	   ! lib/OurNet/BBS/MAPLE2/Board.pm
+	   ! lib/OurNet/BBS/MAPLE2/BoardGroup.pm
 ____________________________________________________________________________
-[  2644] By: autrijus                              on 2001/12/17  16:49:54
-        Log: * makes makefile happy with non-gpg.
+[  3807] By: autrijus                              on 2003/01/24  22:48:36
+        Log: * passes regression with "use OurNet::BBS 'big5'"!
+	   ! Makefile.PL lib/OurNet/BBS.pm
+	   ! lib/OurNet/BBS/BBSAgent/Article.pm
+	   ! lib/OurNet/BBS/BBSAgent/ArticleGroup.pm
+	   ! lib/OurNet/BBS/CVIC/Group.pm
+	   ! lib/OurNet/BBS/CVIC/GroupGroup.pm
+	   ! lib/OurNet/BBS/Cola/Article.pm
+	   ! lib/OurNet/BBS/External/ArticleGroup.pm
+	   ! lib/OurNet/BBS/Firebird3/Article.pm
+	   ! lib/OurNet/BBS/MAPLE2/Article.pm
+	   ! lib/OurNet/BBS/MAPLE2/ArticleGroup.pm
+	   ! lib/OurNet/BBS/MAPLE2/Board.pm
+	   ! lib/OurNet/BBS/MAPLE2/BoardGroup.pm
+	   ! lib/OurNet/BBS/MAPLE2/User.pm
+	   ! lib/OurNet/BBS/MAPLE2/UserGroup.pm
+	   ! lib/OurNet/BBS/MAPLE3/Article.pm
+	   ! lib/OurNet/BBS/MAPLE3/ArticleGroup.pm
+	   ! lib/OurNet/BBS/MELIX/GroupGroup.pm
+____________________________________________________________________________
+[  3805] By: autrijus                              on 2003/01/24  22:04:07
+        Log: * if.pm.
 	   ! Makefile.PL
 ____________________________________________________________________________
-[  2618] By: autrijus                              on 2001/12/15  13:49:34
-        Log: * experimental reconnection code.
-	   ! BBS/Client.pm
+[  3804] By: autrijus                              on 2003/01/24  22:04:01
+        Log: * use OurNet::BBS 'big5' now turns on utf8 mode.
+	   ! lib/OurNet/BBS.pm
 ____________________________________________________________________________
-[  2608] By: autrijus                              on 2001/12/15  01:54:26
-        Log: * adds connection-timeout and logfile support to OurNet servers.
-	   ! BBS/Server.pm bin/bbscomd
+[  3803] By: autrijus                              on 2003/01/24  22:02:43
+        Log: * $OurNet::BBS::Encoding now sets global encoding.
+	   ! eg/boardidx lib/OurNet/BBS.pm
+	   ! lib/OurNet/BBS/MAPLE3/Article.pm
+	   ! lib/OurNet/BBS/MAPLE3/ArticleGroup.pm
+	   ! lib/OurNet/BBS/MAPLE3/User.pm
+	   ! lib/OurNet/BBS/MAPLE3/UserGroup.pm
+	   ! lib/OurNet/BBS/MELIX/Article.pm
+	   ! lib/OurNet/BBS/MELIX/Group.pm
+	   ! lib/OurNet/BBS/MELIX/GroupGroup.pm
+	   ! lib/OurNet/BBS/ScalarFile.pm
 ____________________________________________________________________________
-[  2597] By: autrijus                              on 2001/12/13  20:42:37
-        Log: * fix bbsboard/bbsmail so the Received: header parsing works.
-	   ! bin/bbsboard
+[  3793] By: autrijus                              on 2003/01/24  19:40:04
+        Log: * some more modernization.
+	   ! t/--signature.t t/0-Base.t
 ____________________________________________________________________________
-[  2555] By: autrijus                              on 2001/12/11  04:22:39
-        Log: * version bump.
-	   ! BBS.pm BBS.pod
+[  3792] By: autrijus                              on 2003/01/24  19:34:06
+        Log: * we use pseudohash proudly!
+	   ! (edit 111 files)
 ____________________________________________________________________________
-[  2553] By: autrijus                              on 2001/12/10  21:44:44
-        Log: * strip dates inside parens for pathetic cases.
-	   ! BBS/BBSAgent/Article.pm
-____________________________________________________________________________
-[  2552] By: autrijus                              on 2001/12/10  21:28:56
-        Log: * removes debug message.
-             * adds some comments.
-	   ! BBS/BBSAgent/Article.pm
-____________________________________________________________________________
-[  2551] By: autrijus                              on 2001/12/10  21:21:31
-        Log: * accepts NNTP-style author header now.
-             * fixes a comma-related glitch on kkcity.
-	   ! BBS/BBSAgent/Article.pm
-____________________________________________________________________________
-[  2547] By: autrijus                              on 2001/12/10  04:24:57
-        Log: * changes.
-	   ! Changes
-____________________________________________________________________________
-[  2546] By: autrijus                              on 2001/12/10  04:24:28
-        Log: * This be OurNet::BBS v1.63.
-	   ! BBS.pm Changes
-____________________________________________________________________________
-[  2545] By: autrijus                              on 2001/12/10  04:21:25
-        Log: * adds the OurNet::BBS::Tutorial diagrams.
-             * updates HISTORY in accord to BBS.pod.
-             * updates MANIFEST.
-	   + BBS/Tutorial.pod
-	   ! BBS.pod HISTORY MANIFEST
-____________________________________________________________________________
-[  2491] By: autrijus                              on 2001/12/01  12:05:42
-        Log: * gives BBSAgent a more liberal timeout (60 sec).
-             * reported by cpf, chris.
-	   ! BBS/BBSAgent/BBS.pm
-____________________________________________________________________________
-[  2456] By: autrijus                              on 2001/11/28  12:16:45
-        Log: * let Win32 happy with test on missing SIGUSR2.
-             * stdtest now counts the previously-obiwan use_ok().
-	   ! BBS/MAPLE2/SessionGroup.pm BBS/MELIX/SessionGroup.pm
-	   ! t/stdtests
-____________________________________________________________________________
-[  2454] By: autrijus                              on 2001/11/28  07:08:31
-        Log: * finally the CIPH_CRYPT validation routine is sane again.
-	   ! BBS/Server.pm
-____________________________________________________________________________
-[  2441] By: autrijus                              on 2001/11/27  15:42:06
-        Log: * uses the natural path splitter instead of some nonprotable guess.
+[  3791] By: autrijus                              on 2003/01/24  19:19:23
+        Log: * modern release engineering
+	  +> ChangeLog inc/ExtUtils/AutoInstall.pm
+	  +> t/--signature.t
+	   - HISTORY
 	   ! Makefile.PL
 ____________________________________________________________________________
-[  2440] By: autrijus                              on 2001/11/27  15:38:54
-        Log: * remedy clkao's patch that made M3 skips maxuser/usershmkey params.
-	   ! BBS/MAPLE3/BBS.pm BBS/MAPLE3/User.pm BBS/MAPLE3/UserGroup.pm
-	   ! BBS/MELIX/BBS.pm BBS/MELIX/User.pm BBS/MELIX/UserGroup.pm
-____________________________________________________________________________
-[  2435] By: autrijus                              on 2001/11/27  09:55:03
-        Log: * check CC routine borked. reported by pudge.
-	   ! Makefile.PL
-____________________________________________________________________________
-[  2392] By: clkao                                 on 2001/11/22  13:41:47
-        Log: remove unused MELIX toplevel fields: usershmkey and maxuser
-	   ! BBS/MELIX/BBS.pm
-____________________________________________________________________________
-[  2388] By: clkao                                 on 2001/11/22  06:34:45
-        Log: more obiwan survivors
-	   ! BBS/MAPLE3/UserGroup.pm
-____________________________________________________________________________
-[  2387] By: clkao                                 on 2001/11/22  05:42:11
-        Log: we really need //= operator!
-	   ! BBS/MAPLE3/UserGroup.pm
-____________________________________________________________________________
-[  2386] By: clkao                                 on 2001/11/22  04:30:56
-        Log: really fix adding subgroup into group in MELIX backend for all scenario.
-	   ! BBS/MELIX/GroupGroup.pm
-____________________________________________________________________________
-[  2385] By: clkao                                 on 2001/11/22  04:11:53
-        Log: fix adding subgroup into group in MELIX backend.
-	   ! BBS/MELIX/GroupGroup.pm
-____________________________________________________________________________
-[  2384] By: clkao                                 on 2001/11/22  03:51:53
-        Log: fix adding board into group in MELIX backend.
-	   ! BBS/MELIX/GroupGroup.pm
-____________________________________________________________________________
-[  2354] By: autrijus                              on 2001/11/13  00:27:44
-        Log: * oops! *this* was the real change @2353.
-	   ! bin/bbsboard
-____________________________________________________________________________
-[  2353] By: autrijus                              on 2001/11/13  00:26:37
-        Log: * added $DEFAULT_DOMAIN for in-site mails to fallback into.
-	   ! bin/bbscomd bin/bbsmail
-____________________________________________________________________________
-[  2350] By: autrijus                              on 2001/11/12  22:33:49
-        Log: * retracts @2300 partially; loosen strictrictude for imported vars.
-	   ! BBS/MELIX/SessionGroup.pm
-____________________________________________________________________________
-[  2328] By: autrijus                              on 2001/11/09  07:11:22
-        Log: * CVIC doesn't like guests.
-	   ! BBS/Server.pm
-____________________________________________________________________________
-[  2326] By: autrijus                              on 2001/11/09  06:48:26
-        Log: * oops.
-	   ! BBS/Server.pm
-____________________________________________________________________________
-[  2325] By: autrijus                              on 2001/11/09  04:08:02
-        Log: * fix test numbering.
-             * document various improvements in anticipation to 1.63.
-	   ! BBS.pod t/stdtests
-____________________________________________________________________________
-[  2324] By: autrijus                              on 2001/11/09  04:07:29
-        Log: * fixed the long-standing bug of server EOF.
-             * invalid passphrase will not slip through now.
-	   ! BBS/Authen.pm BBS/Server.pm
-____________________________________________________________________________
-[  2317] By: autrijus                              on 2001/11/08  06:33:13
-        Log: * special case kludge.
-             * parses mime words better.
-	   ! bin/bbsboard
-____________________________________________________________________________
-[  2306] By: autrijus                              on 2001/11/06  19:32:01
-        Log: * triple des XS cipher.
-	   ! BBS/Authen.pm
-____________________________________________________________________________
-[  2300] By: autrijus                              on 2001/11/06  02:24:23
-        Log: * no not pass strict.
-	   ! BBS/MELIX/SessionGroup.pm
-____________________________________________________________________________
-[  2272] By: autrijus                              on 2001/11/04  21:57:13
-        Log: * updated bootstrapping version of autoinstall.
-	   ! ExtUtils/AutoInstall.pm
-____________________________________________________________________________
-[  2249] By: autrijus                              on 2001/11/02  09:29:31
-        Log: * Authen now accepts Crypt::Rijndael_PP as perl-only alternative.
-             * Makefile.PL will probe for compiler/gpg to determine the auth modules.
-	   ! BBS/Authen.pm Makefile.PL
-____________________________________________________________________________
-[  2234] By: autrijus                              on 2001/10/31  22:57:59
-        Log: * the id/title implementation of NNTP was wrong.
-	   ! BBS/NNTP/Board.pm
-____________________________________________________________________________
-[  2228] By: autrijus                              on 2001/10/28  11:20:55
-        Log: * split dependency of OurNet Client vs. Server.
-             * indent.
-	   ! Makefile.PL
-____________________________________________________________________________
-[  2224] By: autrijus                              on 2001/10/28  09:20:50
-        Log: * remember to fetch_article_last after a failed header match.
-	   ! BBS/BBSAgent/Article.pm
-____________________________________________________________________________
-[  2195] By: autrijus                              on 2001/10/22  15:03:49
-        Log: * windows test now passes. (in an ugly way)
-             * take dependencies into account.
-	   ! Makefile.PL t/stdtests
-____________________________________________________________________________
-[  2193] By: autrijus                              on 2001/10/22  06:00:29
-        Log: * activeperl doesn't like bundles.
-	   ! Makefile.PL
-____________________________________________________________________________
-[  2156] By: autrijus                              on 2001/10/18  18:05:59
-        Log: * upgrade autoinstall bootstrap code to v0.21.
-	   ! Makefile.PL
-____________________________________________________________________________
-[  2147] By: autrijus                              on 2001/10/18  05:56:56
-        Log: * cuts README sales-talk and aspell the POD.
-	   ! BBS.pod README
-____________________________________________________________________________
-[  2126] By: autrijus                              on 2001/10/17  08:47:23
-        Log: * comment nits.
-	   ! ExtUtils/AutoInstall.pm
-____________________________________________________________________________
-[  2122] By: autrijus                              on 2001/10/16  16:26:32
-        Log: * oops, didnt' cut it.
-	   ! ExtUtils/AutoInstall.pm
-____________________________________________________________________________
-[  2121] By: autrijus                              on 2001/10/16  16:25:23
-        Log: * be charitable about CPAN propagation.
-	   ! ExtUtils/AutoInstall.pm
-____________________________________________________________________________
-[  2116] By: autrijus                              on 2001/10/16  15:57:57
-        Log: * implemented the new -version directive.
-	   ! ExtUtils/AutoInstall.pm Makefile.PL
-____________________________________________________________________________
-[  2114] By: autrijus                              on 2001/10/16  14:50:59
-        Log: * pretty-print it.
-	   ! Makefile.PL
-____________________________________________________________________________
-[  2113] By: autrijus                              on 2001/10/16  14:48:34
-        Log: * since the new CPAN module breaks old makefile, remedy must be taken.
-	   ! ExtUtils/AutoInstall.pm Makefile.PL
-____________________________________________________________________________
-[  2106] By: autrijus                              on 2001/10/16  11:54:46
-        Log: * This be ExtUtils::AutoInstall v0.02.
-	   ! ExtUtils/AutoInstall.pm
-____________________________________________________________________________
-[  2105] By: autrijus                              on 2001/10/16  11:50:13
-        Log: * deal with the new AutoInstall.
-	   ! Makefile.PL
-____________________________________________________________________________
-[  2100] By: autrijus                              on 2001/10/16  11:28:28
-        Log: * checks permissions into CPAN's sources/ directory first.
-             * better diagnostics.
-	   ! ExtUtils/AutoInstall.pm
-____________________________________________________________________________
-[  2099] By: autrijus                              on 2001/10/16  11:07:47
-        Log: * pod and version bump.
-	   ! ExtUtils/AutoInstall.pm
-____________________________________________________________________________
-[  2098] By: autrijus                              on 2001/10/16  11:02:15
-        Log: * oops, s/zpan/cpan/.
-             * for features that didn't specify -default, assume yes.
-             * makes it perl 5.005 happy.
-	   ! ExtUtils/AutoInstall.pm
-____________________________________________________________________________
-[  2097] By: autrijus                              on 2001/10/16  10:45:19
-        Log: * AutoInstall now detects connection status.
-             * it also probes for prerequisites policy too.
-	   ! ExtUtils/AutoInstall.pm Makefile.PL
-____________________________________________________________________________
-[  2090] By: autrijus                              on 2001/10/15  15:42:02
-        Log: * revised ExtUtils::AutoInstall to have better interface
-             * adjusted everythign accordingly.
-	   ! ExtUtils/AutoInstall.pm Makefile.PL t/5-BBSAgent.t
-	   ! t/6-MailBox.t t/stdtests
-____________________________________________________________________________
-[  2089] By: autrijus                              on 2001/10/15  14:46:51
-        Log: * s/Pre/Existing/ failed me.
-	   ! ExtUtils/AutoInstall.pm
-____________________________________________________________________________
-[  2088] By: autrijus                              on 2001/10/15  14:33:05
-        Log: * marks the -dev release by the CPAN way.
-	   ! BBS.pm ExtUtils/AutoInstall.pm bin/bbscomd
-____________________________________________________________________________
-[  2087] By: autrijus                              on 2001/10/15  14:11:58
-        Log: * POD nitpick
-             * version bump for bbsmail
-	   ! bin/bbsboard bin/bbsmail
-____________________________________________________________________________
-[  2083] By: autrijus                              on 2001/10/15  11:23:13
-        Log: * allows '|' in headl/headr/headi expressions.
-             * now enforces separator detection for easier debugging
-             * more fault-tolerant date extraction
-	   ! BBS/BBSAgent/Article.pm
-____________________________________________________________________________
-[  2080] By: autrijus                              on 2001/10/15  09:23:44
-        Log: * all messages now __()'ized.
-	   ! t/stdtests
-____________________________________________________________________________
-[  2079] By: autrijus                              on 2001/10/15  09:21:54
-        Log: * &_() conflicts with per's built-in _ handle, so renamed to __.
-             * test suite now passes.
-	   ! t/stdtests
-____________________________________________________________________________
-[  2077] By: autrijus                              on 2001/10/15  07:40:05
-        Log: * half-completed reorg of tests.
-	   ! t/stdtests
-____________________________________________________________________________
-[  2076] By: autrijus                              on 2001/10/14  20:46:53
-        Log: * delete old package from %INC so MakeMaker will be happy
-	   ! ExtUtils/AutoInstall.pm
-____________________________________________________________________________
-[  2075] By: autrijus                              on 2001/10/14  20:31:22
-        Log: * fixed kluge usage of conditioned TODO. much cleaner now.
-	   ! t/stdtests
-____________________________________________________________________________
-[  2074] By: autrijus                              on 2001/10/14  20:20:08
-        Log: * uses skip_all instead of some ugly kluge
-             * be trigger-happy about Test::More v0.31 neologisms
-	   ! t/5-BBSAgent.t t/6-MailBox.t t/stdtests
-____________________________________________________________________________
-[  2071] By: autrijus                              on 2001/10/14  18:32:34
-        Log: * we need Test::More 0.31+ to test isa_ok().
-             * Makefile.PL won't touch bin/* outside manifest now.
-	   ! Makefile.PL
-____________________________________________________________________________
-[  2070] By: autrijus                              on 2001/10/14  17:05:04
-        Log: * Changes.
-	   ! Changes
-____________________________________________________________________________
-[  2069] By: autrijus                              on 2001/10/14  17:02:05
-        Log: * stop the press! *this* is v1.62 release.
-             * modified t/ so partially installed users could pass tests.
-	   ! t/5-BBSAgent.t t/6-MailBox.t t/stdtests
-____________________________________________________________________________
-[  2068] By: autrijus                              on 2001/10/14  16:50:03
-        Log: * okay, this be OurNet::BBS v1.62.
-	   ! BBS.pm BBS.pod bin/bbscomd
-____________________________________________________________________________
-[  2067] By: autrijus                              on 2001/10/14  16:48:14
-        Log: * getting ready for release. the reason for this hasty release
-             is 1) change of protocol number and 2) testing CPAN install.
-	   ! TODO
-____________________________________________________________________________
-[  2066] By: autrijus                              on 2001/10/14  16:35:24
-        Log: * preparing for splitting out HISTORY.
-	   ! HISTORY
-____________________________________________________________________________
-[  2065] By: autrijus                              on 2001/10/14  16:34:43
-        Log: * updates what've been done in 1.62.
-             * nits.
-	  +> HISTORY
-	   ! BBS.pod MANIFEST TODO
-____________________________________________________________________________
-[  2064] By: autrijus                              on 2001/10/14  16:20:27
-        Log: * fixed incorrect cachje and reftype test.
-	   ! BBS/Server.pm
-____________________________________________________________________________
-[  2063] By: autrijus                              on 2001/10/14  15:58:18
-        Log: * uses Sort::Versions to compare versions where available.
-	   ! ExtUtils/AutoInstall.pm
-____________________________________________________________________________
-[  2061] By: autrijus                              on 2001/10/14  15:43:00
-        Log: * ExtUtil::AutoInstall, a new module handling customized install.
-             * modified Makefile.PL to take advantage of it.
-             * bbscomd now uses Term::ReadKey only when needed.
-	   + ExtUtils/AutoInstall.pm
-	   ! MANIFEST Makefile.PL bin/bbscomd
-____________________________________________________________________________
-[  2060] By: autrijus                              on 2001/10/14  12:45:40
-        Log: * updated OurNet protocol to v0.4, which allows callback and coderefs.
-             * new op code: CODE_EXECUTE
-             * updated diff-against-PlRPC comments
-             * updated tests for callback + coderef feature
-             * changed STORE semantic to avoid unnecessary loops
-	   ! BBS/Authen.pm BBS/Client.pm BBS/Server.pm t/stdtests
-____________________________________________________________________________
-[  2054] By: autrijus                              on 2001/10/13  10:20:11
-        Log: * enables non-reentrant (i.e. callback inside callback) OOB.
-             * introduces OBJECT_CACHE to directly access a cached object.
-             * Client now automagically registers callback when sending a code ref.
-             * 
-	   ! BBS/Authen.pm BBS/Client.pm BBS/Server.pm
-____________________________________________________________________________
-[  2053] By: autrijus                              on 2001/10/13  08:46:19
-        Log: * Client now does rough (shallow) check for CODE refs.
-             * MELIX auto-supplies $$ if pid not given to new sessions.
-             * implements a crude hack of lastref() equivalent to $value->{ref}
-             * turns everything to procedural and updates echo-agent accordingly
-	   ! BBS/Client.pm BBS/MELIX/SessionGroup.pm
-____________________________________________________________________________
-[  2052] By: autrijus                              on 2001/10/13  06:32:51
-        Log: * the complementary Write code for OOB.
-	   ! BBS/Authen.pm
-____________________________________________________________________________
-[  2051] By: autrijus                              on 2001/10/13  06:24:35
-        Log: * Callback-based out of band communiaction extension to PlRPC.
-	   ! BBS/Authen.pm
-____________________________________________________________________________
-[  2050] By: autrijus                              on 2001/10/13  04:06:05
-        Log: * OurNet::Client back to life.
+[  3790] By: autrijus                              on 2003/01/24  19:08:46
+        Log: * more modern practice.
+	  +> script/bbsboard script/bbscomd script/bbsmail
+	   - bin/bbsboard bin/bbscomd bin/bbsmail
+	   ! MANIFEST
+____________________________________________________________________________
+[  3789] By: autrijus                              on 2003/01/24  19:07:35
+        Log: * change to the modern practice of lib/.
+	  +> (branch 114 files)
+	   - (delete 114 files)
+	   ! MANIFEST
+____________________________________________________________________________
+[  3742] By: autrijus                              on 2003/01/21  22:08:26
+        Log: * put perlio where it belong.
+	   ! BBS/Base.pm BBS/MELIX/Article.pm
+____________________________________________________________________________
+[  3741] By: autrijus                              on 2003/01/21  21:41:40
+        Log: * use a nice global layer instead.
+	   ! BBS/MELIX/Article.pm
+____________________________________________________________________________
+[  3740] By: autrijus                              on 2003/01/21  21:35:39
+        Log: * add experimental encoding layer.
+	   ! BBS/MELIX/Article.pm
+____________________________________________________________________________
+[   859] By: autrijus                              on 2002/09/06  10:08:57
+        Log: * correct clobbering errors thanks to perlopentut.
 	   ! BBS/Base.pm
 ____________________________________________________________________________
-[  2047] By: autrijus                              on 2001/10/12  23:17:55
-        Log: * keeps warnings happy
-	   ! BBS/MELIX/SessionGroup.pm
+[   858] By: autrijus                              on 2002/09/06  09:41:57
+        Log: * first working locking implementation.
+	   ! BBS/Base.pm BBS/CVIC/GroupGroup.pm
+	   ! BBS/MAPLE2/Article.pm BBS/MAPLE2/Board.pm
+	   ! BBS/MAPLE3/Article.pm
+	   ! BBS/MAPLE3/ArticleGroup.pm BBS/MELIX/Group.pm
 ____________________________________________________________________________
-[  2043] By: autrijus                              on 2001/10/12  17:03:47
-        Log: * avoids the local \* bug in Base. this is only temporary measure.
-             * MELIX SessionGroup now handles its own refresh_meta.
-	   ! BBS/MELIX/SessionGroup.pm
+[   856] By: autrijus                              on 2002/09/05  21:28:07
+        Log: * lockers.
+	   ! BBS/Base.pm
 ____________________________________________________________________________
-[  2040] By: autrijus                              on 2001/10/12  17:01:59
-        Log: * works around esoteric bug in 5.6.x optree optimizer.
-             * disables imports into main; updates test.
-	   ! BBS/Base.pm t/0-Base.t
-____________________________________________________________________________
-[  2038] By: clkao                                 on 2001/10/12  14:26:11
-        Log: initialize shm before STORE. (refresh melix for new board creation)
-	   ! BBS/MAPLE2/BoardGroup.pm
-____________________________________________________________________________
-[  2037] By: clkao                                 on 2001/10/12  14:23:11
-        Log: a more efficient way passing new session result
-	   ! BBS/MELIX/SessionGroup.pm
-____________________________________________________________________________
-[  2035] By: autrijus                              on 2001/10/12  11:40:58
-        Log: * fixed a bug that skips normal header processing
-	   ! bin/bbsboard
-____________________________________________________________________________
-[  2034] By: autrijus                              on 2001/10/12  11:10:49
-        Log: * strips header tag.
-	   ! bin/bbsboard
-____________________________________________________________________________
-[  2033] By: autrijus                              on 2001/10/12  07:17:47
-        Log: * allows '-' in board names.
-	   ! bin/bbsboard
-____________________________________________________________________________
-[  2032] By: autrijus                              on 2001/10/12  06:43:13
-        Log: * discards pgp signature info until a better way is invented
-             * perserves header.
-	   ! bin/bbsboard
-____________________________________________________________________________
-[  2030] By: autrijus                              on 2001/10/12  03:44:55
-        Log: * introduces ${var=something} interpolation to External backend.
-             * bbsboard should explicitly exit with 0 status.
-	   ! BBS/External/ArticleGroup.pm bin/bbsboard
-____________________________________________________________________________
-[  2028] By: autrijus                              on 2001/10/12  03:10:12
-        Log: * there's no article.pm for external backend. at least for now.
-	   ! MANIFEST
-____________________________________________________________________________
-[  2027] By: autrijus                              on 2001/10/12  02:53:19
-        Log: * separate doc into a POD file; fix milestones.
-	   + BBS.pod
-	   ! BBS.pm MANIFEST
-____________________________________________________________________________
-[  2026] By: autrijus                              on 2001/10/11  16:47:26
-        Log: * updates sample with the real-world scenario.
-	   ! bin/bbsboard bin/bbsmail
-____________________________________________________________________________
-[  2024] By: autrijus                              on 2001/10/11  15:58:37
-        Log: * completes the mailing list support jigsaw.
-	   ! BBS/External/ArticleGroup.pm bin/bbsboard
-____________________________________________________________________________
-[  2023] By: autrijus                              on 2001/10/11  14:30:19
-        Log: * MAPLE3 boards now checks actual directory for EXIST even when cached
-             * untaints keys().
-	   ! BBS/MAPLE2/BoardGroup.pm BBS/MAPLE3/BoardGroup.pm
-____________________________________________________________________________
-[  2022] By: autrijus                              on 2001/10/11  14:29:18
-        Log: * oops, wrong files.
-             * this (and previous) change fixes tainting problem for bbsboard.
-             * added list compatibility
-	   ! bin/bbscomd bin/bbsmail
-____________________________________________________________________________
-[  2021] By: autrijus                              on 2001/10/11  14:28:28
-        Log: * temporary measure to fix pubkey auth
-	   ! bin/bbsboard
-____________________________________________________________________________
-[  2020] By: autrijus                              on 2001/10/11  14:27:38
-        Log: * the sketch of 'External' backend, an interface to external programs
-	   + BBS/External/ArticleGroup.pm BBS/External/BBS.pm
-	   + BBS/External/Board.pm BBS/External/BoardGroup.pm
-____________________________________________________________________________
-[  1957] By: autrijus                              on 2001/10/01  23:50:55
-        Log: * check for the proper value for PUSH operations.
-	   ! BBS/MAPLE3/ArticleGroup.pm
-____________________________________________________________________________
-[  1956] By: autrijus                              on 2001/10/01  23:19:00
-        Log: * enforces write-to-board access more cleanly.
-             * fix random precedence flitch.
-	   ! BBS/Client.pm BBS/MAPLE3/ArticleGroup.pm
-____________________________________________________________________________
-[  1955] By: autrijus                              on 2001/10/01  23:18:11
-        Log: * adds other OP Codes that should consult writeok().
-	   ! BBS/Server.pm
-____________________________________________________________________________
-[  1954] By: autrijus                              on 2001/10/01  22:05:22
-        Log: * no longer imports POSIX constant table and conflicts with remove().
-             * cleared up several warnings.
-	   ! BBS/CVIC/FileGroup.pm BBS/MAPLE2/Session.pm
-	   ! BBS/MELIX/Session.pm BBS/RAM/UserGroup.pm
-____________________________________________________________________________
-[  1953] By: autrijus                              on 2001/10/01  21:54:21
-        Log: * tests compilation for 'local' modules, suggested by clkao.
-	   ! t/stdtests
-____________________________________________________________________________
-[  1949] By: clkao                                 on 2001/10/01  15:20:39
-        Log: fix for compilation
-	   ! BBS/MELIX/SessionGroup.pm
-____________________________________________________________________________
-[  1944] By: autrijus                              on 2001/09/30  13:37:56
-        Log: * inlines the GC detection code.
-	   ! BBS/Authen.pm
-____________________________________________________________________________
-[  1943] By: autrijus                              on 2001/09/30  12:59:00
-        Log: * rejects malicious ciphers.
-	   ! BBS/Server.pm
-____________________________________________________________________________
-[  1942] By: autrijus                              on 2001/09/30  12:58:48
-        Log: * RAM Usergroup code.
-	   ! BBS/RAM/BBS.pm BBS/RAM/UserGroup.pm
-____________________________________________________________________________
-[  1941] By: autrijus                              on 2001/09/30  12:58:36
-        Log: * solved the incomplete DESTROY handler bug with v5.6.x.
-	   ! BBS/Authen.pm
-____________________________________________________________________________
-[  1940] By: autrijus                              on 2001/09/30  11:53:17
-        Log: * relax the compare_keys routine to allow for subkey differences.
-             * correctly identify gpg support now.
-	   ! BBS/Authen.pm BBS/Server.pm
-____________________________________________________________________________
-[  1928] By: autrijus                              on 2001/09/28  22:27:30
-        Log: * fix 1916, which breaks everything.
+[   850] By: autrijus                              on 2002/09/05  01:30:46
+        Log: * retracted the last submit; flock should be built into
+	       open()
 	   ! BBS/MAPLE2/Article.pm
+	   ! BBS/MAPLE2/ArticleGroup.pm BBS/MAPLE2/Board.pm
+	   ! BBS/MAPLE2/User.pm BBS/MAPLE3/Article.pm
+	   ! BBS/MAPLE3/ArticleGroup.pm
+	   ! BBS/MELIX/Article.pm
 ____________________________________________________________________________
-[  1919] By: autrijus                              on 2001/09/27  21:33:00
-        Log: * version bump and POD nitpick.
-	   ! BBS.pm bin/bbscomd
-____________________________________________________________________________
-[  1918] By: autrijus                              on 2001/09/27  21:31:20
-        Log: * Authen now working even without GnuPG::Interface installed.
-	   ! BBS/Authen.pm
-____________________________________________________________________________
-[  1916] By: clkao                                 on 2001/09/27  12:30:36
-        Log: remove unnecessary and annoying debug message.
+[   849] By: autrijus                              on 2002/09/05  01:28:58
+        Log: * refactored commits to commit().
 	   ! BBS/MAPLE2/Article.pm
-____________________________________________________________________________
-[  1915] By: autrijus                              on 2001/09/27  09:59:20
-        Log: * Changes.
-	   ! Changes
-____________________________________________________________________________
-[  1914] By: autrijus                              on 2001/09/27  09:57:47
-        Log: * This be OurNet::BBS v1.61.
-	   ! BBS.pm README TODO bin/bbscomd
-____________________________________________________________________________
-[  1913] By: autrijus                              on 2001/09/27  09:49:16
-        Log: * fixed the bug of different OpenPGP versions caused pubkey mismatch.
-	   ! BBS/Server.pm
-____________________________________________________________________________
-[  1912] By: autrijus                              on 2001/09/27  09:39:17
-        Log: * great error that prevents pgp key comparison altogether
-	   ! BBS/Authen.pm
-____________________________________________________________________________
-[  1905] By: clkao                                 on 2001/09/26  12:11:00
-        Log: * allow external options overriding
-             * temporarily terminate daemon when loop-timeout
-             * daemonize() now returns the server object for future operations
-	   ! BBS/Server.pm
-____________________________________________________________________________
-[  1897] By: autrijus                              on 2001/09/24  04:12:48
-        Log: * how did this crept in?
-	   ! BBS/NNTP/Board.pm
-____________________________________________________________________________
-[  1889] By: autrijus                              on 2001/09/23  07:31:24
-        Log: * yasb at handshake().
-             * NoCache inmplmentation yasb.
-	   ! BBS/Client.pm BBS/Server.pm
-____________________________________________________________________________
-[  1883] By: autrijus                              on 2001/09/20  18:37:13
-        Log: * Cola doesn't, after all, use spaces. so the kluge is undone.
-             * implements an empty 'date' field to make ebx happy
-	   ! BBS/Cola/ArticleGroup.pm BBS/MAPLE2/Article.pm
-	   ! BBS/MAPLE2/ArticleGroup.pm
-____________________________________________________________________________
-[  1882] By: autrijus                              on 2001/09/20  17:30:51
-        Log: * add real-life multi-domain settings in POD.
-	   ! bin/bbsboard bin/bbsmail
-____________________________________________________________________________
-[  1881] By: autrijus                              on 2001/09/20  15:48:22
-        Log: * adds utmp flags
-             * fixes bbsmail taintedness
-	   ! bin/bbsboard bin/bbsmail
-____________________________________________________________________________
-[  1880] By: autrijus                              on 2001/09/20  15:23:29
-        Log: * updates POD to say OWNER and GROUP in the rcfile.
-	   ! bin/bbsboard bin/bbsmail
-____________________________________________________________________________
-[  1865] By: autrijus                              on 2001/09/18  15:24:11
-        Log: * this should Really Fix It (tm).
-	   ! BBS/Cola/Article.pm BBS/Cola/ArticleGroup.pm
-____________________________________________________________________________
-[  1864] By: autrijus                              on 2001/09/18  15:18:43
-        Log: * unix can't use cola, hrm?
-	   ! BBS/Cola/Article.pm BBS/Cola/ArticleGroup.pm
-____________________________________________________________________________
-[  1842] By: autrijus                              on 2001/09/18  06:17:31
-        Log: * made executable.
-	   ! bin/bbsboard bin/bbscomd
-____________________________________________________________________________
-[  1841] By: autrijus                              on 2001/09/18  06:16:32
-        Log: * RCS tag.
-             * style changes, some of which very pedantic.
-	   ! bin/bbsboard
-____________________________________________________________________________
-[  1840] By: autrijus                              on 2001/09/18  06:12:14
-        Log: * revised bbsmail / bbsboard to avoid duplicate code
-             * also added OWNER and GROUP support using sete[gu]id.
-	   ! bin/bbsboard bin/bbsmail
-____________________________________________________________________________
-[  1839] By: autrijus                              on 2001/09/18  06:08:16
-        Log: * fixed possible same-timestamp article posting
-	   ! BBS/BBSAgent/ArticleGroup.pm
-____________________________________________________________________________
-[  1838] By: autrijus                              on 2001/09/18  05:54:37
-        Log: * logfile support for BBSAgent backend.
-	   ! BBS/BBSAgent/BBS.pm
-____________________________________________________________________________
-[  1825] By: autrijus                              on 2001/09/16  06:27:34
-        Log: * the Cola BBS backend support.
-             * abstracted various things in Maple2.
-	   + BBS/Cola/Article.pm BBS/Cola/ArticleGroup.pm BBS/Cola/BBS.pm
-	   + BBS/Cola/Board.pm BBS/Cola/BoardGroup.pm BBS/Cola/FileGroup.pm
-	   + BBS/Cola/User.pm BBS/Cola/UserGroup.pm
-	   ! BBS/MAPLE2/Article.pm BBS/MAPLE2/ArticleGroup.pm MANIFEST
-____________________________________________________________________________
-[  1819] By: autrijus                              on 2001/09/16  05:02:51
-        Log: * import over-propagation bug
-	   ! BBS/Base.pm BBS/MailBox/BBS.pm
-____________________________________________________________________________
-[  1816] By: autrijus                              on 2001/09/14  15:28:51
-        Log: * do away with redundant version numbers (thanks search.cpan.org!)
-	   ! BBS/RAM/User.pm BBS/RAM/UserGroup.pm
-____________________________________________________________________________
-[  1815] By: autrijus                              on 2001/09/14  12:48:40
-        Log: * finally fixed.
+	   ! BBS/MAPLE2/ArticleGroup.pm BBS/MAPLE2/Board.pm
+	   ! BBS/MAPLE2/User.pm BBS/MAPLE3/Article.pm
 	   ! BBS/MAPLE3/ArticleGroup.pm
+	   ! BBS/MELIX/Article.pm
 ____________________________________________________________________________
-[  1814] By: autrijus                              on 2001/09/14  12:47:11
-        Log: * yasb.
-	   ! BBS/MAPLE3/ArticleGroup.pm
+[   764] By: autrijus                              on 2002/08/23  12:07:00
+        Log: * style cleanup.
+	   ! BBS/MELIX/GroupGroup.pm
 ____________________________________________________________________________
-[  1813] By: autrijus                              on 2001/09/14  12:46:02
-        Log: * yasb. i'm so stupid.
-	   ! BBS/MAPLE3/ArticleGroup.pm
+[   763] By: autrijus                              on 2002/08/23  12:06:49
+        Log: * remedied the incapability of ->delete MELIX groups.
+	   ! BBS/MAPLE2/Board.pm BBS/MELIX/Group.pm
 ____________________________________________________________________________
-[  1812] By: autrijus                              on 2001/09/14  12:43:09
-        Log: * make subdir on storage if not there yet. (reported by whiteg)
-	   ! BBS/MAPLE3/ArticleGroup.pm
+[   577] By: clkao                                 on 2002/08/05  16:26:18
+        Log: edge condition fixes for userid len = 12
+	   ! BBS/MAPLE3/User.pm BBS/MAPLE3/UserGroup.pm
 ____________________________________________________________________________
-[  1811] By: autrijus                              on 2001/09/14  10:46:21
-        Log: * integrate the bbs tools into OurNet::BBS mainline.
-	  +> bin/bbsboard bin/bbsmail
-	   ! MANIFEST
+[   576] By: clkao                                 on 2002/08/05  16:24:42
+        Log: * user home should be all lc'ed.
+             * avoid being refreshed when doing EXISTS for users.
+	   ! BBS/MAPLE3/UserGroup.pm
 ____________________________________________________________________________
-[  1807] By: autrijus                              on 2001/09/14  09:07:00
-        Log: * REF and SPAWN should not be subject to permission control.
-	   ! BBS/Server.pm
+[   321] By: autrijus                              on 2002/07/03  07:48:53
+        Log: * reported by mezl: Cola does not implement usershmkey.
+	   ! BBS/Cola/BBS.pm
 ____________________________________________________________________________
-[  1748] By: autrijus                              on 2001/09/07  13:02:18
-        Log: * pod clean up; updated flags, using new POD directives to mimic proper manpage style
-	   ! bin/bbscomd
+[    13] By: clkao                                 on 2002/06/13  00:52:01
+        Log: workaround group access thru ournet
+	   ! BBS/MELIX/GroupGroup.pm
 ____________________________________________________________________________
-[  1747] By: clkao                                 on 2001/09/07  11:48:31
-        Log: fix date kludge.
-	   ! BBS/BBSAgent/Article.pm
-____________________________________________________________________________
-[  1745] By: clkao                                 on 2001/09/07  11:38:23
-        Log: kludge non-english datetime parse.
-	   ! BBS/BBSAgent/Article.pm
-____________________________________________________________________________
-[  1743] By: autrijus                              on 2001/09/07  09:31:53
-        Log: * version bump and pod cleanup for bbscomd
-	   ! bin/bbscomd
-____________________________________________________________________________
-[  1742] By: autrijus                              on 2001/09/07  06:31:32
-        Log: * retract
-	   ! BBS/MAPLE2/ArticleGroup.pm
-____________________________________________________________________________
-[  1732] By: autrijus                              on 2001/09/05  16:13:05
-        Log: * the correct _brdobj routine. unfortunately this breaks
-             OurNet-CVIC for unknown reasons.
-	   ! BBS/CVIC/GroupGroup.pm t/stdtests
-____________________________________________________________________________
-[  1731] By: autrijus                              on 2001/09/05  15:35:39
-        Log: * fixes the deletion bugs; passes test now
-	   ! BBS/CVIC/Group.pm BBS/CVIC/GroupGroup.pm
-____________________________________________________________________________
-[  1730] By: autrijus                              on 2001/09/05  15:24:43
-        Log: * oops x 4. when will i ever learn?
-	   ! BBS/MELIX/Group.pm
-____________________________________________________________________________
-[  1729] By: autrijus                              on 2001/09/05  12:47:44
-        Log: * oops x 3.
-	   ! BBS/MELIX/Group.pm
-____________________________________________________________________________
-[  1728] By: autrijus                              on 2001/09/05  11:55:50
-        Log: * gives SYSOP more permission than needed.
-	   ! BBS/MAPLE3/ArticleGroup.pm
-____________________________________________________________________________
-[  1727] By: autrijus                              on 2001/09/05  11:55:40
-        Log: * fixes CVIC group; the original was broken beyond doubt
-	   ! BBS/CVIC/Group.pm BBS/CVIC/GroupGroup.pm
-____________________________________________________________________________
-[  1724] By: autrijus                              on 2001/09/05  08:55:02
-        Log: * oops. oops.
-	   ! BBS/MELIX/Group.pm
-____________________________________________________________________________
-[  1723] By: autrijus                              on 2001/09/05  08:50:45
-        Log: * oops.
-	   ! BBS/MELIX/Group.pm
-____________________________________________________________________________
-[  1719] By: autrijus                              on 2001/09/05  07:35:48
-        Log: * retract regex compliation; corrupts multiple BBSAgents (smartboy)
-	   ! BBS/BBSAgent/Article.pm
-____________________________________________________________________________
-[  1715] By: autrijus                              on 2001/09/04  15:21:55
-        Log: * the user id should be checked using method.
-             * Permission cache was broken; should cache against perm instead
-	   ! BBS/CVIC/Board.pm BBS/Server.pm
-____________________________________________________________________________
-[  1714] By: autrijus                              on 2001/09/04  15:00:36
-        Log: * yasb. i shall sleep.
-	   ! BBS/CVIC/Board.pm
-____________________________________________________________________________
-[  1713] By: autrijus                              on 2001/09/04  14:43:04
-        Log: * secret boards won't allow evyerbody to sync archives.
-	   ! BBS/CVIC/Board.pm
-____________________________________________________________________________
-[  1712] By: autrijus                              on 2001/09/04  13:46:47
-        Log: * the dir thing could trigger warnings
-	   ! BBS/MAPLE3/ArticleGroup.pm
-____________________________________________________________________________
-[  1706] By: autrijus                              on 2001/09/04  13:27:10
-        Log: * the CVIC read-only, all-forbidding permission model.
-	   ! BBS/CVIC/Article.pm BBS/CVIC/ArticleGroup.pm BBS/CVIC/BBS.pm
-	   ! BBS/CVIC/Board.pm BBS/CVIC/BoardGroup.pm BBS/CVIC/FileGroup.pm
-	   ! BBS/CVIC/Group.pm BBS/CVIC/GroupGroup.pm BBS/CVIC/Session.pm
-	   ! BBS/CVIC/SessionGroup.pm BBS/CVIC/User.pm
-	   ! BBS/CVIC/UserGroup.pm
-____________________________________________________________________________
-[  1703] By: autrijus                              on 2001/09/04  08:06:39
-        Log: * avoids warnings
-	   ! BBS/MAPLE2/Article.pm
-____________________________________________________________________________
-[  1701] By: autrijus                              on 2001/09/04  07:56:36
-        Log: * chomp the archive sigil. yes, this is final.
-	   ! BBS/MAPLE2/Article.pm
-____________________________________________________________________________
-[  1700] By: autrijus                              on 2001/09/04  07:48:58
-        Log: * btime wasn't refreshed properly
-	   ! BBS/MAPLE2/ArticleGroup.pm BBS/MAPLE3/ArticleGroup.pm
-____________________________________________________________________________
-[  1699] By: autrijus                              on 2001/09/04  05:58:08
-        Log: * another nitpick
-	   ! BBS.pm
-____________________________________________________________________________
-[  1698] By: autrijus                              on 2001/09/04  05:55:10
-        Log: * some truly pedantic style nitpicks
-	   ! BBS.pm BBS/Base.pm BBS/CVIC/Board.pm BBS/CVIC/Session.pm
-	   ! BBS/CVIC/User.pm BBS/RAM/BoardGroup.pm
-____________________________________________________________________________
-[  1686] By: autrijus                              on 2001/09/03  08:13:57
-        Log: * changes.
-	   ! Changes
+[    12] By: clkao                                 on 2002/06/12  23:27:09
+        Log: better access model for MELIX::Group
+	   ! BBS/MELIX/Group.pm BBS/MELIX/GroupGroup.pm

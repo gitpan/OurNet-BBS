@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
-# $File: //depot/OurNet-BBS/t/5-BBSAgent.t $ $Author: autrijus $
-# $Revision: #8 $ $Change: 2993 $ $DateTime: 2002/02/04 13:55:33 $
+# $File: //depot/libOurNet/BBS/t/5-BBSAgent.t $ $Author: autrijus $
+# $Revision: #1 $ $Change: 1 $ $DateTime: 2002/06/11 15:35:12 $
 
 use strict;
 my ($addr, %sites);
