@@ -196,7 +196,9 @@ sub refresh_meta {
 
     return if $self->{mtime} and stat($file)->mtime == $self->{mtime};
     $self->{mtime} = stat($file)->mtime;
-    print "!! reload all articles in ag\n";
+
+    print "!! reload all articles in ag\n" if $OurNet::BBS::DEBUG;
+
     $self->{_phash}[0] = fields::phash(map {
         my (%param, %foo);
         seek DIR, $packsize * ($_), 0;

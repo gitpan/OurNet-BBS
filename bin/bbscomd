@@ -1,19 +1,66 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
+
+$VERSION = '1.52';
+
+=head1 NAME
+
+bbscomd - PlClient remote access daemon
+
+=head1 SYNOPSIS
+
+    % bbscomd [-p port] [-f] MELIX /home/melix
+
+=head1 DESCRIPTION
+
+The bbscomd starts a L<OurNet::BBS::PlServer> daemon listening on 
+the specified port (default 7978). Remote users could then start
+using L<OurNet::BBS::PlClient> to connect, e.g.:
+
+    use OurNet::BBS;
+    use OurNet::BBS::PlClient;
+
+    my $Remote_BBS = OurNet::BBS::PlClient('remote.org');
+
+If the C<-f> flag is specified, bbscomd will fork a new process
+to run as daemon.
+
+Please refer to L<OurNet::BBS> modules for more information on
+usages.
+
+=cut
+
 use strict;
 use OurNet::BBS;
 use OurNet::BBS::PlClient;
 use Getopt::Std;
-use Carp;
 
 my %opt;
-getopts(':ps', \%opt);
+getopts(':pf', \%opt);
 
-my $port = $opt{p} || 7978;
 die "Usage: $0 <backend> <args>\n" unless @ARGV;
-my $BBS = OurNet::BBS->new(@ARGV) or die "Cannot connect to BBS: @ARGV\n";
 
+my $BBS = OurNet::BBS->new(@ARGV) 
+    or die "Cannot link to BBS: @ARGV\n";
 
-if ($opt{s} or !fork()) {
-    print "\nBBSCOM Daemon starting at port $port.\n";
-    $BBS->daemonize($port) or die "Failed to daemonize: $!\n";
+if (!$opt{f} or !fork()) {
+    print "BBSCOM Daemon starting...\n";
+
+    $BBS->daemonize($opt{p} || 7978) 
+	or die "Failed to daemonize: $!\n";
 }
+
+__END__
+
+=head1 AUTHORS
+
+Autrijus Tang E<lt>autrijus@autrijus.org>
+
+=head1 COPYRIGHT
+
+Copyright 2001 by Autrijus Tang E<lt>autrijus@autrijus.org>.
+
+All rights reserved.  You can redistribute and/or modify
+this module under the same terms as Perl itself.
+
+=cut
+

@@ -3,15 +3,21 @@
 use strict;
 use Test;
 use File::Path;
+use File::Temp;
 
-BEGIN { plan tests => 5 }
+BEGIN { 
+    plan tests => ($^O =~ /Win32/ ? 1 : 5);
+}
 
 use OurNet::BBS;
 use OurNet::BBS::PlClient;
 
 ok(1);
 
-my $prefix = "/tmp/".rand();
+exit if $^O =~ /Win32/;
+
+my $prefix = File::Temp::tempdir();
+my $count = 0; # sleep count
 
 mkpath(["$prefix/boards", "$prefix/group", "$prefix/man/boards"])
     or die "Cannot make $prefix";
@@ -20,41 +26,45 @@ open(BOARDS, ">$prefix/.BOARDS") or die "Cannot make $prefix/.BOARDS: $!";
 close BOARDS;
 
 if (fork()) {
-    my $BBS;
-    ok($BBS = OurNet::BBS->new('MAPLE2', $prefix));
+    ok(my $BBS = OurNet::BBS->new('MAPLE2', $prefix));
 
     # make a board...
     my $brd = $BBS->{boards}{test} = {
 	title => 'test board',
 	bm    => 'sysop',
     };
-    my $pid;
+
+    # set an article...
     push @{$brd->{articles}}, {
-        title => 1, author => 2, body => 3
+        title  => 'title',
+        author => 'author', 
+        body   => 'body',
     };
-    unless ($pid = fork()) {
-        $brd->daemonize(2000);
-    }
-    my $count = 0;
-    while ($count++ < 5 and $brd->{articles}[1]{title} eq '1') {
+
+    $brd->daemonize() 
+	unless my $pid = fork();
+
+    while ($count++ < 5 and $brd->{articles}[1]{title} eq 'title') {
        sleep 1;
     }
+
     ok(kill(1, $pid));
     ok($brd->{bm}, $brd->{title});
-    ok($brd->{articles}[1]{title}, 'elephant');
+    ok($brd->{articles}[1]{title}, 'new title');
 
-    rmtree($prefix);
-
-} else {
-    my $count = 0;
+    rmtree($prefix, 0, 1);
+} 
+else {
     while ($count++ < 5 and not -e "$prefix/boards/test/.DIR") {
         sleep 1;
     }
-    my $brd = OurNet::BBS::PlClient->new('localhost', 2000);
-    sleep 1;
+
+    my $brd = OurNet::BBS::PlClient->new('localhost');
+
     $brd->{bm} = $brd->{title};
     sleep 1;
+
     my $art = $brd->{articles};
-    $art->[1]{title} = "elephant";
+    $art->[1]{title} = 'new title';
 }
 

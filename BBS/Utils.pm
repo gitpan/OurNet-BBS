@@ -23,14 +23,20 @@ sub deltree {
 }
 
 sub locate {
-    my $path = (caller)[0];
-    my $file = $_[0];
+    my ($file, $path) = @_;
+
+    print "[@_]\n";
+    
+    unless ($path) {
+	$path = (caller)[0];
+	$path =~ s|::\w+$||;
+    }
 
     $path =~ s|::|/|g;
-    $path =~ s|/\w+$||;
 
     unless (-e $file) {
         foreach my $inc (@INC) {
+	    print "$inc/$path/$_[0]\n";
             last if -e ($file = join('/', $inc, $_[0]));
             last if -e ($file = join('/', $inc, $path, $_[0]));
         }

@@ -1,7 +1,7 @@
 package OurNet::BBS;
 require 5.005;
 
-$OurNet::BBS::VERSION = "1.51";
+$OurNet::BBS::VERSION = "1.52";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -48,7 +48,8 @@ OurNet::BBS - Component Object Model for BBS systems
         sleep 5 until ($brd->{articles}->refresh);
     
         foreach my $article (@{$brd->{articles}}[1..$#{$brd->{articles}}]) {
-        	print "Found article: $article->{title}\n" if $article->btime > $mtime;
+            print "Found article: $article->{title}\n" 
+		if $article->btime > $mtime;
         }
     
         $mtime = $brd->{articles}->mtime;
@@ -120,8 +121,8 @@ Autrijus Tang E<lt>autrijus@autrijus.org>
 
 =head1 COPYRIGHT
 
-Copyright 2001 by Autrijus Tang E<lt>autrijus@autrijus.org>,
-                  Chia-Liang Kao E<lt>clkao@clkao.org>.
+Copyright 2001 by Chia-Liang Kao E<lt>clkao@clkao.org>,
+		  Autrijus Tang E<lt>autrijus@autrijus.org>.
 
 All rights reserved.  You can redistribute and/or modify
 this module under the same terms as Perl itself.

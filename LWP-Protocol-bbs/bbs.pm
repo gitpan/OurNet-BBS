@@ -1,7 +1,7 @@
 package LWP::Protocol::bbs;
 require 5.005;
 
-$LWP::Protocol::bbs::VERSION = '1.5';
+$LWP::Protocol::bbs::VERSION = '1.52';
 
 use strict;
 

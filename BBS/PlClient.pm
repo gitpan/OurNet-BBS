@@ -48,7 +48,7 @@ sub TIEHASH {
         $self->{id} = 1 + scalar @delegators; # 1 more than max
         $delegators[$self->{id}] = RPC::PlClient->new(
             'peeraddr'    => shift,
-            'peerport'    => shift,
+            'peerport'    => shift || 2000,
             'application' => 'OurNet::BBS::PlServer',
             'version'     => $VERSION,
             'username'    => shift,

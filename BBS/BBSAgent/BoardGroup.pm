@@ -35,7 +35,8 @@ sub sanity_test {
     } keys(%{$vars}); # gets sanity_board_* variables
 
     my $rec = delete($var{rec}) || 1;
-	print "Sanity testing: board $brd, rec $rec\n" if $OurNet::BBS::DEBUG;
+
+    print "Sanity testing: board $brd, rec $rec\n" if $OurNet::BBS::DEBUG;
     my $art = $self->{$brd}{articles}[$rec] or return;
 
     while (my ($k, $v) = each %var) {
@@ -57,15 +58,13 @@ sub load_bbsobj {
     $bbsname ||= $self->{bbsroot};
     $bbsname .= ".bbs" unless $bbsname =~ /\.bbs$/;
 
-    # XXX hack, fixme
-	my $bbsobj = OurNet::BBSAgent->new(OurNet::BBS::Utils::locate(
-	    $bbsname,
-    ) || OurNet::BBS::Utils::locate(
-        "../../BBSAgent/$bbsname",
-    ), $Timeout);
+    my $bbsobj = OurNet::BBSAgent->new(
+	OurNet::BBS::Utils::locate($bbsname, 'OurNet::BBSAgent'),
+        $Timeout
+    );
 
-	print "$bbsname loaded\n" if $OurNet::BBS::DEBUG;
-	return $bbsobj if $nologin;
+    print "$bbsname loaded\n" if $OurNet::BBS::DEBUG;
+    return $bbsobj if $nologin;
 
     $self->{bbsobj} = $bbsobj;
     $self->{bbsobj}{debug} = $OurNet::BBS::DEBUG;

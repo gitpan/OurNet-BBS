@@ -7,19 +7,20 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     AUTHOR          => 'Autrijus Tang (autrijus@autrijus.org)',
     ABSTRACT        => 'Component Object Model for BBS systems',
-	NAME            => 'OurNet::BBS',
-	VERSION_FROM    => 'BBS.pm',
+    NAME            => 'OurNet::BBS',
+    VERSION_FROM    => 'BBS.pm',
     DISTNAME        => 'OurNet-BBS',
     BINARY_LOCATION => 'x86/OurNet-BBS.tar.gz',
 
     PREREQ_PM       => {
-		'RPC::PlClient'    => '0.2012',     # BBSCOM
-        'Mail::Address'    => '1.17',       # BBSCOM
-        'Date::Parse'      => '2.20',       # BBSCOM
-		'Digest::MD5'      => '2.13',       # BBSCOM
-		'Net::NNTP'        => '2.19',       # NNTP backend
-		'LWP'              => '5.00',       # LWP-BBS
-		'OurNet::BBSAgent' => '1.5',        # BBSAgent backend
+	'RPC::PlClient'		=> '0.2012',     # BBSCOM
+        'Mail::Address'		=> '1.17',       # BBSCOM
+        'Date::Parse'		=> '2.20',       # BBSCOM
+	'Digest::MD5'		=> '2.13',       # BBSCOM
+	'Net::NNTP'		=> '2.19',       # NNTP backend
+	'LWP'			=> '5.00',       # LWP-BBS
+	'OurNet::BBSAgent'	=> '1.5',        # BBSAgent backend
+	'File::Temp'		=> '0.12',       # test scripts
     },
 
     EXE_FILES       => [ <bin/*> ],
