@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Client.pm $ $Author: autrijus $
-# $Revision: #21 $ $Change: 1581 $ $DateTime: 2001/08/28 07:27:35 $
+# $Revision: #23 $ $Change: 1889 $ $DateTime: 2001/09/23 22:31:24 $
 
 package OurNet::BBS::Client;
 
@@ -32,7 +32,7 @@ use enum qw/id remote_ref optree/;
 use enum qw/BITMASK:CIPHER_ NONE BASIC PGP/;
 use enum qw/BITMASK:AUTH_   NONE CRYPT PGP/;
 
-our ($AUTOLOAD, $Port);
+our ($AUTOLOAD, $Port, $NoCache);
 
 $Port = 7979;
 
@@ -59,19 +59,28 @@ sub _spawn {
 }
 
 sub new {
-    my ($class, $peeraddr, $peerport, 
-	$keyid, $user, $pass, $cipher_level, $auth_level) = @_; 
-
+    my $class    = shift;
+    my $peeraddr = shift;
+    my $peerport = shift || $Port;
     my $self = [];
 
     $self->[id] = scalar @delegators; # 1 more than max
 
     $delegators[$self->[id]] = RPC::PlClient->new(
 	peeraddr    => $peeraddr,
-	peerport    => $peerport || $Port,
+	peerport    => $peerport,
 	application => 'OurNet::BBS::Server',
 	version     => $OurNet::BBS::Authen::VERSION,
     )->ClientObject('__', 'spawn');
+
+    my $obj = bless(\[$self, \%obj, \@obj, \$code, \$glob, 'OBJECT_'], $class);
+
+    return $obj->init(@_);
+}
+
+sub init {
+    my ($obj, $keyid, $user, $pass, $cipher_level, $auth_level) = @_; 
+    my $self = ${$obj}->[0];
 
     my $client = $delegators[$self->[id]];
 
@@ -96,8 +105,8 @@ sub new {
     }
 
     show("done!\n");
-    
-    return bless(\[$self, \%obj, \@obj, \$code, \$glob, 'OBJECT_'], $class);
+
+    return $obj; 
 }
 
 sub negotiate_locate {
@@ -318,7 +327,8 @@ sub AUTOLOAD {
     );
 
     if (@result == 4 and !$result[0] and my $opcode = $result[1]) {
-        return ($Cache{$result[2]} ||= _spawn(@result[2, 3]))
+        return ($NoCache ? _spawn(@result[2, 3])
+			 : ($Cache{$result[2]} ||= _spawn(@result[2, 3])))
 	    if $OP->{$opcode} eq 'OBJECT_SPAWN';
 
 	return @result if $OP->{$opcode} eq 'STATUS_IGNORED';

@@ -1,5 +1,5 @@
-# $File: //depot/OurNet-BBS/BBS/BBSAgent/Article.pm $ $Author: autrijus $
-# $Revision: #13 $ $Change: 1542 $ $DateTime: 2001/08/19 03:33:19 $
+# $File: //depot/OurNet-BBS/BBS/BBSAgent/Article.pm $ $Author: clkao $
+# $Revision: #16 $ $Change: 1747 $ $DateTime: 2001/09/08 02:48:31 $
 
 package OurNet::BBS::BBSAgent::Article;
 
@@ -35,20 +35,22 @@ sub refresh_meta {
 	return if $self->{_hash}{header}; # already exists
 
         my ($head, $body) = split(
-	    /$var{separator}/o, $self->_fetch_body, 2
+	    /$var{separator}/, $self->_fetch_body, 2
 	);
 
         $body ||= $head; # fallback unless in expected format
 
-        my $author = $head =~ m/$compiled[0]/mo ? $1 : '';
-        my $title  = $head =~ m/$compiled[1]/mo ? $1 : '';
-        my $date   = $head =~ m/$compiled[2]/mo ? $1 : '';
+        my $author = $head =~ m/$compiled[0]/m ? $1 : '';
+        my $title  = $head =~ m/$compiled[1]/m ? $1 : '';
+        my $date   = $head =~ m/$compiled[2]/m ? $1 : '';
 
 	my $nick;
 
         # special-case header munging
 
         $date = $1 if $date   =~ m/\(([^)]*)\)/;            # embedded date
+	$date =~ s/(¦~|¤ë|¤é)/\x20/g;			    # kludge
+	$date = $1 if $date =~ m/([\w\s\d:]+)/;             # strip shit
 	$nick = $1 if $author =~ s/\s?\((.*?)\)?[\s\t]*$//; # nickname
 
 	$author ||= '(unknown)';

@@ -1,11 +1,11 @@
 # $File: //depot/OurNet-BBS/BBS.pm $ $Author: autrijus $
-# $Revision: #33 $ $Change: 1685 $ $DateTime: 2001/09/03 23:10:33 $
+# $Revision: #37 $ $Change: 1914 $ $DateTime: 2001/09/28 00:57:47 $
 # Documentation at the __END__
 
 package OurNet::BBS;
 use 5.006;
 
-$OurNet::BBS::VERSION  = '1.6';
+$OurNet::BBS::VERSION  = '1.61';
 
 use strict;
 use warnings;
@@ -451,7 +451,27 @@ sydication between nodes.
 
 =over 4
 
-=item v1.6, Mon Sep  3 Mon Sep  3 23:07:36 CST 2001
+=item v1.61, Fri Sep 28 00:53:46 CST 2001
+
+Adds a read-only, experimental C<Cola> backend.
+
+Implements re-authentication for C<Server>.
+
+Bundles F<bbsboard> and F<bbsmail> utilities.
+
+The C<BBSAgent> backend now has a C<logfile> property for debugging use.
+
+Permission model and group support for C<CVIC>.
+
+Fixes various C<Base> namespace pollution bugs.
+
+Public key-based login is working now.
+
+Additional C<Server> options could be set in C<%OurNet::BBS::Server::Options>.
+
+Introduced the C<Bundle::OurNet> namespace.
+
+=item v1.6, Mon Sep  3 23:07:36 CST 2001
 
 Changed C<Server> and C<Client>'s default port from 7978 to 7979.
 
@@ -515,7 +535,7 @@ Added the HISTORY secion in manpage.
 Rewritten C<Base> to be C<overload>-based.
 
 Eliminated C<ArrayProxy> and pseudohashes.
-  
+
 Uses C<Test::More> instead of C<Test>.
 
 Improved MIME and mail address parsing regexes.
@@ -621,7 +641,7 @@ Autrijus Tang E<lt>autrijus@autrijus.org>
 =head1 COPYRIGHT
 
 Copyright 2001 by Chia-Liang Kao E<lt>clkao@clkao.org>,
-		  Autrijus Tang E<lt>autrijus@autrijus.org>.
+                  Autrijus Tang E<lt>autrijus@autrijus.org>.
 
 This program is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.

@@ -1,5 +1,4 @@
 package OurNet::BBS::RAM::UserGroup;
-$VERSION = "0.1";
 
 use strict;
 use fields qw/dbh _ego _hash _array/;

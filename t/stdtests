@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # $File: //depot/OurNet-BBS/t/stdtests $ $Author: autrijus $
-# $Revision: #18 $ $Change: 1662 $ $DateTime: 2001/09/02 05:54:09 $
+# $Revision: #19 $ $Change: 1732 $ $DateTime: 2001/09/06 07:13:05 $
 
 sub BEGIN {
     # XXX kluge against insufficient granularity on file timestamps
@@ -179,15 +179,17 @@ SKIP: {
 
 like($brd->{archives}[-1][0]{title}, qr/turandot/, 'archive: negative index');
 
+my $grp;
+
 SKIP: {
-    skip 'Group not supported for this backend', 3
+    skip 'Group not supported for this backend', 2
 	unless eval { $BBS->{groups}{home} = {
 	    owner => 'autrijus',
 	    title => 'home sweet home',
 	} };
 
     # new group
-    my $grp = $BBS->{groups}{home};
+    $grp = $BBS->{groups}{home};
 
     is(join('', keys(%{$BBS->{groups}})), 'home', 'group: keys');
 
@@ -195,6 +197,13 @@ SKIP: {
     ++$BBS->{groups}{rainbow}{home};
     is(join('', sort {$a cmp $b} keys(%{$BBS->{groups}})),
        'homerainbow', 'group: modification');
+}
+
+SKIP: {
+    skip 'Group not supported for this backend', 1 unless $grp;
+    skip 'todo: OurNet-CVIC deletion', 1
+	if $brd->isa('OurNet::BBS::Client') and $BBS->backend eq 'CVIC';
+
 
     # delete group
     delete $BBS->{groups}{home};

@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/CVIC/GroupGroup.pm $ $Author: autrijus $
-# $Revision: #8 $ $Change: 1600 $ $DateTime: 2001/08/29 23:35:16 $
+# $Revision: #12 $ $Change: 1732 $ $DateTime: 2001/09/06 07:13:05 $
 
 package OurNet::BBS::CVIC::GroupGroup;
 
@@ -7,12 +7,12 @@ use strict;
 use fields qw/bbsroot bbsego mtime _ego _hash/;
 use OurNet::BBS::Base;
 
-sub _brdobj {
-    my $brds = ${${$_[0]->{bbsego}}->[0]{_hash}{boards}}->[0];
-    $brds->refresh_meta($_[1], HASH);
-    $brds = $brds->{_hash}{$_[0]};
+sub writeok { 0 };
+sub readok { 1 };
 
-    return $brds ? ${$brds}->[0]{hash} : {};
+sub _brdobj {
+    my $brd = $_[0]{bbsego}{boards}{$_[1]};
+    return $brd || {};
 }
 
 # Fetch key: id savemode author date title filemode body
@@ -21,7 +21,7 @@ sub refresh_meta {
     my $file = "$self->{bbsroot}/group";
 
     return $self->{_hash}{$key} ||= $self->module('Group')->new(
-	$self->{bbsroot}, $self->_brdobj($key), $key
+	@{$self}{qw/bbsroot bbsego/}, $self->_brdobj($key), $key,
     ) if defined $key;
 
     return if $self->filestamp($file);
@@ -29,7 +29,7 @@ sub refresh_meta {
     opendir my $DIR, $file or die "can't read group file $file: $!";
     %{$self->{_hash}} = map {
         ($_, $self->module('Group')->new(
-	    $self->{bbsroot}, $self->_brdobj($_), $_)
+	    @{$self}{qw/bbsroot bbsego/}, $self->_brdobj($_), $_)
 	);
     } grep {
         /^[^\.]/;

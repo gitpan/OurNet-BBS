@@ -1,7 +1,7 @@
-# $File: //depot/OurNet-BBS/BBS/CVIC/Board.pm $ $Author: autrijus $
-# $Revision: #8 $ $Change: 1715 $ $DateTime: 2001/09/05 06:21:55 $
+# $File: //depot/OurNet-BBS/BBS/Cola/Board.pm $ $Author: autrijus $
+# $Revision: #1 $ $Change: 1825 $ $DateTime: 2001/09/16 21:27:34 $
 
-package OurNet::BBS::CVIC::Board;
+package OurNet::BBS::Cola::Board;
 
 use strict;
 use base qw/OurNet::BBS::MAPLE2::Board/;
@@ -14,7 +14,6 @@ sub readok {
     my ($self, $user, $op, $param) = @_;
     my $id = quotemeta($user->id);
 
-    return if $self->{access} and $self->{access} !~ /\b$id\b/s;
     return ($self->{bm} =~ /\b$id\b/s) if $param->[0] eq 'archives';
 
     return 1;

@@ -1,5 +1,4 @@
 package OurNet::BBS::RAM::User;
-$VERSION = "0.1";
 
 use strict;
 use fields qw/dbh id recno _ego _hash/;

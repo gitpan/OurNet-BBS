@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Server.pm $ $Author: autrijus $
-# $Revision: #38 $ $Change: 1628 $ $DateTime: 2001/08/31 03:47:07 $
+# $Revision: #44 $ $Change: 1913 $ $DateTime: 2001/09/28 00:49:16 $
 
 package OurNet::BBS::Server;
 
@@ -7,7 +7,7 @@ use strict;
 use OurNet::BBS::Authen;
 use base qw/RPC::PlServer/;
 
-our ($Port, $Mode, $Childs, $LocalAddr);
+our ($Port, $Mode, $Childs, $LocalAddr, %Options);
 
 $OurNet::BBS::Server::VERSION = $OurNet::BBS::Authen::VERSION; 
 
@@ -15,6 +15,11 @@ $Port      = 7979;
 $Mode      = 'fork';
 $Childs    = undef; # max. concurrent connections.
 $LocalAddr = 'localhost';
+%Options   = ();
+
+sub Loop {
+    $_[0]->{done} = 1;
+}
 
 sub daemonize {
     my ($class, $root, $port) = splice(@_, 0, 3);
@@ -26,6 +31,7 @@ sub daemonize {
         facility    => 'daemon', # Default
 	localaddr   => $LocalAddr,
         localport   => $port || $Port,
+        options     => \%Options,
         methods     => {
 	    'OurNet::BBS::Server' => {
 		## Default ##########
@@ -142,6 +148,7 @@ sub daemonize {
     show("[Server] OurNet service started.\n");
 
     $Server->Bind;
+    return $Server;
 }
 
 ## Initialization #####################################################
@@ -154,6 +161,8 @@ sub handshake {
     my ($self, $cipher_level, $auth_level) = @_;
 
     nextstate('get_suites', 'get_pubkey', 'cipher_none');
+    $Server->{methods}{__}{handshake} = 1; # allows re-authenticate
+
     return ($CipherLevel & $cipher_level, $AuthLevel & $auth_level);
 }
 
@@ -228,8 +237,7 @@ sub auth_pgp {
 
     show("[Server] $login: login");
 
-    $Auth->{user}  = $ROOT->{users}{$login} 
-	or return $OP->{STATUS_NO_USER};
+    $Auth->{user}  = $ROOT->{users}{$login} or return $OP->{STATUS_NO_USER};
     $Auth->{login} = $login;
 
     my $plan = ($Auth->{user})->{plans} || '';
@@ -262,7 +270,7 @@ sub set_pubkey {
 
     $Auth->import_key($pubkey);
 
-    if ($pubkey eq $Auth->export_key) {
+    if (compare_keys($pubkey, $Auth->export_key)) {
 	$Auth->{user}{pubkey} = $pubkey or return;
 	nextstate('set_sign');
 	return ($Auth->{challenge} = md5_hex(rand));
@@ -272,6 +280,16 @@ sub set_pubkey {
 	nextstate();
 	return $OP->{STATUS_BAD_PUBKEY};
     }
+}
+
+sub compare_keys {
+    my ($key1, $key2) = @_;
+
+    # strip version info
+    $key1 =~ s/.*\n\n+//s; 
+    $key2 =~ s/.*\n\n+//s;
+
+    return ($key1 eq $key2);
 }
 
 sub set_sign {
@@ -390,20 +408,6 @@ sub __ {
 	    return('', $OP->{STATUS_IGNORED}, $action, '');
 	}
 
-	if (not $Perm{"$obj $op"} and $Auth->{user}
-	    and substr(ref($obj), 0, 11) eq 'OurNet::BBS'
-	) {
-	    return (
-		'', $OP->{STATUS_FORBIDDEN}, $action, "not permitted: $obj"
-	    ) unless (
-		(index(OP_WRITE, " $action ") > -1)
-		    ? $obj->writeok($Auth->{user}, $action, $param)
-		    : $obj->readok($Auth->{user}, $action, $param)
-	    );
-
-	    $Perm{"$obj $op"} = 1;
-	}
-
         if ($op =~ m/^OBJECT_/) {
 	    return { %{$obj} } if $action eq 'SPAWN';
 	    return ref($obj)   if $action eq 'REF';
@@ -411,6 +415,21 @@ sub __ {
             my @ret = $obj->$action(@{$param});
             $obj = $ret[0] and next unless $#ret; 
             return @ret; # return unless single arg
+	}
+
+	if (not $Perm{"$obj $op $param->[0]"} and $Auth->{user}
+	    and substr(ref($obj), 0, 11) eq 'OurNet::BBS'
+	) {
+	    return (
+		'', $OP->{STATUS_FORBIDDEN}, $action,
+		"not permitted: $obj $op $param->[0]",
+	    ) unless (
+		(index(OP_WRITE, " $action ") > -1)
+		    ? $obj->writeok($Auth->{user}, $action, $param)
+		    : $obj->readok($Auth->{user}, $action, $param)
+	    );
+
+	    $Perm{"$obj $op $param->[0]"} = 1;
 	}
 
         my $arg = $param->[0] if @{$param};
@@ -505,8 +524,6 @@ sub show {
 
 sub nextstate {
     my $caller = substr((caller(1))[3], 4); # subroutine name
-
-    # show("|$caller") if @_;
 
     $Server->{methods}{__}{$caller} = 0;
     $Server->{methods}{__}{$_} = 1 foreach @_;

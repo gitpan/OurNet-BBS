@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/CVIC/BBS.pm $ $Author: autrijus $
-# $Revision: #4 $ $Change: 1595 $ $DateTime: 2001/08/29 20:28:55 $
+# $Revision: #5 $ $Change: 1706 $ $DateTime: 2001/09/05 04:27:10 $
 
 package OurNet::BBS::CVIC::BBS;
 

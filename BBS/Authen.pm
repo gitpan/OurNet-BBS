@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Authen.pm $ $Author: autrijus $
-# $Revision: #18 $ $Change: 1526 $ $DateTime: 2001/08/17 22:51:14 $
+# $Revision: #19 $ $Change: 1912 $ $DateTime: 2001/09/28 00:39:17 $
 
 package OurNet::BBS::Authen;
 $OurNet::BBS::Authen::VERSION = '0.3';
@@ -64,7 +64,7 @@ sub new {
 sub export_key {
     my $self = shift;
 
-    return `gpg --armor --export $self->{keyid}`;
+    return scalar `gpg --armor --export $self->{keyid}`;
 }
 
 sub test {

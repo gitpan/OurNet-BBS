@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/Article.pm $ $Author: autrijus $
-# $Revision: #23 $ $Change: 1649 $ $DateTime: 2001/09/01 21:07:24 $
+# $Revision: #27 $ $Change: 1883 $ $DateTime: 2001/09/21 09:37:13 $
 
 package OurNet::BBS::MAPLE2::Article;
 
@@ -8,8 +8,9 @@ use warnings;
 use fields qw/bbsroot board basepath name dir recno mtime btime _ego _hash/;
 
 use OurNet::BBS::Base (
-    'ArticleGroup' => [qw/$packsize $packstring @packlist/],
+    'ArticleGroup' => [qw/$packsize $namestring $packstring @packlist/],
     'Board'	   => [qw/&remove_entry/],
+    '$HEAD_REGEX'  => qr/作者: ([^ \(]+)\s?(?:\((.+?)\) )?[^\n]*\n標題: (.*)\n時間: (.+)\n\n/,
 );
 
 my %chronos;
@@ -75,13 +76,16 @@ sub _refresh_body {
     my ($from, $title, $date);
 
     if ($self->{_hash}{body} =~ 
-	s/^作者: ([^ \(]+)\s?(?:\((.+?)\) )?[^\n]*\n標題: (.*)\n時間: (.+)\n\n//
+	s/$HEAD_REGEX//
     ) {
         ($from, $self->{_hash}{nick}, $title, $date) = ($1, $2, $3, $4);
     }
     else {
         $self->refresh_meta;
     }
+
+    $self->{_hash}{title} =~ s/^◇ //
+	if $self->{dir} and $self->{_hash}{title};
 
     $self->{_hash}{header} = {
         From	=> ($from || $self->{_hash}{author}) .

@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/ArticleGroup.pm $ $Author: autrijus $
-# $Revision: #15 $ $Change: 1600 $ $DateTime: 2001/08/29 23:35:16 $
+# $Revision: #20 $ $Change: 1883 $ $DateTime: 2001/09/21 09:37:13 $
 
 package OurNet::BBS::MAPLE2::ArticleGroup;
 
@@ -10,6 +10,7 @@ use fields qw/bbsroot board basepath name dir recno mtime btime/,
 
 use OurNet::BBS::Base (
     '$packstring'    => 'Z33Z1Z14Z6Z73C',
+    '$namestring'    => 'Z33',
     '$packsize'      => 128,
     '@packlist'      => [qw/id savemode author date title filemode/],
 );
@@ -118,12 +119,8 @@ sub refresh_meta {
     my $file = join('/', $self->basedir, $self->{name}, '.DIR');
     my $name;
 
-    if ($self->contains($key) or $key eq 'recno' or $key eq 'btime') {
-        goto &refresh_id;
-    }
-    elsif (!defined($key) and $self->{dir}) {
-        $self->refresh_id;
-    }
+    goto &refresh_id if $self->contains($key);
+    $self->refresh_id if (!defined($key) and $self->{dir});
 
     if ($key and $flag == HASH) {
         # hash key -- no recaching needed
@@ -151,8 +148,8 @@ sub refresh_meta {
         return if $key < 0 or $key >= int((stat($file))[7] / $packsize);
 
         seek $DIR, $packsize * $key, 0;
-        read $DIR, $name, 33;
-        $name = unpack('Z33', $name);
+        read $DIR, $name, $packsize;
+        $name = unpack($namestring, $name);
 
         return if exists $self->{_hash}{$name}
 		and $self->{_hash}{$name}== $self->{_array}[$key];
@@ -179,7 +176,7 @@ sub refresh_meta {
 
     foreach my $key (0 .. int((stat($file))[7] / $packsize) - 1) {
         read $DIR, $name, $packsize;
-        $name = unpack('Z33x95', $name);
+        $name = unpack($namestring, $name);
 
         # return the thing
         $self->{_hash}{$name} = $self->{_array}[$key] = $self->module(
@@ -284,9 +281,8 @@ sub EXISTS {
     my $board;
 
     foreach (0 .. int((stat($file))[7] / $packsize)-1) {
-        seek $DIR, $packsize * $_, 0;
-        read $DIR, $board, 33;
-        return 1 if unpack('Z33', $board) eq $key;
+        read $DIR, $board, $packsize;
+        return 1 if unpack($namestring, $board) eq $key;
     }
 
     close $DIR;

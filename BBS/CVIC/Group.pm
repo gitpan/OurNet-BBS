@@ -1,11 +1,16 @@
 # $File: //depot/OurNet-BBS/BBS/CVIC/Group.pm $ $Author: autrijus $
-# $Revision: #10 $ $Change: 1600 $ $DateTime: 2001/08/29 23:35:16 $
+# $Revision: #13 $ $Change: 1731 $ $DateTime: 2001/09/06 06:35:39 $
 
 package OurNet::BBS::CVIC::Group;
 
 use strict;
-use fields qw/bbsroot brdobj group mtime _ego _hash/;
-use OurNet::BBS::Base;
+use fields qw/bbsroot bbsego brdobj group mtime _ego _hash/;
+use OurNet::BBS::Base (
+    'GroupGroup' => [qw/&_brdobj/],
+);
+
+sub writeok { 0 };
+sub readok { 1 };
 
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
@@ -16,11 +21,11 @@ sub refresh_meta {
     if (!$key or index(' owner title id ', " $key ") > -1) {
 	@{$self->{_hash}}{qw/owner title id/} = 
 	    @{$self->{brdobj}}{qw/bm title id/};
-	return 1 unless $key;
+	return 1 if $key;
     }
 
     my $file = "$self->{bbsroot}/group/$self->{group}";
-    return if $self->filestamp($file);
+    # return if $self->filestamp($file);
 
     my $GROUP;
     open($GROUP, $file) or open($GROUP, '+>>', $file)
@@ -30,34 +35,31 @@ sub refresh_meta {
 
     while ($key = <$GROUP>) {
         $key = $1 if $key =~ m/([\w\-\.]+)/;
-	delete $remain{$key};
-        next if exists $self->{_hash}{$key};
 
         if (-e "$self->{bbsroot}/group/$key") {
             $self->{_hash}{$key} = $self->module('Group')->new(
-                @{$self}{qw/bbsroot bbsego/}, $key
+                @{$self}{qw/bbsroot bbsego/}, $self->_brdobj($key), $key,
             );
+	    delete $remain{$key};
         }
         elsif (substr($key, 0, 1) eq '+' and
                -e "$self->{bbsroot}/group/".($key = substr($key, 1))) {
             %{$self->{_hash}} = (
-                %{$self->{_hash}},
                 %{$self->module('Group')->new( 
-		    @{$self}{qw/bbsroot bbsego/}, $key
+		    @{$self}{qw/bbsroot bbsego/}, $self->_brdobj($key), $key
 		)},
+                %{$self->{_hash}},
             );
         }
         elsif (-e "$self->{bbsroot}/boards/$key/.DIR") {
             $self->{_hash}{$key} = $self->module('Board')->new(
-                @{$self}{qw/bbsroot bbsego/}, $key
+                $self->{bbsroot}, $key,
             );
+	    delete $remain{$key};
         }
     }
 
-    foreach my $del (keys(%remain)) {
-	delete $self->{_hash}{$del};
-    }
-
+    delete @{$self->{_hash}}{keys(%remain)};
     close $GROUP;
 }
 

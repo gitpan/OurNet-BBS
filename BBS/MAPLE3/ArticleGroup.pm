@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/ArticleGroup.pm $ $Author: autrijus $
-# $Revision: #26 $ $Change: 1606 $ $DateTime: 2001/08/30 02:35:36 $
+# $Revision: #33 $ $Change: 1815 $ $DateTime: 2001/09/15 03:48:40 $
 
 package OurNet::BBS::MAPLE3::ArticleGroup;
 
@@ -59,7 +59,8 @@ sub readok {
 
     my $readlevel = $self->readlevel;
 
-    return ($self->bm eq $user->id) if $readlevel == -1; # mailbox
+    return ($user->has_perm('PERM_SYSOP') or $self->bm eq $user->id)
+	if $readlevel == -1; # mailbox
     return (!$readlevel or $readlevel & $user->{userlevel});
 }
 
@@ -98,6 +99,10 @@ sub new_id {
 
         $chrono = ++$chronos{$self->{board}};
     }
+
+    # make storage subdir if not exist
+    my $path = $1 if $fname =~ m|^(.+)/|;
+    mkdir $path unless -d $path;
 
     open(my $BODY, '>', $fname) or die "cannot open $fname";
     close $BODY;
@@ -245,6 +250,7 @@ sub _insert($$) {
     return if exists $self->{_hash}{$name}
 	 	 and $self->{_hash}{$name} == $self->{_array}[$key];
 
+    no warnings 'uninitialized';
     $self->{_hash}{$name} = $self->{_array}[$key] = (
 	$entry{xmode} & POST_DELETE
     ) ? undef : $self->module(
@@ -255,6 +261,7 @@ sub _insert($$) {
 	name		=> $name,
 	hdrfile		=> $self->{idxfile},
 	recno		=> $key,
+	dir		=> "$self->{dir}/$self->{name}",
 	($entry{xmode} & GEM_FOLDER) ? (
 	    idxfile	=> substr($entry{id}, -1) . "/$entry{id}"
 	) : (),

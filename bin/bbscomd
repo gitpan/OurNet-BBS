@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 # $File: //depot/OurNet-BBS/bin/bbscomd $ $Author: autrijus $
-# $Revision: #20 $ $Change: 1681 $ $DateTime: 2001/09/03 22:41:51 $
+# $Revision: #24 $ $Change: 1914 $ $DateTime: 2001/09/28 00:57:47 $
 
-$VERSION = '1.6';
+$VERSION = '1.61';
 $REVISION = "rev$1\[\@$2\]" 
-    if ('$Revision: #20 $ $Change: 1681 $' =~ /(\d+)[^\d]+(\d+)/);
+    if ('$Revision: #24 $ $Change: 1914 $' =~ /(\d+)[^\d]+(\d+)/);
 
 =head1 NAME
 
@@ -12,28 +12,31 @@ bbscomd - OurNet BBS Remote Access Daemon
 
 =head1 SYNOPSIS
 
-    % bbscomd [-acdfghx] [-b addr] [-p port] [-u key] <backend> <args>...
-    % bbscomd -acfg -u melix MELIX /home/melix 2997 350
+B<bbscomd> S<[ B<-acdfghx> ]> S<[ B<-b> I<addr> ]> S<[ B<-p> I<port>
+]> S<[ B<-u> I<key> ]>
+    S<I<backend> [ I<argument>... ]>
 
 =head1 DESCRIPTION
 
 The bbscomd starts a I<OurNet::BBS::Server> daemon listening on 
 the specified port (default 7979). Remote users could then start
-using I<OurNet::BBS::Client> to connect, e.g.:
+using the I<OurNet> backend or I<OurNet::BBS::Client> to connect
+like this:
 
     use OurNet::BBS;
-    my $Remote_BBS = OurNet::BBS->new('OurNet', 'remote.org');
+    my $Remote_BBS = OurNet::BBS->new(OurNet => 'remote.org');
 
 If the C<-f> flag is specified, bbscomd will fork a new process
 to run as daemon. The C<-d> flag turns on debugging.
 
 The C<-u> specifies the pgp keyid or userid used in authorization. 
-If C<-a> is supplied, the server will serve in 'authentication' 
+If C<-a> is supplied, the server will serve in the I<authenticated>
 mode with additional permission controls. Similarly, C<-c> 
 disallows insecure cipher modes.
 
-The C<-g> flag allows server to assume 'guest' on a failed
-Authentication mode, with permission controls bits.
+The C<-g> flag allows server to assume C<guest> as the user ID on
+a failed Authentication (fallback to AUTH_NONE), with corresponding
+permissions.
 
 The C<-x> flag assumes default settings on Win32. It's not meant
 to be used on other platforms.
@@ -42,20 +45,30 @@ If you don't want to bind all available IPs, specify one using
 the C<-b> flag.
 
 Please refer to L<OurNet::BBS> modules for more information on
-usages.
+usage.
+
+=head1 EXAMPLES
+
+Starting a typical MELIX daemon, require authentication, but allowing
+unpriviledged guest access:
+
+    % bbscomd -acfg -u melix MELIX /home/melix 2997 350
+
+Starting a localhost-only bridge at port 8080 to another I<OurNet>
+node, with debugging output:
+
+    % bbscomd -d -b 127.0.0.1 -p 8080 OurNet localhost
 
 =cut
 
 use strict;
 use warnings;
-use OurNet::BBS;
-use OurNet::BBS::Server;
 use Getopt::Std;
 use Term::ReadKey;
+use OurNet::BBS;
+use OurNet::BBS::Server;
 
 $|++;
-
-no warnings 'misc'; # see //depot/ebx/build/makeebx.bat for why
 
 my %args;
 
@@ -64,8 +77,8 @@ if (!@ARGV) {
 
 OurNet BBS Remote Access Daemon v$main::VERSION-$main::REVISION
 
-Usage: $0 [-acdfh] [-b addr] [-p port] [-u key] 
-       <backend> <args>...
+Usage: $0 [ -acdfghx] [-b <addr>] [-p <port>] [-u <key>] 
+       <backend> [ <argument>... ]
 
 Type '$0 -h' to see available argument and options.
 

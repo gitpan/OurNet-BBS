@@ -1,11 +1,13 @@
 # $File: //depot/OurNet-BBS/BBS/BBSAgent/ArticleGroup.pm $ $Author: autrijus $
-# $Revision: #8 $ $Change: 1571 $ $DateTime: 2001/08/27 23:45:57 $
+# $Revision: #9 $ $Change: 1839 $ $DateTime: 2001/09/18 21:08:16 $
 
 package OurNet::BBS::BBSAgent::ArticleGroup;
 
 use strict;
 use fields qw/bbsroot bbsobj board basepath article_size _ego _hash _array/;
 use OurNet::BBS::Base;
+
+my $lastpost = 0;
 
 sub refresh_meta {
     my ($self, $key, $flag) = @_;
@@ -67,6 +69,9 @@ sub STORE {
     $self->{bbsobj}->article_post_raw(
         $self->{board}, $value->{header}{Subject}, $body, $author,
     );
+
+    sleep 1 if (time - $lastpost) < 2; # avoids same-time posting
+    $lastpost = time;
 
     return 1;
 }

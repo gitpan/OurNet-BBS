@@ -1,4 +1,5 @@
-# $File: //depot/OurNet-BBS/BBS/MELIX/Group.pm $ $Author: autrijus $ # $Revision: #11 $ $Change: 1649 $ $DateTime: 2001/09/01 21:07:24 $
+# $File: //depot/OurNet-BBS/BBS/MELIX/Group.pm $ $Author: autrijus $
+# $Revision: #15 $ $Change: 1730 $ $DateTime: 2001/09/06 06:24:43 $
 
 package OurNet::BBS::MELIX::Group;
 
@@ -7,7 +8,7 @@ use fields qw/bbsroot parent recno group/,
            qw/time xmode xid id author nick date title mtime _ego _hash/;
 use OurNet::BBS::Base (
     'GroupGroup' => [
-	qw/$packstring $packsize @packlist &STORE _refresh_meta/,
+	qw/$packstring $packsize @packlist &STORE &_refresh_meta/,
 	qw/&GEM_FOLDER &GEM_BOARD &GEM_GOPHER &GEM_HTTP &GEM_EXTEND/,
     ],
     'Board'	   => [qw/&remove_entry/],

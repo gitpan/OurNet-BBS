@@ -1,11 +1,11 @@
 # $File: //depot/OurNet-BBS/BBS/BBSAgent/BBS.pm $ $Author: autrijus $
-# $Revision: #5 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
+# $Revision: #6 $ $Change: 1838 $ $DateTime: 2001/09/18 20:54:37 $
 
 package OurNet::BBS::BBSAgent::BBS;
 
 use strict;
 use base qw/OurNet::BBS/;
-use fields qw/backend bbsroot login password timeout bbsobj _ego _hash/;
+use fields qw/backend bbsroot login password timeout logfile bbsobj _ego _hash/;
 use OurNet::BBS::Base (
     '@BOARDS' => [qw/bbsroot bbsobj/],
 );
@@ -35,6 +35,7 @@ sub load_bbsobj {
     my $bbsobj = OurNet::BBSAgent->new(
 	OurNet::BBS::Utils::locate($bbsname, 'OurNet::BBSAgent'),
         $self->{timeout} ||= 10,
+        $self->{logfile},
     );
 
     return $bbsobj if $nologin;

@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Base.pm $ $Author: autrijus $
-# $Revision: #29 $ $Change: 1600 $ $DateTime: 2001/08/29 23:35:16 $
+# $Revision: #31 $ $Change: 1819 $ $DateTime: 2001/09/16 20:02:51 $
 
 package OurNet::BBS::Base;
 use 5.006;
@@ -50,18 +50,13 @@ __TIE__
 1;
 .
 
-=head2 import
-
-import does following things:
-
-1. set up @ISA.
-2. export type constants.
-3. set overload bits.
-4. install accessor methods.
-5. handle variable propagation.
-6. install the new handler.
-
-=cut
+# import does following things:
+# 1. set up @ISA.
+# 2. export type constants.
+# 3. set overload bits.
+# 4. install accessor methods.
+# 5. handle variable propagation.
+# 6. install the new() handler.
 
 require overload; # no import, please
 
@@ -74,7 +69,7 @@ sub import {
 
     *{"$pkg\::$_"}  = \&{$_} foreach qw/EGO FLAG HASH ARRAY CODE GLOB/;
     return *{"$pkg\::SIGILS"}  = \&{SIGILS} if $pkg eq 'OurNet::BBS::Client';
-    return if $pkg eq 'main';
+    return unless $class eq __PACKAGE__;
 
     *{"$pkg\::ego"} = sub { ${$_[0]}->[0] };
 

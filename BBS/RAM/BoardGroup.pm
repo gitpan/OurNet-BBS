@@ -1,14 +1,13 @@
 # $File: //depot/OurNet-BBS/BBS/RAM/BoardGroup.pm $ $Author: autrijus $
-# $Revision: #2 $ $Change: 1662 $ $DateTime: 2001/09/02 05:54:09 $
+# $Revision: #3 $ $Change: 1698 $ $DateTime: 2001/09/04 20:55:10 $
 
 package OurNet::BBS::RAM::BoardGroup;
 
 use strict;
 use fields qw/bbsroot dbh mtime _ego _hash/;
-
 use OurNet::BBS::Base (
     '@packlist' => [qw/id title bm level/],
-);;
+);
 
 sub refresh_meta {
     my ($self, $key) = @_;

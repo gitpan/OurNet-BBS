@@ -1,7 +1,7 @@
-# $File: //depot/OurNet-BBS/BBS/CVIC/UserGroup.pm $ $Author: autrijus $
-# $Revision: #5 $ $Change: 1706 $ $DateTime: 2001/09/05 04:27:10 $
+# $File: //depot/OurNet-BBS/BBS/Cola/UserGroup.pm $ $Author: autrijus $
+# $Revision: #1 $ $Change: 1825 $ $DateTime: 2001/09/16 21:27:34 $
 
-package OurNet::BBS::CVIC::UserGroup;
+package OurNet::BBS::Cola::UserGroup;
 
 use strict;
 use base qw/OurNet::BBS::MAPLE2::UserGroup/;

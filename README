@@ -1,3 +1,6 @@
+# $File: //depot/OurNet-BBS/README $ $Author: autrijus $
+# $Revision: #8 $ $Change: 1914 $ $DateTime: 2001/09/28 00:57:47 $
+
 This is the README file for OurNet::BBS, the component object
 model and distributed storage suite for BBS systems, by Elixir 
 Group and OurInternet Inc.
@@ -26,9 +29,12 @@ OurNet::BBS implements a flexible object model for different
 BBS backends, along with an asymmetric authentication and
 remote procedure call protocol.
 
+If you are new to the telnet-bbs platform, please download a
+copy of Melix BBS software (in English, Traditional Chinese
+and Simplified Chinese) at http://melix.elixus.org/.
+
 For some of this library's practical uses, consult CPAN for
 OurNet::BBSApp::Sync and relevant boards on telnet://elixus.org/.
 
 See the HISTORY section in the OurNet::BBS manpage for an
 overview on developments so far.
-
