@@ -1,19 +1,12 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/User.pm $ $Author: autrijus $
-# $Revision: #8 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
+# $Revision: #9 $ $Change: 2916 $ $DateTime: 2002/01/26 23:37:01 $
 
 package OurNet::BBS::MAPLE2::User;
 
 use strict;
 use fields qw/bbsroot id recno _ego _hash/;
-
 use OurNet::BBS::Base (
-    '$packstring' => 'Z13Z20Z24Z14CISSLLZ16Z8Z50Z50Z39',
-    '$packsize'   => 256,
-    '@packlist'   => [
-        qw/userid realname username passwd uflag userlevel numlogins 
-           numposts firstlogin lastlogin lasthost remoteuser email 
-           address justify month day year reserved state/
-    ],
+    'UserGroup' => [qw/$packsize $namestring $packstring @packlist $PWD/],
 );
 
 sub refresh_meta {
@@ -26,7 +19,7 @@ sub refresh_meta {
     if ($self->contains($key)) {
 	my $buf = '';
 
-	open(my $USR, "$self->{bbsroot}/.PASSWDS") or die "can't open .PASSWDS";
+	open(my $USR, "$self->{bbsroot}/$PWD") or die "can't open $PWD";
 	seek $USR, $self->{recno} * $packsize, 0;
 	read $USR, $buf, $packsize;
 	close $USR;
@@ -61,8 +54,8 @@ sub STORE {
  	$self->refresh_meta($key);
 	$self->{_hash}{$key} = $value;
 
-	open(my $USR, '+<', "$self->{bbsroot}/.PASSWDS")
-	    or die "can't open .PASSWDS";
+	open(my $USR, '+<', "$self->{bbsroot}/$PWD")
+	    or die "can't open $PWD";
 	seek $USR, $self->{recno} * $packsize, 0;
         print $USR pack($packstring, @{$self->{_hash}}{@packlist});
 	close $USR;

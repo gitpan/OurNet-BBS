@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Client.pm $ $Author: autrijus $
-# $Revision: #27 $ $Change: 2060 $ $DateTime: 2001/10/15 03:45:40 $
+# $Revision: #31 $ $Change: 3019 $ $DateTime: 2002/02/05 13:08:59 $
 
 package OurNet::BBS::Client;
 
@@ -43,7 +43,7 @@ use enum qw/BITMASK:AUTH_   NONE CRYPT PGP/;
 $Port = 7979;
 
 my $OP = $OurNet::BBS::Authen::OP;
-my (%Cache, @delegators);
+my (%Cache, @delegators, @arguments);
 
 tie my %obj  => __PACKAGE__, 'HASH_';
 tie my @obj  => __PACKAGE__, 'ARRAY_';
@@ -53,6 +53,18 @@ tie my $glob => __PACKAGE__, 'GLOB_'; # XXX: not working
 sub TIEHASH   { bless(\[$_[1]], $_[0]) }
 sub TIEARRAY  { bless(\[$_[1]], $_[0]) }
 sub TIESCALAR { bless(\[$_[1]], $_[0]) }
+
+use constant IsWin32 => ($^O eq 'MSWin32');
+
+if (IsWin32 and not Win32::IsWinNT()) {
+    require Net::Daemon::Log;
+
+    no strict 'refs';
+    no warnings 'redefine';
+
+    *{'Net::Daemon::Log'}	= sub { return };
+    *{'Net::Daemon::Log::Log'}	= sub { return };
+}
 
 # spawn (optree_id)
 sub _spawn {
@@ -68,20 +80,34 @@ sub new {
     my $class    = shift;
     my $peeraddr = shift;
     my $peerport = shift || $Port;
-    my $self = [];
-
-    $self->[id] = scalar @delegators; # 1 more than max
-
-    $delegators[$self->[id]] = RPC::PlClient->new(
+    my @args = (
 	peeraddr    => $peeraddr,
 	peerport    => $peerport,
 	application => 'OurNet::BBS::Server',
 	version     => $OurNet::BBS::Authen::VERSION,
+    );
+
+    my $id = @delegators; # 1 more than max
+    $arguments[$id] = [\@args, @_];
+
+    return $class->generate($id);
+}
+
+sub generate {
+    my ($class, $id) = @_;
+    my $self = []; $self->[id] = $id;
+
+    if ($delegators[$id]) {
+	delete $delegators[$id]{client};
+	$delegators[$id]->DESTROY;
+    }
+
+    $delegators[$id] = RPC::PlClient->new(
+	@{$arguments[$id][0]}
     )->ClientObject('__', 'spawn');
 
     my $obj = bless(\[$self, \%obj, \@obj, \$code, \$glob, 'OBJECT_'], $class);
-
-    return $obj->init(@_);
+    return $obj->init(@{$arguments[$id]}[1 .. $#{$arguments[$id]}]);
 }
 
 sub init {
@@ -224,7 +250,7 @@ sub negotiate_auth {
 	return AUTH_CRYPT if auth_crypt($client, $user, $pass);
     }
 
-    if ($mode & AUTH_NONE and $client->auth_none) {
+    if ($mode & AUTH_NONE and $client->auth_none($user)) {
 	# no authentication at all
 	show("fallback to none...");
 	return AUTH_NONE;
@@ -336,15 +362,25 @@ sub AUTOLOAD {
 
     $op .= $action;
 
-    my @result = $delegators[$Ego->[id]]->__(
-	$OP->{$op} || $op, $Ego->[optree], map { 
-	    ref($_) eq __PACKAGE__ 
-		? bless(\(${$_}->[0][optree]), '__') :
-	    ref($_) eq 'CODE'
-		? register_callback($_) 
-	    : $_;
-	} @_
+    my @result;
+    
+    do { eval {
+	undef $@;
+	@result = $delegators[$Ego->[id]]->__(
+	    $OP->{$op} || $op, $Ego->[optree], map { 
+		ref($_) eq __PACKAGE__ 
+		    ? bless(\(${$_}->[0][optree]), '__') :
+		ref($_) eq 'CODE'
+		    ? register_callback($_) 
+		: $_;
+	    } @_
+	);
+    } } while (
+	$@ and $@ =~ /^Error while reading socket:/ and
+	__PACKAGE__->generate($Ego->[id])
     );
+
+    die $@ if $@;
 
     if (@result == 4 and !$result[0] and my $opcode = $result[1]) {
         return ($NoCache ? _spawn(@result[2, 3])

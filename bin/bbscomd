@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 # $File: //depot/OurNet-BBS/bin/bbscomd $ $Author: autrijus $
-# $Revision: #31 $ $Change: 2353 $ $DateTime: 2001/11/13 16:26:37 $
+# $Revision: #36 $ $Change: 2720 $ $DateTime: 2001/12/23 20:57:55 $
 
 $VERSION = '1.62_01';
 $REVISION = "rev$1\[\@$2\]" 
-    if ('$Revision: #31 $ $Change: 2353 $' =~ /(\d+)[^\d]+(\d+)/);
+    if ('$Revision: #36 $ $Change: 2720 $' =~ /(\d+)[^\d]+(\d+)/);
 
 =head1 NAME
 
@@ -12,9 +12,10 @@ bbscomd - OurNet BBS Remote Access Daemon
 
 =head1 SYNOPSIS
 
-B<bbscomd> S<[ B<-acdfghx> ]> S<[ B<-b> I<addr> ]> S<[ B<-p> I<port>
-]> S<[ B<-u> I<key> ]>
-    S<I<backend> [ I<argument>... ]>
+B<bbscomd> S<[ B<-acdfgGhsx> ]> S<[ B<-b> I<addr> ]> S<[ B<-p>
+    I<port> ]> S<[ B<-u> I<key> ] >
+    S<[ B<-l> I<logfile> ]> S<[ B<-t> I<timeout> ]> S< I<backend>
+    [ I<argument>... ]>
 
 =head1 DESCRIPTION
 
@@ -38,11 +39,27 @@ The C<-g> flag allows server to assume C<guest> as the user ID on
 a failed Authentication (fallback to AUTH_NONE), with corresponding
 permissions.
 
+Similarly, the C<-G> flag allows the client to authenticate as
+B<ANY> user they wanted to; because of the security risk, this flag
+automatically specifies C<-b localhost> for you. Note that this does
+not assume the behaviour of C<-g>; you'll have to specify C<-gG>
+explicitly to turn on both settings.
+
+The C<-s> flag permits single-connection only. This is primary used
+for single-user situations.
+
 The C<-x> flag assumes default settings on Win32. It's not meant
 to be used on other platforms.
 
 If you don't want to bind all available IPs, specify one using
 the C<-b> flag.
+
+The C<-t> flag sets the C<connection-timeout> option to the Server
+object, which causes a child connection to terminate after an
+inactivity for I<timeout> seconds.
+
+If you want to keep a B<Net::Daemon> styled log file, specify
+the file name to C<-l>.
 
 Please refer to L<OurNet::BBS> modules for more information on
 usage.
@@ -50,7 +67,7 @@ usage.
 =head1 EXAMPLES
 
 Starting a typical MELIX daemon, require authentication, but allowing
-unpriviledged guest access:
+unprivileged guest access:
 
     % bbscomd -acfg -u melix MELIX /home/melix 2997 350
 
@@ -91,14 +108,16 @@ See <http://www.perl.com/perl/misc/Artistic.html>.
 .
 }
 
-getopts('acgb:p:u:fdhx', \%args);
+getopts('acgGb:p:t:u:fdhsx', \%args);
 exec('perldoc', $0) if defined $args{h};
 
-my ($auth, $ciph, $port, $key, $fork, $debug, $addr, $guest) =
-    @{args}{qw/a c p u f d b g/};
+my ($auth, $ciph, $port, $logfile, $timeout,
+    $key, $fork, $debug, $addr, $guest, $anyuser, $single)
+    = @{args}{qw/a c p l t u f d b g G s/};
 
 $guest = $guest ? 'guest' : undef;
-$auth  = defined($auth) ? $guest ? 7 : 6 : 0;
+$guest = "*$guest" if $anyuser;
+$auth  = defined($auth) ? $guest ? 3 : 2 : 0;
 $ciph  = $key ? 2 : 2 if defined $ciph;
 $port  ||= 7979;
 
@@ -111,8 +130,17 @@ if ($args{x}) {
 }
     
 no warnings 'once';
-$OurNet::BBS::Server::LocalAddr = $addr if defined $addr;
+
 $OurNet::BBS::DEBUG = $debug;
+$OurNet::BBS::Server::LocalAddr = $addr if defined $addr;
+%OurNet::BBS::Server::Options   = (
+    'logfile'		 => $logfile,
+    'connection-timeout' => $timeout,
+);
+
+if ($single) {
+    $OurNet::BBS::Server::Mode = 'single';
+}
 
 my $BBS = OurNet::BBS->new(@ARGV) or die "Cannot link to BBS: @ARGV\n";
 
@@ -130,7 +158,6 @@ if ($key) {
     print "\n";
 }
 
-
 if (!$fork or !fork()) {
     print "BBSCOM Daemon starting at port $port...\n";
 
@@ -139,6 +166,10 @@ if (!$fork or !fork()) {
 }
 
 __END__
+
+=head1 SEE ALSO
+
+L<OurNet::BBS>, L<RPC::PlServer>, L<Net::Daemon>
 
 =head1 AUTHORS
 

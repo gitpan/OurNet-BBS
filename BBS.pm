@@ -1,11 +1,11 @@
 # $File: //depot/OurNet-BBS/BBS.pm $ $Author: autrijus $
-# $Revision: #42 $ $Change: 2546 $ $DateTime: 2001/12/10 04:24:28 $
+# $Revision: #44 $ $Change: 2998 $ $DateTime: 2002/02/04 15:00:07 $
 # See BBS.pod for documentations.
 
 package OurNet::BBS;
 use 5.006;
 
-$OurNet::BBS::VERSION  = '1.63';
+$OurNet::BBS::VERSION = '1.64';
 
 use strict;
 use warnings;
@@ -23,7 +23,7 @@ no strict 'refs';
 my $sub_new = *{'new'}{CODE};
 
 {
-    no warnings qw/redefine/;
+    no warnings 'redefine';
 
     sub new { 
 	goto &{$sub_new} unless $_[0] eq __PACKAGE__;
@@ -43,7 +43,7 @@ sub refresh_meta {
 
     return $self->fillin(
 	$key, substr(ucfirst($key), 0, -1).'Group', 
-	map { $self->{$_} } @{uc($key)}
+	map($self->{$_}, @{uc($key)})
     );
 }
 

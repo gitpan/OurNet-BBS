@@ -1,5 +1,32 @@
-# $File: //depot/OurNet-BBS/HISTORY $ $Author: autrijus $
-# $Revision: #3 $ $Change: 2545 $ $DateTime: 2001/12/10 04:21:25 $
+v1.64 Thu Feb  7 05:31:46 CST 2002
+    Better parsing of NNTP-style BBSAgent articles.
+
+    The bbsboard utilitiy now respects the board's {permit} settings.
+
+    Reconnection is supported in OurNet::Client.
+
+    New "-s" (non-forking) flag for bbscomd.
+
+    New "-G" flag for bbscomd to allow login as any user.
+
+    Hash components now has the "KEYS" method.
+
+    Major overhaul in UserGroup work to provide consistent behaviour.
+
+    Introduces experimental Firebird3 backend (User and Board only).
+
+    Relaxed Makefile.PL requirements; no install of MailBox by default.
+
+    Removed ExtUtils so it has to be fetched from CPAN manually.
+
+    The eg/ directory now contains some sample scripts.
+
+    Prefers the use of hashref by-name new() syntax in examples and
+    tests.
+
+    The hashref constructor syntax is accepted by OurNet backend.
+
+    Split documentation about roadmap to OurNet::BBS::Roadmap.
 
 v1.63, Mon Dec 10 20:21:38 CST 2001
     Added three simple diagrams in OurNet::BBS::Tutorial.

@@ -1,10 +1,12 @@
 #!/usr/bin/perl -T
 # $File: //depot/OurNet-BBS/bin/bbsmail $ $Author: autrijus $
-# $Revision: #9 $ $Change: 2353 $ $DateTime: 2001/11/13 16:26:37 $
+# $Revision: #11 $ $Change: 2996 $ $DateTime: 2002/02/04 14:59:01 $
 
 $VERSION = '0.04';
 $REVISION = "rev$1\[\@$2\]" 
-    if ('$Revision: #9 $ $Change: 2353 $' =~ /(\d+)[^\d]+(\d+)/);
+    if ('$Revision: #11 $ $Change: 2996 $' =~ /(\d+)[^\d]+(\d+)/);
+
+use strict;
 
 =head1 NAME
 
@@ -114,8 +116,6 @@ and any contributions on that front will be most welcomed.
 
 =cut
 
-use strict;
-
 our ($Postfix, $Element, $Container) = qw/.bbs users mailbox/;
 
 my $exec = 'bbsboard';
@@ -133,11 +133,11 @@ L<OurNet::BBS>, L<bbsboard>.
 
 =head1 AUTHORS
 
-Autrijus Tang E<lt>autrijus@autrijus.org>
+Autrijus Tang E<lt>autrijus@autrijus.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2001 by Autrijus Tang E<lt>autrijus@autrijus.org>.
+Copyright 2001-2002 by Autrijus Tang E<lt>autrijus@autrijus.orgE<gt>.
 
 This program is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.

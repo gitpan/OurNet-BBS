@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/BBSAgent/ArticleGroup.pm $ $Author: autrijus $
-# $Revision: #9 $ $Change: 1839 $ $DateTime: 2001/09/18 21:08:16 $
+# $Revision: #10 $ $Change: 2893 $ $DateTime: 2002/01/17 05:00:19 $
 
 package OurNet::BBS::BBSAgent::ArticleGroup;
 
@@ -52,6 +52,10 @@ sub STORE {
     $self = $self->ego;
 
     my $body = $value->{body};
+
+    $body =~ s/\x1b/$self->{bbsobj}{var}{escape}/g
+	if defined $self->{bbsobj}{var}{escape};
+
     $body =~ s/(?<!\015)\012/\015\012/g; # crlf: sensible
     $body = "§@ªÌ: $value->{header}{From} ".
             "¬ÝªO: $value->{header}{Board}\015\012".

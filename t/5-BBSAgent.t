@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # $File: //depot/OurNet-BBS/t/5-BBSAgent.t $ $Author: autrijus $
-# $Revision: #7 $ $Change: 2090 $ $DateTime: 2001/10/16 06:42:02 $
+# $Revision: #8 $ $Change: 2993 $ $DateTime: 2002/02/04 13:55:33 $
 
 use strict;
 my ($addr, %sites);
@@ -30,7 +30,11 @@ print << "." unless @ARGV;
 .
 
 while (my ($site, $addr) = each %sites) {
-    my $BBS = OurNet::BBS->new(BBSAgent => $site);
+    my $BBS = OurNet::BBS->new({
+	backend => 'BBSAgent',
+	bbsroot => $site
+    });
+
     is(ref($BBS), $BBS->module('BBS'), "load: $site");
 
     SKIP: {

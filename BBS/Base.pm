@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Base.pm $ $Author: autrijus $
-# $Revision: #33 $ $Change: 2050 $ $DateTime: 2001/10/13 19:06:05 $
+# $Revision: #35 $ $Change: 2916 $ $DateTime: 2002/01/26 23:37:01 $
 
 package OurNet::BBS::Base;
 use 5.006;
@@ -82,7 +82,7 @@ sub import {
     my $fields = \%{"$pkg\::FIELDS"};
 
     foreach my $type (HASH .. GLOB) {
-	if (exists($fields->{TYPES->[$type]})) {
+	if (exists($fields->{TYPES->[$type]})) { # checks for _hash .. _glob
 	    my $sigil = SIGILS->[$type];
 
 	    push @overload, "$sigil\{}" => sub { 
@@ -93,7 +93,6 @@ sub import {
 	    if ($type == HASH or $type == ARRAY) {
 		$tie_eval = "tie my ${sigil}obj => '$pkg', ".
 		            "[\$self, $type];\n" . $tie_eval;
-		# "[\$self, $type__OBJ__];\n" . $tie_eval; # huh?
 		$obj_eval .= ", \\${sigil}obj";
 	    }
 	    elsif ($type == CODE) {
@@ -220,7 +219,7 @@ sub import {
 	next unless ($ref =~ /^\*(.+)::([^:]+)$/);
 	next if defined(&{"$pkg\::$sym"});
 
-	if (%{$RegVar{$pkg}} and (uc($sym) ne $sym or $sym eq 'STORE')) {
+	if (%{$RegVar{$pkg}}) {
 	    eval qq(
 		sub $pkg\::$sym {
 	    ) . join('', 
@@ -400,6 +399,7 @@ sub module {
 # object serialization for OurNet::Server calls; does nothing otherwise
 sub SPAWN { return $_[0] }
 sub REF { return ref($_[0]) }
+sub KEYS { return keys(%{$_[0]}) }
 
 ## Tiescalar Accessors ################################################
 # XXX: Experimental: Globs only.

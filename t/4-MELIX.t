@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # $File: //depot/OurNet-BBS/t/4-MELIX.t $ $Author: autrijus $
-# $Revision: #2 $ $Change: 1562 $ $DateTime: 2001/08/26 03:16:24 $
+# $Revision: #3 $ $Change: 2993 $ $DateTime: 2002/02/04 13:55:33 $
 
 use strict;
 use File::Path;
@@ -17,7 +17,7 @@ close $BOARDS;
 ###################################################################
 
 use OurNet::BBS;
-our $BBS = OurNet::BBS->new(MELIX => $prefix);
+our $BBS = OurNet::BBS->new({backend => 'MELIX', bbsroot => $prefix});
 (($_ = $0) =~ s/[\w-]+\.t$/stdtests/) and do $_ if $BBS;
 
 __END__

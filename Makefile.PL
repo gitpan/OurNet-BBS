@@ -1,15 +1,16 @@
 #!/usr/bin/perl
 # $File: //depot/OurNet-BBS/Makefile.PL $ $Author: autrijus $
-# $Revision: #30 $ $Change: 2441 $ $DateTime: 2001/11/27 15:42:06 $
+# $Revision: #35 $ $Change: 3001 $ $DateTime: 2002/02/04 15:06:31 $
 
 use 5.006;
 use strict;
 use warnings;
 
-# ExtUtils::AutoInstall Bootstrap Code, version 1.
-BEGIN { my $p='ExtUtils::AutoInstall'; eval"use $p 0.21;1" or(print
-	"*** Fetching $p.\n"), require CPAN, CPAN::install $p; eval
-	"use $p 0.21;1" or die "*** Please install $p manually.\n"}
+# ExtUtils::AutoInstall Bootstrap Code, version 2.
+BEGIN {my($p,$v)=('ExtUtils::AutoInstall',0.21);eval"use $p $v;1"or
+print"*** $p $v is needed. Install automatically? [Y/n] "and<STDIN>
+!~/^n/i and print"*** Fetching $p.\n"and require CPAN,CPAN::install
+$p;eval"use $p $v;1" or die "*** Please install $p $v manually.\n"}
 
 my @ciphers = map { "Crypt::$_" } (
     qw/Rijndael Twofish2 Twofish Blowfish IDEA DES/,
@@ -55,7 +56,9 @@ ExtUtils::AutoInstall->import(
 	@cipher_module,
     ],
     'GnuPG Encryption'		=> [ 
-	-default		=> (have('gpg') and have($Config::Config{cc})),
+	-default		=> (
+	    (have('gpg') and have($Config::Config{cc})) ? 1 : 0
+	),
      	'Class::MethodMaker'	=> '1.00',
 	'GnuPG::Interface'	=> '0.31',
 	'Term::ReadKey'		=> '2.13',
@@ -64,12 +67,12 @@ ExtUtils::AutoInstall->import(
 	'Net::NNTP'		=> '2.19',
     ],
     'Mailbox File (MailBox)'	=> [
-	-default 		=> ($^O ne 'MSWin32'),
+	-default 		=> 0,
 	-tests   		=> [ 't/6-MailBox.t'],
     	'Mail::Internet'	=> '1.0',
 	'MIME::Tools'		=> '5.0',
 	'IO::Scalar'		=> '1.0',
-	'Mail::Box'		=> '1.313',
+	'Mail::Box'		=> '1.0',
     ],
     'Telnet BBS (BBSAgent)'	=> [
 	-tests   		=> [ 't/5-BBSAgent.t'],

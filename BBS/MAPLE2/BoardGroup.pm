@@ -1,5 +1,5 @@
-# $File: //depot/OurNet-BBS/BBS/MAPLE2/BoardGroup.pm $ $Author: clkao $
-# $Revision: #13 $ $Change: 2038 $ $DateTime: 2001/10/13 05:26:11 $
+# $File: //depot/OurNet-BBS/BBS/MAPLE2/BoardGroup.pm $ $Author: autrijus $
+# $Revision: #14 $ $Change: 2916 $ $DateTime: 2002/01/26 23:37:01 $
 
 package OurNet::BBS::MAPLE2::BoardGroup;
 
@@ -9,6 +9,7 @@ use OurNet::BBS::ShmScalar;
 
 use OurNet::BBS::Base (
     '$packstring'    => 'Z13Z49Z39Z11LZ3CLL',
+    '$namestring'    => 'Z13',
     '$packsize'      => 128,
     '@packlist'      => [
         qw/id title bm pad bupdate pad2 bvote vtime level/
@@ -16,20 +17,19 @@ use OurNet::BBS::Base (
     '$BRD'           => '.BOARDS',
     '$PATH_BRD'      => 'boards',
     '$PATH_GEM'      => 'man/boards',
-
 );
 
 sub shminit {
     my $self = shift;
 
     if ($^O ne 'MSWin32' and
-        $self->{shmid} = shmget($self->{shmkey}, $self->{maxboard}*128+16, 0)) {
+        $self->{shmid} = shmget($self->{shmkey}, $self->{maxboard} * $packsize + 16, 0)) {
         tie $self->{shm}{touchtime}, 'OurNet::BBS::ShmScalar',
-           $self->{shmid}, $self->{maxboard}*128+4, 4, 'L';
+	    $self->{shmid}, $self->{maxboard}*$packsize +  4, 4, 'L';
         tie $self->{shm}{number}, 'OurNet::BBS::ShmScalar',
-            $self->{shmid}, $self->{maxboard}*128+8, 4, 'L';
+            $self->{shmid}, $self->{maxboard}*$packsize +  8, 4, 'L';
         tie $self->{shm}{busystate}, 'OurNet::BBS::ShmScalar',
-            $self->{shmid}, $self->{maxboard}*128+12, 4, 'L';
+            $self->{shmid}, $self->{maxboard}*$packsize + 12, 4, 'L';
     }
 }
 
@@ -58,11 +58,10 @@ sub refresh_meta {
 
     open(my $DIR, $file) or die "can't read DIR file $file $!";
 
-    foreach (0 .. int((stat($file))[7] / 128)-1) {
-        seek $DIR, 128 * $_, 0;
-        read $DIR, $board, 13;
+    foreach (0 .. int((stat($file))[7] / $packsize)-1) {
+        read $DIR, $board, $packsize;
 
-	unpack('Z13', $board) =~ /^([^\0].*)$/ or next;
+	unpack($namestring, $board) =~ /^([^\0].*)$/ or next;
 	$board = $1; # untaint
 
         $self->{_hash}{$board} ||= $self->module('Board')->new({
@@ -88,10 +87,9 @@ sub EXISTS {
     open(my $DIR, $file) or die "can't read DIR file $file: $!";
 
     my $board;
-    foreach (0 .. int((stat($file))[7] / 128)-1) {
-        seek $DIR, 128 * $_, 0;
-        read $DIR, $board, 13;
-        return 1 if unpack('Z13', $board) eq $key;
+    foreach (0 .. int((stat($file))[7] / $packsize)-1) {
+        read $DIR, $board, $packsize;
+        return 1 if unpack($namestring, $board) eq $key;
     }
 
     close $DIR;

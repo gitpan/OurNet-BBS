@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/RAM/ArticleGroup.pm $ $Author: autrijus $
-# $Revision: #2 $ $Change: 1662 $ $DateTime: 2001/09/02 05:54:09 $
+# $Revision: #3 $ $Change: 2935 $ $DateTime: 2002/01/29 00:44:59 $
 
 package OurNet::BBS::RAM::ArticleGroup;
 
@@ -150,6 +150,8 @@ sub STORE {
 	$value->{title} = $value->{header}{Subject};
     }
     else {
+	no warnings 'uninitialized';
+
 	# traditional style
 	$value->{header} = {
 	    From    => $value->{author}.

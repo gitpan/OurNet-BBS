@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/BBSAgent/Article.pm $ $Author: autrijus $
-# $Revision: #18 $ $Change: 2224 $ $DateTime: 2001/10/29 01:20:50 $
+# $Revision: #21 $ $Change: 2553 $ $DateTime: 2001/12/10 21:44:44 $
 
 package OurNet::BBS::BBSAgent::Article;
 
@@ -36,23 +36,27 @@ sub refresh_meta {
     if (defined $self->{recno}) {
 	return if $self->{_hash}{header}; # already exists
 
-        my ($head, $body) = split(
-	    /$var{separator}/, $self->_fetch_body, 2
-	);
+        my ($head, $body) = split(/$var{separator}/, $self->_fetch_body, 2);
 
-	if (!defined($body)) {
-	    $self->{bbsobj}->board_article_fetch_last;
+	unless (defined $body) {
+	    $self->{bbsobj}->board_article_fetch_last; # cleanup
 	    die "header/body separator not found";
 	}
 
+	# match the fields according to the regex variables
         my $author = $head   =~ m/$compiled[0]/m ? $1 : '';
         my $title  = $head   =~ m/$compiled[1]/m ? $1 : '';
         my $date   = $head   =~ m/$compiled[2]/m ? $1 : '';
-	my $nick   = $author =~ s/\s?\((.*?)\)?(?:[\s\t]+.*)?$// ? $1 : '';
+
+	# takes care for both BBS- and NNTP-style author lines
+	my $nick   = ($author =~ s/\s?\((.*?)\)?(?:[\s\t]+.*)?,?$//) ? $1
+	           : ($author =~ s/\s*"([^"]+)"\s+<([^>]+)>,?\s*/$2/) ? $1
+		   : '';
 
         # date munging
 	$date =~ s/¦~|¤ë|¤é/\x20/g;			    # kludge
-	$date = $1 if $date =~ m/([\w\s\d:]{10,})/;	    # keep date only
+	$date = $1 if $date =~ m/\(([\w\s\d\:]{10,})\)/     # strip parens
+		   or $date =~ m/([\w\s\d:]{10,})/;	    # keep date only
 
 	$author ||= '(unknown)';
 	$title  ||= '(untitled)';
@@ -104,7 +108,8 @@ sub _adjust_body {
 
 sub _fetch_body {
     my ($self) = @_;
-    my ($body, $chunk, $precent) = ('');
+    my ($chunk, $precent);
+    my $body = '';
 
     eval {
 	($chunk, $precent) = $self->{bbsobj}->board_article_fetch_first( 

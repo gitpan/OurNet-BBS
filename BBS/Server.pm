@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Server.pm $ $Author: autrijus $
-# $Revision: #54 $ $Change: 2454 $ $DateTime: 2001/11/28 07:08:31 $
+# $Revision: #60 $ $Change: 2720 $ $DateTime: 2001/12/23 20:57:55 $
 
 package OurNet::BBS::Server;
 
@@ -139,7 +139,8 @@ sub daemonize {
     }
 
     if ($AuthLevel & AUTH_NONE and $GuestId = $guest_id) {
-	$AuthLevel &= ~AUTH_NONE unless exists $ROOT->{users}{$guest_id};
+	$AuthLevel &= ~AUTH_NONE
+	    unless $GuestId =~ /^\*/ or exists $ROOT->{users}{$guest_id};
     }
 
     if ($CipherLevel & (CIPHER_PGP | CIPHER_BASIC)) {
@@ -169,7 +170,7 @@ sub handshake {
     $Server->{methods}{__}{handshake} = 1; # allows re-authenticate
 
     $CipherLevel &= ~CIPHER_PGP and $AuthLevel &= ~AUTH_PGP
-	unless $Auth and $Auth->test;
+	unless UNIVERSAL::isa($Auth, 'UNIVERSAL') and $Auth->test;
 
     return ($CipherLevel & $cipher_level, $AuthLevel & $auth_level);
 }
@@ -355,10 +356,14 @@ sub set_crypted {
 }
 
 sub auth_none {
+    my ($self, $login) = @_;
     return unless $AuthLevel & AUTH_NONE;
 
     if ($Auth->{login} = $GuestId) {
-	$Auth->{user} = $ROOT->{users}{$GuestId} or return $OP->{NO_USER};
+	$Auth->{login} = ($login || substr($GuestId, 1))
+	    or return $OP->{NO_USER} if $GuestId =~ /^\*/; # AUTH_LOCAL
+	$Auth->{user} = $ROOT->{users}{$Auth->{login}}
+	    or return $OP->{NO_USER};
     }
     else {
 	undef $Auth->{user};  # clean up previous auth
@@ -453,6 +458,9 @@ sub __ {
 
 	    $Perm{"$obj $op $param->[0]"} = 1;
 	}
+
+	# XXX: experimental.
+	return keys(%$obj)  if $action eq 'KEYS';
 
         my $arg = $param->[0] if @{$param};
 
@@ -632,11 +640,11 @@ sub CallMethod ($$$@) {
 	}
     }
 
-    no strict 'refs';
     if ($method eq '__') {
 	$object->$method(@args);
     }
     else {
+	no strict 'refs';
 	&{"$ref\::$method"}($self, @args);
     }
 }
@@ -646,7 +654,20 @@ sub Run ($) {
     my $socket = $self->{'socket'};
 
     while (!$self->Done) {
-	my $msg = $self->RPC::PlServer::Comm::Read;
+	my $msg;
+	
+	if (my $timeout = $self->{'connection-timeout'}) {
+	    eval {
+		local $SIG{ALRM} = sub { die "alarm\n" };
+		alarm $timeout;
+		$msg = $self->RPC::PlServer::Comm::Read;
+		alarm 0;
+	    }
+	}
+	else {
+	    $msg = $self->RPC::PlServer::Comm::Read;
+	}
+
 	last unless defined($msg);
 	die "Expected array" unless ref($msg) eq 'ARRAY';
 	my($error, $command);

@@ -32,6 +32,14 @@ BBS/External/ArticleGroup.pm
 BBS/External/BBS.pm
 BBS/External/Board.pm
 BBS/External/BoardGroup.pm
+BBS/Firebird3/Article.pm
+BBS/Firebird3/ArticleGroup.pm
+BBS/Firebird3/BBS.pm
+BBS/Firebird3/Board.pm
+BBS/Firebird3/BoardGroup.pm
+BBS/Firebird3/FileGroup.pm
+BBS/Firebird3/User.pm
+BBS/Firebird3/UserGroup.pm
 BBS/MAPLE2/Article.pm
 BBS/MAPLE2/ArticleGroup.pm
 BBS/MAPLE2/BBS.pm
@@ -96,6 +104,7 @@ BBS/RAM/Session.pm
 BBS/RAM/SessionGroup.pm
 BBS/RAM/User.pm
 BBS/RAM/UserGroup.pm
+BBS/Roadmap.pod
 BBS/ScalarFile.pm
 BBS/Server.pm
 BBS/ShmArray.pm
@@ -104,15 +113,18 @@ BBS/SocketScalar.pm
 BBS/Tutorial.pod
 BBS/Utils.pm
 Changes
-ExtUtils/AutoInstall.pm
+Changes1.6
 HISTORY
-MANIFEST
+MANIFEST			This list of files
 Makefile.PL
 README
 TODO
 bin/bbsboard
 bin/bbscomd
 bin/bbsmail
+eg/bbsget
+eg/boardidx
+eg/echo-agent
 t/0-Base.t
 t/1-RAM.t
 t/2-CVIC.t

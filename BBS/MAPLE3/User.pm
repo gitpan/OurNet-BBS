@@ -1,20 +1,14 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/User.pm $ $Author: autrijus $
-# $Revision: #17 $ $Change: 2440 $ $DateTime: 2001/11/27 15:38:54 $
+# $Revision: #18 $ $Change: 2992 $ $DateTime: 2002/02/04 12:27:50 $
 
 package OurNet::BBS::MAPLE3::User;
 
 use strict;
 use fields qw/bbsroot id recno _ego _hash/;
 use subs qw/writeok readok/;
+
 use OurNet::BBS::Base (
-    '$packstring' => 'iZ13Z14CZ20Z24IiiILLLLZ32iLZ60Z60Z60Z60Z120L',
-    '$packsize'   => 512,
-    '@packlist'   => [ qw(
-	userno userid passwd signature realname username userlevel 
-	numlogins numposts ufo firstlogin lastlogin staytime tcheck 
-	lasthost numemail tvalid email address justify vmail ident 
-	vtime
-    ) ],
+    'UserGroup' => [qw/$packsize $packstring @packlist/],
 );
 
 use constant IsWin32 => ($^O eq 'MSWin32');

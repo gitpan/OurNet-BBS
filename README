@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/README $ $Author: autrijus $
-# $Revision: #10 $ $Change: 2166 $ $DateTime: 2001/10/20 01:19:57 $
+# $Revision: #11 $ $Change: 3001 $ $DateTime: 2002/02/04 15:06:31 $
 
 This is the README file for OurNet::BBS, the component object
 model and distributed storage suite for BBS systems, by Elixir 
@@ -14,10 +14,15 @@ make
 make test
 make install
 
+Note that it makes use of the ExtUtils::AutoInstall module
+in Makefile.PL; if Makefile.PL cannot install that module
+for you, please download it manually from CPAN, or at
+<http://autrijus.org/ExtUtils-AutoInstall.tar.gz>.
+
 * Copyright
 
-Copyright 2001 by Chia-Liang Kao <clkao@clkao.org>.
-		  Autrijus Tang <autrijus@autrijus.org>,
+Copyright 2001-2002 by Chia-Liang Kao <clkao@clkao.org>.
+		       Autrijus Tang <autrijus@autrijus.org>,
 
 All rights reserved.  You can redistribute and/or modify
 this bundle under the same terms as Perl itself.

@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/Article.pm $ $Author: autrijus $
-# $Revision: #29 $ $Change: 1928 $ $DateTime: 2001/09/29 13:27:30 $
+# $Revision: #30 $ $Change: 2674 $ $DateTime: 2001/12/19 04:17:32 $
 
 package OurNet::BBS::MAPLE2::Article;
 
@@ -174,9 +174,11 @@ sub STORE {
         my $file = join('/', $self->basedir, $self->{name});
         unless (-s $file) {
             $value =
-                "作者: $self->{_hash}{author} ".
-                (defined $self->{_hash}{nick} 
-                    ? "($self->{_hash}{nick}) " : " ").
+                "作者: ".($self->{_hash}{header}{From} || (
+		    $self->{_hash}{author}." ".
+		    (defined $self->{_hash}{nick} 
+			? "($self->{_hash}{nick})" : "")
+		)) . " " .
                 "看板: $self->{board} \n".
                 "標題: ".substr($self->{_hash}{title}, 0, 60)."\n".
                 "時間: ".localtime($self->{_hash}{time} || time).
@@ -195,6 +197,9 @@ sub STORE {
             substr($value, 0, 3) ne '◇ ') {
             $value = "◇ $value";
         }
+	elsif ($key eq 'author') {
+	    $value =~ s/(?:\.bbs)?\@.*$/./;
+	}
 
         $self->{_hash}{$key} = $value;
 

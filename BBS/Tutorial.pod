@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Tutorial.pod $ $Author: autrijus $
-# $Revision: #1 $ $Change: 2545 $ $DateTime: 2001/12/10 04:21:25 $
+# $Revision: #2 $ $Change: 2997 $ $DateTime: 2002/02/04 14:59:27 $
 
 =head1 NAME
 
@@ -119,7 +119,7 @@ Autrijus Tang E<lt>autrijus@autrijus.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2001 by Autrijus Tang E<lt>autrijus@autrijus.orgE<gt>.
+Copyright 2001-2002 by Autrijus Tang E<lt>autrijus@autrijus.orgE<gt>.
 
 This document is open document; you can redistribute it and/or
 modify it under the Open Content License.

@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/OurNet/BBS.pm $ $Author: autrijus $
-# $Revision: #5 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #6 $ $Change: 2999 $ $DateTime: 2002/02/04 15:00:28 $
 
 package OurNet::BBS::OurNet::BBS;
 
@@ -7,7 +7,16 @@ use strict;
 use OurNet::BBS::Client;
 
 sub new { 
-    return OurNet::BBS::Client->new(@_[2..$#_]);
+    if (ref($_[1])) {
+	# hashref
+	return OurNet::BBS::Client->new(@{$_[1]}{qw{
+	    bbsroot peerport keyid user password cipher_level auth_level
+	}});
+    }
+    else {
+	# plain
+	return OurNet::BBS::Client->new(@_[2..$#_]);
+    }
 }
 
 1;

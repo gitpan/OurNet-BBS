@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # $File: //depot/OurNet-BBS/t/stdtests $ $Author: autrijus $
-# $Revision: #31 $ $Change: 2456 $ $DateTime: 2001/11/28 12:16:45 $
+# $Revision: #32 $ $Change: 2993 $ $DateTime: 2002/02/04 13:55:33 $
 
 use strict; $|++;
 use constant IsWin32 => ($^O eq 'MSWin32');
@@ -16,12 +16,12 @@ sub BEGIN {
     	$_[0]->{$_[2] || 'mtime'} = $_[1] and return
     };
 
-    if (ref($::BBS) eq 'ARRAY') {
+    if (ref($::BBS) eq 'HASH') {
 	plan skip_all => 'RPC::PlServer not installed'
 	    unless (eval "use RPC::PlServer; 1;");
 
 	$OurNet::BBS::BYPASS_NEGOTIATION = 1;
-	OurNet::BBS->new(@{$::BBS})->daemonize(7977) if $ARGV[0];
+	OurNet::BBS->new($::BBS)->daemonize(7977) if $ARGV[0];
     }
     else {
 	# local BBS: test for compliation
@@ -34,7 +34,7 @@ sub BEGIN {
 our ($pid, $TODO, $Heading);
 
 my $BBS = $::BBS;
-my $IsClient = ref($BBS) eq 'ARRAY';
+my $IsClient = ref($BBS) eq 'HASH';
 my $backend  = $1 if $BBS =~ m/OurNet::BBS::([^:]+)::/;
 my @modules  = grep { m|BBS/$backend| } <$::MANIFEST> and close $::MANIFEST
     if $backend and $::MANIFEST;
@@ -58,7 +58,12 @@ if ($IsClient) {
     }
 
     for (1 .. 20) {
-	last if eval { $BBS = OurNet::BBS->new('OurNet', 'localhost', 7977) };
+	last if $BBS = eval { OurNet::BBS->new({
+	    backend     => 'OurNet',
+	    bbsroot     => 'localhost',
+	    peerport    => 7977
+	}) }; 
+
 	sleep 1;
     }
 

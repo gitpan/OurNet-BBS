@@ -1,10 +1,17 @@
 #!/usr/bin/perl -T
 # $File: //depot/OurNet-BBS/bin/bbsboard $ $Author: autrijus $
-# $Revision: #18 $ $Change: 2354 $ $DateTime: 2001/11/13 16:27:44 $
+# $Revision: #25 $ $Change: 2996 $ $DateTime: 2002/02/04 14:59:01 $
 
-$VERSION = '0.04';
+$VERSION = '0.05';
 $REVISION = "rev$1\[\@$2\]" 
-    if ('$Revision: #18 $ $Change: 2354 $' =~ /(\d+)[^\d]+(\d+)/);
+    if ('$Revision: #25 $ $Change: 2996 $' =~ /(\d+)[^\d]+(\d+)/);
+
+use strict;
+
+use MIME::Words ':all';
+use MIME::Parser;
+use Mail::Internet;
+use OurNet::BBS '1.6';
 
 =head1 NAME
 
@@ -35,6 +42,7 @@ In F</usr/local/etc/bbs.rc> or F</etc/bbs.rc>;
                          1003, 2500, 1005, 250, 1004, 50000], # needs utmp
             OWNER   => 'cvic',
             GROUP   => 'bbs',
+	    PERMIT  => 1, # 'permit' file required to post
         },
         'm543.com'  => {
             BASEURL => 'http://m543.com',
@@ -114,20 +122,18 @@ and any contributions on that front will be most welcomed.
 
 =cut
 
-use MIME::Words ':all';
-use MIME::Parser;
-use Mail::Internet;
-use OurNet::BBS '1.6';
-use strict;
-
 our ($SIZE_LIMIT, $DUMP, $LOG, $MAIL_LOG, $BOARD_LOG);
 our (%DOMAINS, $DEFAULT_DOMAIN);
 our ($Postfix, $Element, $Container, $RCFile);
+our ($MsgAttach, $MsgTooLarge, $MsgDownload);
 
-$Postfix   ||= '.board';
-$Element   ||= 'boards';
-$Container ||= 'articles';
-$RCFile    ||= 'bbs.rc';
+$Postfix	||= '.board';
+$Element	||= 'boards';
+$Container	||= 'articles';
+$RCFile		||= 'bbs.rc';
+$MsgAttach	||= "\n※ [信件夾檔: %s]\n";
+$MsgTooLarge	||= "※ (附加檔案 %s 超過上限: %s 位元組。)\n";
+$MsgDownload	||= "※ (附加檔案可於 %s 下載。)\n";
 
 foreach my $path ('/etc', '/usr/local/etc', '/usr/local/bin', '.') {
     do "$path/$RCFile" and last if -e "$path/$RCFile";
@@ -170,10 +176,14 @@ foreach my $dom (keys(%DOMAINS)) {
         $to = $bcc;
         $DOMAIN = $dom; last;
     }
-    elsif (index($received, "$Postfix\@".$dom) > -1) {
+    elsif (index(uc($received), uc("$Postfix\@".$dom)) > -1) {
+	$to = $received;
+	$to =~ s/.* for //s; $to =~ s/;.*//s;
         $DOMAIN = $dom; last;
     }
     elsif (index($received, "-owner\@".$dom) > -1) { # mailing list
+	$to = $received;
+	$to =~ s/.* for //s; $to =~ s/;.*//s;
         $DOMAIN = $dom; last;
     }
     elsif (index($received, "contact\@".$dom) > -1) { # special case
@@ -187,8 +197,8 @@ foreach my $dom (keys(%DOMAINS)) {
 die "Cannot find domain in: $received\n $to $cc $bcc!\n"
     unless defined($DOMAIN);
 
-my ($BASEURL, $WWWHOME, $OWNER, $GROUP) = 
-    @{$DOMAINS{$DOMAIN}}{qw/BASEURL WWWHOME OWNER GROUP/};
+my ($BASEURL, $WWWHOME, $OWNER, $GROUP, $PERMIT) = 
+    @{$DOMAINS{$DOMAIN}}{qw/BASEURL WWWHOME OWNER GROUP PERMIT/};
 
 if ($OWNER) {
     # change ownership / group to the designated id
@@ -240,14 +250,37 @@ unless (exists $OBJ->{$target}) {
 # blocks duplication
 exit 0 if index($xorig, "$target$Postfix\@") > -1;
 
+# check for existence
 die "no such target: $target" unless exists $OBJ->{$target};
 
+my $obj = $OBJ->{$target};
+
+die "no permission settings in $target" if (
+    $PERMIT and ($Container ne 'mailbox') and (
+	!exists($obj->{permit}) or		# no permission file
+	$obj->{permit} =~ /^[\s\t\015\012]*$/	# empty permission file
+    )
+);
+
+# check {permit} if there's one
+die "no permission to post: $target from $email" unless (
+    not exists($obj->{permit}) or		# 1) no permission
+    $obj->{permit} =~ /^[\s\t\015\012]*$/ or (	# 2) it's empty
+    grep { $email =~ /^$_$/i } 			# 3) match
+    grep { length }				#    nonempty
+    map { s/\\\*/.*/g; s/\\\?/./g; $_ }		#    wildcard-expanded
+    map { quotemeta }				#    escaped
+    map { s/^[\s\t]+//; s/[\s\t]+$//; $_ }	#    trimmed
+    split(/(?:\015?\012)+/, $obj->{permit}))	#    entries
+);
+
+# post permitted -- handle attachments
 foreach my $chunk ($entity->parts_DFS) {
     # skip Outlook special case!
     next if $chunk->head->recommended_filename eq 'winmail.dat';
 
     if ($chunk->head->recommended_filename) {
-        $body .= "\n※ [信件夾檔: ".$chunk->head->recommended_filename."]\n";
+        $body .= sprintf($MsgAttach, $chunk->head->recommended_filename);
     }
 
     if ($chunk->effective_type eq 'text/plain' or
@@ -285,25 +318,23 @@ foreach my $chunk ($entity->parts_DFS) {
 
         if ($file !~ /^\.+$/ and $content = $chunk->bodyhandle->as_string) {
 	    if (length($content) > $SIZE_LIMIT) {
-		$body .= "※ (附加檔案$file超過上限: $SIZE_LIMIT bytes。)\n";
+		$body .= sprintf($MsgTooLarge, $file, $SIZE_LIMIT);
 		next;
 	    }
 
             next unless mkdir "$WWWHOME/$timeseq"
 		 and open _, ">$WWWHOME/$timeseq/$file";
-            print _ 
+            print _ $content;
             close _;
-            $body .= "※ (附加檔案可於$BASEURL/$timeseq/$file下載。)\n";
-        }
+
+            $body .= sprintf($MsgDownload, "$BASEURL/$timeseq/$file");
+	}
     }
 }
 
 $subject =~ s/^\[$target\]\s?//i; # strip mailing list header tag
 
 # do the real work
-
-my $obj = $OBJ->{$target};
-
 $obj->{$Container}{''} = {
     title  => substr($subject, 0, 60),
     body   => $body,
@@ -330,11 +361,11 @@ L<OurNet::BBS>, L<bbsmail>.
 
 =head1 AUTHORS
 
-Autrijus Tang E<lt>autrijus@autrijus.org>
+Autrijus Tang E<lt>autrijus@autrijus.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2001 by Autrijus Tang E<lt>autrijus@autrijus.org>.
+Copyright 2001-2002 by Autrijus Tang E<lt>autrijus@autrijus.orgE<gt>.
 
 This program is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.
