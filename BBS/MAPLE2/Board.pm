@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/Board.pm $ $Author: autrijus $
-# $Revision: #6 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #7 $ $Change: 1254 $ $DateTime: 2001/06/21 10:39:30 $
 
 package OurNet::BBS::MAPLE2::Board;
 
@@ -55,8 +55,7 @@ sub refresh_meta {
     }
 
     my $file = "$self->{bbsroot}/$BRD";
-    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
-    $self->{mtime} = (stat($file))[9];
+    return if $self->timestamp($file);
 
     local $/ = \$packsize;
     open(my $DIR, $file) or die "can't read $BRD: $!";
@@ -119,16 +118,17 @@ sub STORE {
     $self->refresh_meta($key);
     $self->{_cache}{$key} = $value;
 
-    return if (index(' '.join(' ', @packlist).' ', " $key ") == -1);
+    return unless $self->contains($key);
 
     my $file = "$self->{bbsroot}/$BRD";
-    open DIR, "+<$file" or die "cannot open $file for writing";
+    open (my $DIR, '+<', $file) or die "cannot open $file for writing";
     # print "seeeking to ".($packsize * $self->{recno});
-    seek DIR, $packsize * $self->{recno}, 0;
-    print DIR pack($packstring, @{$self->{_cache}}{@packlist});
-    close DIR;
-    $self->{mtime} = (stat($file))[9];
-    $self->shmtouch() if exists $self->{shm};
+    seek $DIR, $packsize * $self->{recno}, 0;
+    print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
+    close $DIR;
+
+    $self->timestamp($file);
+    $self->shmtouch if exists $self->{shm};
 }
 
 sub shmtouch {

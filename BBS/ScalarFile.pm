@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/ScalarFile.pm $ $Author: autrijus $
-# $Revision: #4 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #5 $ $Change: 1265 $ $DateTime: 2001/06/23 16:52:45 $
 
 package OurNet::BBS::ScalarFile;
 
@@ -39,18 +39,21 @@ sub STORE {
     no warnings 'uninitialized';
     
     if (defined($_[0])) {
-        if (length($_[0]) >= length($self->[2]) and substr($_[0], 0,
-            length($self->[2])) eq $self->[2]) 
+        if (length($self->[2]) and 
+	    length($_[0]) >= length($self->[2]) and 
+	    substr($_[0], 0, length($self->[2])) eq $self->[2]) 
         {
             # append mode
-            open FILE, '>>', $filename or die "cannot append $filename: $!";
-            print FILE substr($_[0], length($self->[2]));
-            close FILE;
+            open(my $FILE, '>>', $filename) 
+		or die "cannot append $filename: $!";
+            print $FILE substr($_[0], length($self->[2]));
+            close $FILE;
         }
         else {
-            open FILE, '>', $filename or die "cannot write $filename: $!";
-            print FILE $self->[2];
-            close FILE;
+            open(my $FILE, '>', $filename) 
+		or die "cannot write $filename: $!";
+            print $FILE $_[0];
+            close $FILE;
         }
         $self->[1] = (stat($filename))[9];
         $self->[2] = $_[0];

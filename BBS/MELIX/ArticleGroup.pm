@@ -1,36 +1,32 @@
 # $File: //depot/OurNet-BBS/BBS/MELIX/ArticleGroup.pm $ $Author: autrijus $
-# $Revision: #7 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #9 $ $Change: 1460 $ $DateTime: 2001/07/17 22:31:42 $
 
 package OurNet::BBS::MELIX::ArticleGroup;
 
 use strict;
-use Mail::Address;
 use Date::Parse;
 use Date::Format;
 
 use base qw/OurNet::BBS::MAPLE3::ArticleGroup/;
 use fields qw/_cache _phash/;
 use subs qw/STORE/;
+use open IN => ':raw', OUT => ':raw';
 
 BEGIN { __PACKAGE__->initvars() };
 
 sub STORE {
     my ($self, $key, $value) = @_;
 
-    no warnings; # XXX: why?
-
     if ($self->contains($key)) {
 	$self->refresh($key);
 	$self->{_cache}{$key} = $value;
 
-	my $file = join('/', $self->basedir(), $self->{hdrfile});
+	my $file = "$self->{basepath}/$self->{board}/$self->{hdrfile}";
 
 	open(my $DIR, '+<', $file) or die "cannot open $file for writing";
 	seek $DIR, $packsize * $self->{recno}, 0;
 	print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
 	close $DIR;
-
-	$self->{mtime} = $self->{_cache}{$key}->mtime;
     }
     else {
 	my $obj;
@@ -48,16 +44,14 @@ sub STORE {
 	}
 	$key = $obj->recno;
 	if (ref($obj) =~ m|ArticleGroup|) {
-	    # do something here
 	    $obj->refresh('id');
 	}
 	elsif ($value->{header}) {
-	    if (my $adr = (Mail::Address->parse(
-		$value->{header}{From}))[0]
-	    ) {
-		$value->{author} = $adr->address;
-		$value->{nick} = $adr->comment;
-	    }
+	    # modern style
+	    no warnings 'uninitialized';
+
+	    @{$value}{qw/author nick/} = ($1, $2)
+		if $value->{header}{From} =~ m/(.+?)\s*(?:\((.*)\))/g;
 
 	    $value->{date} = time2str(
 		'%y/%m/%d', str2time($value->{header}{Date})
@@ -65,9 +59,13 @@ sub STORE {
 	    $value->{title} = $value->{header}{Subject};
 	}
 	else {
+	    no warnings 'uninitialized';
+
 	    # traditional style
 	    $value->{header} = {
-		From    => "$value->{author} ($value->{nick})",
+		From    => $value->{author}.
+		(defined $self->{_cache}{nick} 
+		    ? " ($self->{_cache}{nick})" : ''),
 		Date    => scalar localtime,
 		Subject => $value->{title},
 		Board   => $self->board,
@@ -80,7 +78,7 @@ sub STORE {
 
 	$obj->{body} = $value->{body} if ($value->{body});
 	$self->refresh($key);
-	$self->{mtime} = $obj->mtime;
+	$self->{mtime} = $obj->{time}; # not mtime, due to chrono-ahead.
     }
 }
 

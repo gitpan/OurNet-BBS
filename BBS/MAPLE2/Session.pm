@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/Session.pm $ $Author: autrijus $
-# $Revision: #5 $ $Change: 1181 $ $DateTime: 2001/06/17 22:14:27 $
+# $Revision: #6 $ $Change: 1254 $ $DateTime: 2001/06/21 10:39:30 $
 
 package OurNet::BBS::MAPLE2::Session;
 
@@ -92,8 +92,7 @@ sub STORE {
     $self->refresh_meta($key);
     $self->{_cache}{$key} = $value;
 
-    return if (index(' '.join(' ', @packlist).' ', " $key ") == -1);
-
+    return unless $self->contains($key);
     $self->_shmwrite();
 }
 

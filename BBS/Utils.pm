@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Utils.pm $ $Author: autrijus $
-# $Revision: #11 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #12 $ $Change: 1430 $ $DateTime: 2001/07/14 23:34:22 $
 
 package OurNet::BBS::Utils;
 
@@ -69,9 +69,9 @@ sub set_msgid {
     $_[0]->{'Message-ID'} = "<$timestamp.$hash\@bbs.elixus.org>";
 }
 
-# arg: timestamp author board host
+# arg: timestamp author board title host
 sub get_msgid {
-    my ($timestamp, $author, $board, $host) = @_;
+    my ($timestamp, $author, $board, $title, $host) = @_;
 
     $host ||= $hostname;
 
@@ -88,7 +88,7 @@ sub get_msgid {
         unless length($timestamp ||= ('0' x 14)) == 14;
 
     no warnings 'uninitialized';
-    return $timestamp.'.'.md5_base64("$board $author").'@'.$host;
+    return "<$timestamp.".md5_base64("$author $title $board")."\@$host>";
 }
 
 1;

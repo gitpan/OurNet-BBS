@@ -1,10 +1,10 @@
 # $File: //depot/OurNet-BBS/BBS.pm $ $Author: autrijus $
-# $Revision: #23 $ $Change: 1242 $ $DateTime: 2001/06/20 05:46:53 $
+# $Revision: #25 $ $Change: 1482 $ $DateTime: 2001/07/23 01:18:05 $
 
 package OurNet::BBS;
 require 5.006;
 
-$OurNet::BBS::VERSION  = '1.55';
+$OurNet::BBS::VERSION  = '1.56';
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -71,6 +71,7 @@ More detailed document is expected to appear soon.
 BEGIN { 
     __PACKAGE__->initvars(
 	'@BOARDS'   => [qw/bbsroot brdshmkey maxboard/],
+	'@FILES'    => [qw/bbsroot/],
 	'@GROUPS'   => [qw/bbsroot/],
         '@SESSIONS' => [qw/bbsroot sessionshmkey maxsesions chatport passwd/],
 	'@USERS'    => [qw/bbsroot usershmkey maxuser/],

@@ -1,9 +1,9 @@
 TODO for 1.5x:
 
-- better-polished bin/bbscomd, including the ability to serve as proxy
-- bbscomd authentication model
-- A better README and overall documentation
+- better-polished bin/bbscomd, including the ability to serve as proxy.
+- A better README and overall documentation.
 - add locating, security and session to BBSCOM-RPC.
+- XML-RPC support.
 
 Please mail your ideas to autrijus@autrijus.org.
 

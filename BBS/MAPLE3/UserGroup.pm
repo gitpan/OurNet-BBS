@@ -1,11 +1,18 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/UserGroup.pm $ $Author: autrijus $
-# $Revision: #7 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #9 $ $Change: 1460 $ $DateTime: 2001/07/17 22:31:42 $
 
 package OurNet::BBS::MAPLE3::UserGroup;
 
 use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot maxuser _cache _phash/;
+use subs qw/writeok readok/;
+use open IN => ':raw', OUT => ':raw';
+
+BEGIN { __PACKAGE__->initvars() }
+
+sub writeok { 0 }
+sub readok { 1 }
 
 sub FETCHSIZE {
     my $self = $_[0];

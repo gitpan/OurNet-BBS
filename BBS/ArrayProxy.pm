@@ -1,22 +1,19 @@
 # $File: //depot/OurNet-BBS/BBS/ArrayProxy.pm $ $Author: autrijus $
-# $Revision: #3 $ $Change: 1132 $ $DateTime: 2001/06/14 16:34:13 $
+# $Revision: #5 $ $Change: 1407 $ $DateTime: 2001/07/11 22:27:23 $
 
 package OurNet::BBS::ArrayProxy;
 
 sub FETCHSIZE {
-    my $self = shift;
-    my $ego  = (tied %{$self->{_hash}});
+    my $ego  = (tied %{$_[0]->{_hash}});
 
-    return $ego->FETCHSIZE() if ($ego->can('FETCHSIZE'));
+    return $ego->FETCHSIZE if ($ego->can('FETCHSIZE'));
 
-    $ego->refresh();
-
+    $ego->refresh;
     return (($#{$ego->{_phash}[0]} + 1) || 1);
 }
 
 sub TIEARRAY {
-    my ($class, $hash) = @_;
-    my $flag = undef;
+    my ($class, $hash, $flag) = @_;
     my $self = {_flag => \$flag, _hash => $hash};
 
     (tied %$hash)->{_phash}[1] = (\$flag);
@@ -25,8 +22,7 @@ sub TIEARRAY {
 
 sub PUSH {
     my $self = shift;
-    my $ego  = (tied %{$self->{_hash}});
-    my $size = (($#{$ego->{_phash}[0]} + 1) || 1);
+    my $size = $self->FETCHSIZE;
 
     foreach my $item (@_) {
         $self->STORE($size++, $item);
@@ -34,26 +30,20 @@ sub PUSH {
 }
 
 sub STORE {
-    my $self = shift;
-    my $key  = shift;
+    my ($self, $key) = splice(@_, 0, 2);
     my $ego  = (tied %{$self->{_hash}});
 
     $ego->STORE(
-        defined(${$self->{_flag}}) ? ${$self->{_flag}}
-                                   : $key,
-        @_
+        (defined(${$self->{_flag}}) ? ${$self->{_flag}} : $key), @_
     );
 }
 
 sub DELETE {
-    my $self = shift;
-    my $key  = shift;
+    my ($self, $key) = splice(@_, 0, 2);
     my $ego  = (tied %{$self->{_hash}});
 
     $ego->DELETE(
-        defined(${$self->{_flag}}) ? ${$self->{_flag}}
-                                   : $key,
-        @_
+        (defined(${$self->{_flag}}) ? ${$self->{_flag}} : $key), @_
     );
 }
 
@@ -77,7 +67,6 @@ sub FETCH {
         undef ${$self->{_flag}};
 
         $ego->refresh($key);
-
         return (exists $ego->{_phash}[0] and $ego->{_phash}[0][0]{$key})
             ? $ego->{_phash}[0]{$key}
             : $ego->{_cache}{$key};
@@ -88,7 +77,10 @@ sub FETCH {
     }
 }
 
-sub CLEAR {};
-sub EXTEND {};
+# couldn't care less
+sub UNTIE {}
+sub CLEAR {}
+sub EXTEND {}
+sub DESTROY {}
 
 1;

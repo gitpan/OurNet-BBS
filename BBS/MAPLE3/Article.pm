@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/Article.pm $ $Author: autrijus $
-# $Revision: #14 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #21 $ $Change: 1468 $ $DateTime: 2001/07/20 19:49:34 $
 
 package OurNet::BBS::MAPLE3::Article;
 
@@ -7,6 +7,7 @@ use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/basepath board name dir hdrfile recno mtime btime _cache/;
 use subs qw/writeok readok remove/;
+use open IN => ':raw', OUT => ':raw';
 
 BEGIN {
     __PACKAGE__->initvars(
@@ -22,7 +23,7 @@ sub writeok {
     return if $op eq 'DELETE';
 
     # STORE
-    return ($self->{author} eq $user->id() 
+    return ($self->{author} eq $user->id 
 	    or $user->has_perm('PERM_SYSOP'));
 }
 
@@ -63,6 +64,7 @@ sub new_id {
     while (my $id = stamp($chrono)) {
         $fname = join('/', $file, substr($id, -1), $id);
         last unless -e $fname;
+
         $chrono = ++$chronos{$self->{board}};
     }
 
@@ -78,7 +80,8 @@ sub _refresh_body {
     $self->refresh_meta unless ($self->{name});
 
     my $file = "$self->{basepath}/$self->{board}/".
-	substr($self->{name}, -1).'/'.$self->{name};
+        (substr($self->{name}, 0, 1) eq '@' ? '@' : substr($self->{name}, -1)).
+	'/'.$self->{name};
 
     die "no such file: $file" unless -e $file;
 
@@ -119,22 +122,19 @@ sub refresh_header {
 }
 
 sub refresh_meta {
-    my $self = shift;
+    my $self = shift;   
+    my $cachetime;
+    
+    $self->{name} = stamp($cachetime = $self->new_id) unless (defined $self->{name});
 
-    unless ($self->{name}) {
-        $self->{_cache}{time} = $self->new_id();
-        $self->{name} = stamp($self->{_cache}{time});
-    }
- 
     my $file = "$self->{basepath}/$self->{board}/$self->{hdrfile}";
-    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
+    
+    return if $self->timestamp($file);
 
-    my $filesize;
     local $/ = \$packsize;
-    open(my $DIR, $file) or die "can't read DIR file for $self->{board}: $!";
-    ($filesize, $self->{mtime}) = (stat($DIR))[7, 9];
+    open(my $DIR, '<', $file) or die "can't read DIR file $file: $!";
 
-    if (defined $self->{recno}) {
+    if (defined $self->{name} and defined $self->{recno}) {
         seek $DIR, $packsize * $self->{recno}, 0;
         @{$self->{_cache}}{@packlist} = unpack($packstring, <$DIR>);
 
@@ -144,22 +144,32 @@ sub refresh_meta {
         }
     }
 
-    unless (defined $self->{recno}) {
-        seek $DIR, 0, 2;
-        $self->{recno} = $filesize / $packsize;
-
+    unless (defined $self->{name} and defined $self->{recno}) {
 	no warnings 'uninitialized';
+
+	if (not defined $cachetime) { # seek for name
+	    $self->{recno} = 0;
+
+	    while (my $data = <$DIR>) {
+		@{$self->{_cache}}{@packlist} = unpack($packstring, $data);
+		last if ($self->{_cache}{id} eq $self->{name});
+		$self->{recno}++;
+	    }
+	}
+	else { # append
+	    seek $DIR, 0, 2;
+	    $self->{_cache}{time} = $cachetime;
+	    $self->{recno} = (stat($DIR))[7] / $packsize; # filesize/packsize
+	}
+
 	my @localtime = localtime;
 
         if ($self->{_cache}{id} ne $self->{name}) {
-            $self->{_cache}{id} = $self->{name};
-            $self->{_cache}{author}   ||= '(nobody).';
+            $self->{_cache}{id}		= $self->{name};
             $self->{_cache}{date}     ||= sprintf(
 		"%02d/%02d/%02d", substr($localtime[5], -2), 
 		$localtime[4] + 1, $localtime[3]
 	    );
-            $self->{_cache}{title}    = ' '
-		unless defined $self->{_cache}{title};
             $self->{_cache}{filemode} = 0;
 
             open(my $DIR, '+>>', $file)
@@ -184,20 +194,24 @@ sub STORE {
             $value =
 		"作者: $self->{_cache}{author} ".
 		(defined $self->{_cache}{nick} 
-		    ? "($self->{_cache}{nick}) " : " ").
+		    ? "($self->{_cache}{nick}) " : '').
 		"看板: $self->{board} \n".
 		"標題: ".substr($self->{_cache}{title}, 0, 60)."\n".
 		"時間: ".($self->{_cache}{datetime} || scalar localtime).
 		"\n\n".
 		$value;
         }
+
         open(my $BODY, '>', $file) or die "cannot open $file";
         print $BODY $value;
         close $BODY;
-        $self->{btime} = (stat($file))[9];
+
         $self->{_cache}{$key} = $value;
+	$self->timestamp($file, 'btime');
     }
     else {
+	no warnings 'uninitialized';
+
         $self->{_cache}{$key} = $value;
 
 	my $file = "$self->{basepath}/$self->{board}/$self->{hdrfile}";
@@ -206,14 +220,15 @@ sub STORE {
         seek $DIR, $packsize * $self->{recno}, 0;
         print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
         close $DIR;
-        $self->{mtime} = (stat($file))[9];
+
+	$self->timestamp($file);
     }
 }
 
 =comment out
 sub remove {
     my $self = shift;
-    my $file = join('/', $self->basedir, $self->{hdrfile});
+    my $file = "$self->{basepath}/$self->{board}/$self->{hdrfile}";
 
     open(my $DIR, $file) or die "cannot open $file for reading";
 
@@ -242,7 +257,7 @@ sub remove {
     print $DIR $before . $after;
     close $DIR;
 
-    unlink join('/', $self->basedir, $self->{name});
+    unlink "$self->{basepath}/$self->{board}/$self->{name}";
 
     return 1;
 }

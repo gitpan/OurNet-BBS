@@ -1,11 +1,17 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/GroupGroup.pm $ $Author: autrijus $
-# $Revision: #3 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+# $Revision: #6 $ $Change: 1460 $ $DateTime: 2001/07/17 22:31:42 $
 
 package OurNet::BBS::MAPLE3::GroupGroup;
 
 use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot mtime _cache/;
+use subs qw/readok/;
+use open IN => ':raw', OUT => ':raw';
+
+BEGIN { __PACKAGE__->initvars() }
+
+sub readok { 1 }
 
 sub refresh_meta {
     my ($self, $key) = @_;
@@ -18,8 +24,7 @@ sub refresh_meta {
         return;
     }
 
-    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
-    $self->{mtime} = (stat($file))[9];
+    return if $self->timestamp($file);
 
     opendir DIR, $file or die "can't read group file $file: $!";
 

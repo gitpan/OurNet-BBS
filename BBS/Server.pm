@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Server.pm $ $Author: autrijus $
-# $Revision: #25 $ $Change: 1238 $ $DateTime: 2001/06/20 04:55:16 $
+# $Revision: #32 $ $Change: 1477 $ $DateTime: 2001/07/22 23:14:15 $
 
 package OurNet::BBS::Server;
 
@@ -124,7 +124,7 @@ sub daemonize {
 
     if ($CipherLevel & (CIPHER_PGP | CIPHER_BASIC)) {
 	$CipherLevel &= ~(CIPHER_PGP | CIPHER_BASIC)
-	    unless @CipherSuites = OurNet::BBS::Authen->suites();
+	    unless @CipherSuites = OurNet::BBS::Authen->suites;
     }
 
     die "no cipher modes available"	    unless $CipherLevel;
@@ -132,7 +132,7 @@ sub daemonize {
 
     show("[Server] OurNet service started.\n");
 
-    $Server->Bind();
+    $Server->Bind;
 }
 
 ## Initialization #####################################################
@@ -184,13 +184,13 @@ sub cipher_basic {
     $cipher = OurNet::BBS::Authen->suites($cipher)
 	or nextstate() and return;
 
-    my $keysize = $cipher->keysize() || (
+    my $keysize = $cipher->keysize || (
 	$cipher eq 'Crypt::Blowfish' ? 56 : 8
     );
 
     # make session key
-    my $session_key = md5(rand());
-    $session_key .= md5(rand()) until length($session_key) >= $keysize;
+    my $session_key = md5(rand);
+    $session_key .= md5(rand) until length($session_key) >= $keysize;
     $session_key = substr($session_key, 0, $keysize);
 
     $self->{newciph} = $cipher->new($session_key)
@@ -238,7 +238,7 @@ sub auth_pgp {
 
     if ($pubkey and $pubkey eq $Auth->export_key) {
 	nextstate('set_sign');
-	return ($Auth->{challenge} = md5_hex(rand()));
+	return ($Auth->{challenge} = md5_hex(rand));
     }
     else {
 	nextstate('set_pubkey');
@@ -256,7 +256,7 @@ sub set_pubkey {
     if ($pubkey eq $Auth->export_key) {
 	$Auth->{user}{pubkey} = $pubkey or return;
 	nextstate('set_sign');
-	return ($Auth->{challenge} = md5_hex(rand()));
+	return ($Auth->{challenge} = md5_hex(rand));
     }
     else {
 	show("...failed! (keyid doesn't match)\n");;
@@ -320,6 +320,9 @@ sub set_crypted {
 
 sub auth_none {
     return unless $AuthLevel & AUTH_NONE;
+
+    undef $Auth->{user}; # clean up previous auth
+
     nextstate('locate', 'relay');
     return ($OP->{STATUS_ACCEPTED}, $AuthMode = AUTH_NONE); 
 }
@@ -349,7 +352,7 @@ sub __ {
 	@_[$#_ .. $#_ + 2] = @OPTREE[$_[-1] .. $_[-1] + 2];
     }
 
-    foreach my $i (2 .. (scalar @_ / 2)) {
+    foreach my $i (2 .. (scalar @_ / 2)) { return eval { 
 	my ($op, $param) = @_[
 	    ($#_ - ($i * 2)) + 2,
 	    ($#_ - ($i * 2)) + 3,
@@ -360,14 +363,15 @@ sub __ {
 	$action  ||= substr($op, index($op, '_') + 1);
 
 	if ((index(OP_IGNORE, " $action ") > -1)) {
-	    show("ignored op: $obj $op\n");;
-	    return '', $OP->{STATUS_IGNORED}, $action, '';
+	    show("ignored op: $obj $op\n");
+	    return('', $OP->{STATUS_IGNORED}, $action, '');
 	}
 
 	if (not $Perm{"$obj $op"} and $Auth->{user}
-			  and substr(ref($obj), 0, 11) eq 'OurNet::BBS') {
+	    and substr(ref($obj), 0, 11) eq 'OurNet::BBS'
+	) {
 	    return (
-		'', $OP->{STATUS_FORBIDDEN}, $action, 'not permitted'
+		'', $OP->{STATUS_FORBIDDEN}, $action, "not permitted: $obj"
 	    ) unless (
 		(index(OP_WRITE, " $action ") > -1)
 		    ? $obj->writeok($Auth->{user}, $action, $param)
@@ -378,9 +382,9 @@ sub __ {
 	}
 
         if ($op =~ m/^OBJECT_/) {
-	    if ($action eq 'SPAWN') {
-		return { %{$obj} };
-	    }
+	    return { %{$obj} } if $action eq 'SPAWN';
+	    return ref($obj)   if $action eq 'REF';
+
             my @ret = $obj->$action(@{$param});
             $obj = $ret[0] and next unless $#ret; # return if single arg
             return @ret;
@@ -395,7 +399,7 @@ sub __ {
 	    $obj = $obj->{$arg};
         } elsif ($op eq 'HASH_FIRSTKEY') {
 	    if (UNIVERSAL::can($obj, 'ego')) {
-		@ret = $obj->ego->FIRSTKEY();
+		@ret = $obj->ego->FIRSTKEY;
 	    }
 	    else {
 		scalar keys(%$obj);
@@ -405,7 +409,7 @@ sub __ {
 	    return @ret;
         } elsif ($op eq 'HASH_NEXTKEY') {
 	    if (UNIVERSAL::can($obj, 'ego')) {
-		@ret = $obj->ego->NEXTKEY();
+		@ret = $obj->ego->NEXTKEY;
 	    }
 	    else {
 		@ret = each(%$obj);
@@ -452,7 +456,16 @@ sub __ {
             warn "Unknown OP: $op (@{$param})\n";
 	    return ('', $OP->{STATUS_UNKNOWN_OP}, '', '');
         }
-    }
+
+	no warnings 'exiting'; # intended! arbitary! 
+	next;
+    };
+
+	if ($@) {
+	    show("execution failed: $@\n");
+	    return ('', $OP->{STATUS_FAILED}, '', $@);
+	}
+    };
 
     if (UNIVERSAL::isa($obj, 'UNIVERSAL')) { # is it an object?
 	push @OPTREE, $_[1], $_[2], $parent;
@@ -485,6 +498,8 @@ sub nextstate {
 }
 
 1;
+
+package OurNet::BBS::Server;
 
 #######################################################################
 # The following section is a modified version of RPC::PlServer code, 
@@ -522,8 +537,6 @@ sub nextstate {
 # CPAN at http://www.cpan.org/.
 #
 #######################################################################
-
-package OurNet::BBS::Server;
 
 sub CallMethod ($$$@) {
     my($self, $handle, $method, @args) = @_;
@@ -564,8 +577,8 @@ sub Run ($) {
     my $self = shift;
     my $socket = $self->{'socket'};
 
-    while (!$self->Done()) {
-	my $msg = $self->RPC::PlServer::Comm::Read();
+    while (!$self->Done) {
+	my $msg = $self->RPC::PlServer::Comm::Read;
 	last unless defined($msg);
 	die "Expected array" unless ref($msg) eq 'ARRAY';
 	my($error, $command);

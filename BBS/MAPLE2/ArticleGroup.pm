@@ -1,9 +1,10 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/ArticleGroup.pm $ $Author: autrijus $
-# $Revision: #5 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #7 $ $Change: 1317 $ $DateTime: 2001/06/27 04:50:59 $
 
 package OurNet::BBS::MAPLE2::ArticleGroup;
 
 use strict;
+use warnings;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot board basepath name dir recno mtime btime _cache _phash/;
 
@@ -109,7 +110,7 @@ sub refresh_id {
 sub refresh_meta {
     my ($self, $key) = @_;
 
-    no warnings 'uninitialized';
+    no warnings qw/uninitialized numeric/;
 
     my $file = join('/', $self->basedir(), $self->{name}, '.DIR');
     my $name;
@@ -171,8 +172,7 @@ sub refresh_meta {
         return 1;
     }
 
-    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
-    $self->{mtime} = (stat($file))[9];
+    return if $self->timestamp($file);
 
     $self->{_phash}[0] = fields::phash(map {
         seek $DIR, $packsize * $_, 0;
@@ -212,11 +212,13 @@ sub STORE {
         seek $DIR, $packsize * $self->{recno}, 0;
         print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
         close $DIR;
-        $self->{mtime} = (stat($file))[9];
+
+	$self->timestamp($file);
     }
     else {
 	my $obj;
 
+	no warnings 'numeric';
         if ($key > 0 and exists $self->{_phash}[0][$key]) {
             $obj = $self->{_phash}[0][$key];
         }
@@ -272,7 +274,7 @@ sub EXISTS {
     return 1 if exists ($self->{_cache}{$key});
 
     my $file = join('/', $self->basedir(), $self->{name}, '.DIR');
-    return 0 if $self->{mtime} and (stat($file))[9] == $self->{mtime};
+    return 0 if $self->timestamp($file, 0);
 
     open(my $DIR, $file) or die "can't read DIR file $file: $!";
 

@@ -1,11 +1,13 @@
 # $File: //depot/OurNet-BBS/BBS/CVIC/GroupGroup.pm $ $Author: autrijus $
-# $Revision: #3 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+# $Revision: #5 $ $Change: 1267 $ $DateTime: 2001/06/23 20:35:33 $
 
 package OurNet::BBS::CVIC::GroupGroup;
 
 use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot mtime _cache/;
+
+BEGIN { __PACKAGE__->initvars() }
 
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
@@ -19,8 +21,7 @@ sub refresh_meta {
         return;
     }
 
-    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
-    $self->{mtime} = (stat($file))[9];
+    return if $self->timestamp($file);
 
     opendir DIR, $file or die "can't read group file $file: $!";
     %{$self->{_cache}} = map {

@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/UserGroup.pm $ $Author: autrijus $
-# $Revision: #3 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+# $Revision: #4 $ $Change: 1270 $ $DateTime: 2001/06/24 07:15:18 $
 
 package OurNet::BBS::MAPLE2::UserGroup;
 
@@ -54,7 +54,7 @@ sub refresh_meta {
                     last;
                 }
             }
-            $key ||= $self->{maxuser}++;
+            $key ||= $self->{maxuser} + 1;
         }
     }
 

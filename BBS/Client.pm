@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Client.pm $ $Author: autrijus $
-# $Revision: #17 $ $Change: 1235 $ $DateTime: 2001/06/20 04:21:24 $
+# $Revision: #18 $ $Change: 1255 $ $DateTime: 2001/06/21 10:57:45 $
 
 package OurNet::BBS::Client;
 
@@ -10,9 +10,11 @@ use OurNet::BBS::Authen;
 
 use fields qw/id remote_ref optree _phash/;
 use enum qw/BITMASK:CIPHER_ NONE BASIC PGP/;
-use enum qw/BITMASK:AUTH_ NONE CRYPT PGP/;
+use enum qw/BITMASK:AUTH_   NONE CRYPT PGP/;
 
-our $AUTOLOAD;
+our ($AUTOLOAD, $Port);
+
+$Port = 7978;
 
 my $OP = $OurNet::BBS::Authen::OP;
 my (%Cache, @delegators);
@@ -54,7 +56,7 @@ sub TIEHASH {
 
         $delegators[$self->{id}] = RPC::PlClient->new(
             peeraddr    => $peeraddr,
-            peerport    => $peerport || 7978,
+            peerport    => $peerport || $Port,
             application => 'OurNet::BBS::Server',
             version     => $OurNet::BBS::Authen::VERSION,
         )->ClientObject('__', 'spawn');
@@ -108,7 +110,7 @@ sub negotiate_cipher {
 ## Seed Phase #########################################################
 # gets supported cipher suites and (optionally) server's public key
 
-    my $cipher = OurNet::BBS::Authen->suites($client->get_suites())
+    my $cipher = OurNet::BBS::Authen->suites($client->get_suites)
 	if $mode & (CIPHER_BASIC | CIPHER_PGP);
 
     show("[Client] agreed on cipher: $cipher ") if $cipher;
@@ -149,8 +151,8 @@ sub cipher_pgp {
     );
 
     # make session key
-    my $session_key = md5(rand());
-    $session_key .= md5(rand()) until length($session_key) >= $keysize;
+    my $session_key = md5(rand);
+    $session_key .= md5(rand) until length($session_key) >= $keysize;
     $session_key = substr($session_key, 0, $keysize);
 
     my $authcrypt = $auth->encrypt($session_key) or return; # encrypt it
@@ -170,7 +172,7 @@ sub cipher_basic {
 
 sub cipher_none {
     my ($client) = @_;
-    return $client->cipher_none();
+    return $client->cipher_none;
 }
 
 ## Auth Phase #########################################################
@@ -196,7 +198,7 @@ sub negotiate_auth {
 	return AUTH_CRYPT if auth_crypt($client, $user, $pass);
     }
 
-    if ($mode & AUTH_NONE and $client->auth_none()) {
+    if ($mode & AUTH_NONE and $client->auth_none) {
 	# no authentication at all
 	show("fallback to none...");
 	return AUTH_NONE;
@@ -225,7 +227,7 @@ sub auth_pgp {
     }
     elsif ($challenge eq $OP->{STATUS_OK}) {
 	show("challenge($challenge)");
-	$challenge = $client->set_pubkey($auth->export_key());
+	$challenge = $client->set_pubkey($auth->export_key);
     }
 
     if ($challenge eq $OP->{STATUS_BAD_PUBKEY}) {
@@ -260,14 +262,15 @@ sub auth_crypt {
 
 sub auth_none {
     my ($client) = @_;
-    return $client->auth_none();
+    return $client->auth_none;
 }
 
 sub quit {
     foreach my $client (@delegators) {
-	$client->quit() if $client;
+	$client->quit if $client;
     }
-    @delegators = ();
+
+    undef @delegators;
 }
 
 sub show {
@@ -275,28 +278,37 @@ sub show {
     print $_[0] if $OurNet::BBS::DEBUG;
 }
 
-
 ## Connected ##########################################################
 # do the real job via AUTOLOAD passing and ArrayHashMonster magic
 
 sub AUTOLOAD {
-    my $self = shift;
     my ($ego, $op);
 
-    $AUTOLOAD = substr($AUTOLOAD, (
+    no strict 'refs';
+
+    my $action = substr($AUTOLOAD, (
 	(rindex($AUTOLOAD, ':') + 1) || return
     ));
 
+    # special-casing the FETCH method
+    if (rindex($action, '__') > -1) {
+	chop $action; chop $action;
+    }
+
+    # install a closure-based handler for future use instead of AUTOLOAD
+*{$AUTOLOAD} = sub {
+    my $self = shift;
+
     if (tied(%{$self})) {
-        $op = "OBJECT_$AUTOLOAD";
+        $op = "OBJECT_$action";
         $ego = tied(%{tied(%{$self})->{_hash}});
     }
     elsif (exists $self->{_hash}) {
-        $op = "ARRAY_$AUTOLOAD";
+        $op = "ARRAY_$action";
         $ego = tied(%{$self->{_hash}});
     }
     else {
-        $op = "HASH_$AUTOLOAD";
+        $op = "HASH_$action";
         $ego = $self;
     }
 
@@ -305,15 +317,18 @@ sub AUTOLOAD {
     );
 
     if (@result == 4 and !$result[0] and my $opcode = $result[1]) {
-        return $ego->spawn($result[2], $result[3])
+        return $ego->spawn(@result[2, 3])
 	    if $OP->{$opcode} eq 'OBJECT_SPAWN';
 
 	return undef if $OP->{$opcode} eq 'STATUS_IGNORED';
 
-        die "$result[2] $result[3] [$OP->{$opcode}]\n";
+        die "@result[2, 3] [$OP->{$opcode}]\n";
     }
 
     return wantarray ? @result : $result[0];
+} unless exists(&{$AUTOLOAD});
+
+    goto &{$AUTOLOAD};
 }
 
 sub FETCH {
@@ -324,19 +339,23 @@ sub FETCH {
     return 1;
 }
 
+# couldn't care less
+sub UNTIE {}
 sub DESTROY {}
 
 1;
 
+## ArrayProxy #########################################################
+# Resolves the second level tie intelligently
+
 package OurNet::BBS::ClientArrayProxy;
 
-our $AUTOLOAD;
-
+# delegate FETCHSIZE etc to OurNet::BBS::Client's handler
 *OurNet::BBS::ClientArrayProxy::AUTOLOAD = *OurNet::BBS::Client::AUTOLOAD;
 
+# constructor; $flag is usually undef
 sub TIEARRAY {
-    my ($class, $hash) = @_;
-    my $flag = undef;
+    my ($class, $hash, $flag) = @_;
     my $self = {_flag => \$flag, _hash => $hash};
 
     (tied %$hash)->{_phash} = (\$flag);
@@ -346,51 +365,35 @@ sub TIEARRAY {
 sub STORE {
     my ($self, $key) = splice(@_, 0, 2);
     my $hash = $self->{_hash};
-    # print "STORE: $key $hash\n";
     return $hash if $key == 0;
-    # print "$self AFETCH: $key\n";
-    my $ego = tied %{$hash};
-
-    no strict 'refs';
 
     if (defined ${$self->{_flag}}) {
         $key = ${$self->{_flag}};
         undef ${$self->{_flag}};
+    }
 
-        # hash store: VERY CRUDE HACK!
-        $AUTOLOAD = ':STORE';
-        return ($ego->AUTOLOAD($key, @_))[0];
-    }
-    else {
-        $AUTOLOAD = ':STORE';
-        return ($ego->AUTOLOAD($key, @_))[0];
-    }
+    return scalar(tied(%{$hash})->STORE($key, @_));
 }
 
 sub FETCH {
     my ($self, $key) = @_;
     my $hash = $self->{_hash};
-    # print "FETCH: $key $hash\n";
     return $hash if $key == 0;
-    # print "$self AFETCH: $key\n";
-    my $ego = tied %{$hash};
-
-    no strict 'refs';
 
     if (defined ${$self->{_flag}}) {
         $key = ${$self->{_flag}};
         undef ${$self->{_flag}};
 
-        # hash fetch: VERY CRUDE HACK!
-	$AUTOLOAD = ':FETCH';
-	return ($ego->AUTOLOAD($key))[0];
+	return scalar(tied(%{$hash})->FETCH__($key));
     }
     else {
-        $AUTOLOAD = ':FETCHARRAY';
-        return ($ego->AUTOLOAD($key))[0];
+	return scalar(tied(%{$hash})->FETCHARRAY($key));
     }
 }
 
+# couldn't care less
+sub UNTIE {}
+sub EXTEND {}
 sub DESTROY {}
 
 1;

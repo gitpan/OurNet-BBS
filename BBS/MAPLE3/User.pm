@@ -1,11 +1,18 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE3/User.pm $ $Author: autrijus $
-# $Revision: #9 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #13 $ $Change: 1468 $ $DateTime: 2001/07/20 19:49:34 $
 
 package OurNet::BBS::MAPLE3::User;
 
 use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot id recno _cache/;
+use subs qw/writeok readok/;
+use open IN => ':raw', OUT => ':raw';
+
+BEGIN { __PACKAGE__->initvars() }
+
+sub writeok { 0 }
+sub readok { 1 }
 
 use enum 'BITMASK:PERM_',
     qw/BASIC CHAT PAGE POST VALID MBOX CLOAK XEMPT/,		# Basic
@@ -103,15 +110,17 @@ sub refresh_meta {
 
 sub refresh_mailbox {
     my $self = shift;
+    my $PATH_USR = 'usr'; # XXX should be in inivars
 
-    $self->{_cache}{mailbox} ||= $self->module('ArticleGroup')->new(
-        $self->{bbsroot},
-        'usr/'.lc(substr($self->{id}, 0, 1)."/$self->{id}").
-        '',
-        '',
-        '.DIR',
-        '',
-    );
+    return $self->{_cache}{mailbox} ||= $self->module('ArticleGroup')->new({
+	basepath	=> "$self->{bbsroot}/$PATH_USR/".
+			   lc(substr($self->{id}, 0, 1)),
+	board		=> lc($self->{id}),
+	idxfile	 	=> '.DIR',
+	bm		=> $self->{id},
+	readlevel	=> 0,
+	postlevel	=> 0,
+    });
 }
 
 sub STORE {

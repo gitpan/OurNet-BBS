@@ -1,9 +1,10 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/Article.pm $ $Author: autrijus $
-# $Revision: #16 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #17 $ $Change: 1254 $ $DateTime: 2001/06/21 10:39:30 $
 
 package OurNet::BBS::MAPLE2::Article;
 
 use strict;
+use warnings;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot board basepath name dir recno mtime btime _cache/;
 
@@ -25,14 +26,14 @@ sub new_id {
     my $self = shift;
     my ($id, $file);
 
-    $file = $self->basedir();
+    $file = $self->basedir;
 
     unless (-e "$file/.DIR") {
         open(my $DIR, '>', "$file/.DIR") or die "cannot create $file/.DIR";
         close $DIR;
     }
 
-    my $chrono = time();
+    my $chrono = time;
 
     no warnings 'uninitialized';
     $chronos{$self->{board}} = $chrono 
@@ -52,7 +53,7 @@ sub new_id {
 sub _refresh_body {
     my $self = shift;
 
-    $self->{name} ||= $self->new_id();
+    $self->{name} ||= $self->new_id;
 
     my $file = join('/', $self->basedir, $self->{name});
 
@@ -116,8 +117,7 @@ sub refresh_meta {
 
     $file = join('/', $self->basedir, '.DIR');
 
-    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
-    $self->{mtime} = (stat($file))[9];
+    return if $self->timestamp($file);
 
     local $/ = \$packsize;
     open(my $DIR, $file) or die "can't read DIR file for $self->{board}: $!";
@@ -201,7 +201,8 @@ sub STORE {
         seek $DIR, $packsize * $self->{recno}, 0;
         print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
         close $DIR;
-        $self->{mtime} = (stat($file))[9];
+
+	$self->timestamp($file);
     }
 }
 

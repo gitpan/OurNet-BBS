@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 # $File: //depot/OurNet-BBS/bin/bbscomd $ $Author: autrijus $
-# $Revision: #14 $ $Change: 1221 $ $DateTime: 2001/06/19 04:19:25 $
+# $Revision: #15 $ $Change: 1423 $ $DateTime: 2001/07/13 07:05:42 $
 
 $VERSION = '1.55-dev';
 $REVISION = "rev$1\[\@$2\]" 
-    if ('$Revision: #14 $ $Change: 1221 $' =~ /(\d+)[^\d]+(\d+)/);
+    if ('$Revision: #15 $ $Change: 1423 $' =~ /(\d+)[^\d]+(\d+)/);
 
 =head1 NAME
 
@@ -12,7 +12,7 @@ bbscomd - OurNet BBS Remote Access Daemon
 
 =head1 SYNOPSIS
 
-    % bbscomd [-acdfh] [-p port] [-u key] <backend> <args>...
+    % bbscomd [-acdfhx] [-p port] [-u key] <backend> <args>...
     % bbscomd -acf -u melix MELIX /home/melix 2997 350
 
 =head1 DESCRIPTION
@@ -32,6 +32,9 @@ The C<-u> specifies the pgp keyid or userid used in authorization.
 If C<-a> is supplied, the server will serve in 'authentication' 
 mode with additional permission controls. Similarly, C<-c> 
 disallows insecure cipher modes.
+
+The C<-x> flag assumes default settings on Win32. It's not meant
+to be used on other platforms.
 
 Please refer to L<OurNet::BBS> modules for more information on
 usages.
@@ -66,7 +69,7 @@ See <http://www.perl.com/perl/misc/Artistic.html>.
 .
 }
 
-getopts('acp:u:fdh', \%args);
+getopts('acp:u:fdhx', \%args);
 exec('perldoc', $0) if defined $args{h};
 
 my ($auth, $ciph, $port, $key, $fork, $debug) = @{args}{qw/a c p u f d/};
@@ -75,6 +78,13 @@ $auth = 6 if defined $auth;
 $ciph = $key ? 6 : 2 if defined $ciph;
 $port ||= 7978;
 
+if ($args{x}) {
+    @ARGV = (
+        'MELIX', -e 'c:/cygwin/home/melix' ? 'c:/cygwin/home/melix' 
+                                           : 'c:/program files/melix/home/melix'
+    );
+}
+    
 my $BBS = OurNet::BBS->new(@ARGV) or die "Cannot link to BBS: @ARGV\n";
 
 $OurNet::BBS::DEBUG = $debug;

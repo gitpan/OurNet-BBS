@@ -1,11 +1,13 @@
 # $File: //depot/OurNet-BBS/BBS/CVIC/Group.pm $ $Author: autrijus $
-# $Revision: #4 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #7 $ $Change: 1296 $ $DateTime: 2001/06/25 22:25:50 $
 
 package OurNet::BBS::CVIC::Group;
 
 use strict;
 use base qw/OurNet::BBS::Base/;
-use fields qw/bbsroot group mtime _cache/;
+use fields qw/bbsroot group title mtime _cache/;
+
+BEGIN { __PACKAGE__->initvars() }
 
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
@@ -14,18 +16,15 @@ sub refresh_meta {
     my $board;
 
     return unless $self->{group};
-
-    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
+    return if $self->timestamp($file);
 
     my $GROUP;
     open($GROUP, $file) or open($GROUP, '+>>', $file)
         or die("Cannot read group file $file: $!");
 
-    $self->{mtime} = (stat($file))[9];
-
     my %remain = %{$self->{_cache} || {}};
     while ($key = <$GROUP>) {
-        $key = $1 if $key =~ m/(\w+)/;
+        $key = $1 if $key =~ m/([\w\-\.]+)/;
 	delete $remain{$key};
         next if exists $self->{_cache}{$key};
 
@@ -38,7 +37,7 @@ sub refresh_meta {
                -e "$self->{bbsroot}/group/".($key = substr($key, 1))) {
             %{$self->{_cache}} = (
                 %{$self->{_cache}},
-                %{OurNet::BBS::CVIC::Group->new($self->{bbsroot}, $key)},
+                %{$self->module('Group')->new($self->{bbsroot}, $key)},
             );
         }
         elsif (-e "$self->{bbsroot}/boards/$key/.DIR") {

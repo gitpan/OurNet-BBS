@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Authen.pm $ $Author: autrijus $
-# $Revision: #15 $ $Change: 1238 $ $DateTime: 2001/06/20 04:55:16 $
+# $Revision: #16 $ $Change: 1481 $ $DateTime: 2001/07/23 01:14:33 $
 
 package OurNet::BBS::Authen;
 $OurNet::BBS::Authen::VERSION = '0.22';
@@ -399,7 +399,7 @@ sub Write ($$) {
 	}
     }
 
-    if (!$socket->print(pack("N", $encodedSize), $encodedMsg) ||
+    if ($socket and !$socket->print(pack("N", $encodedSize), $encodedMsg) ||
 	!$socket->flush()) {
 	die "Error while writing socket: $!";
     }

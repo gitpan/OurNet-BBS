@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MAPLE2/BoardGroup.pm $ $Author: autrijus $
-# $Revision: #5 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+# $Revision: #6 $ $Change: 1254 $ $DateTime: 2001/06/21 10:39:30 $
 
 package OurNet::BBS::MAPLE2::BoardGroup;
 
@@ -52,14 +52,11 @@ sub refresh_meta {
             shm     => $self->{shm},
         });
 
-	print $self->{_cache}{$key}->shmid
-	    if $OurNet::BBS::DEBUG;
+	print $self->{_cache}{$key}->shmid if $OurNet::BBS::DEBUG;
         return;
     }
 
-    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
-
-    $self->{mtime} = (stat($file))[9];
+    return if $self->timestamp($file);
 
     open(my $DIR, $file) or die "can't read DIR file $file $!";
 
@@ -86,7 +83,7 @@ sub EXISTS {
     return 1 if exists ($self->{_cache}{$key});
 
     my $file = "$self->{bbsroot}/$BRD";
-    return 0 if $self->{mtime} and (stat($file))[9] == $self->{mtime};
+    return 0 if $self->timestamp($file, 0);
 
     open(my $DIR, $file) or die "can't read DIR file $file: $!";
 
