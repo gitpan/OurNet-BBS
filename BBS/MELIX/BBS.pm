@@ -1,12 +1,12 @@
-# $File: //depot/OurNet-BBS/BBS/MELIX/BBS.pm $ $Author: autrijus $
-# $Revision: #5 $ $Change: 1525 $ $DateTime: 2001/08/17 22:49:33 $
+# $File: //depot/OurNet-BBS/BBS/MELIX/BBS.pm $ $Author: clkao $
+# $Revision: #6 $ $Change: 2392 $ $DateTime: 2001/11/22 13:41:47 $
 
 package OurNet::BBS::MELIX::BBS;
 
 use strict;
 use base qw/OurNet::BBS/;
 use fields qw/backend bbsroot brdshmkey maxboard sessionshmkey maxsession
-              usershmkey maxuser chatport passwd _ego _hash/;
+              chatport passwd _ego _hash/;
 use subs qw/readok writeok/;
 use OurNet::BBS::Base;
 

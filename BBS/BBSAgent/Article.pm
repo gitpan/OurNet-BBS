@@ -1,5 +1,5 @@
-# $File: //depot/OurNet-BBS/BBS/BBSAgent/Article.pm $ $Author: clkao $
-# $Revision: #16 $ $Change: 1747 $ $DateTime: 2001/09/08 02:48:31 $
+# $File: //depot/OurNet-BBS/BBS/BBSAgent/Article.pm $ $Author: autrijus $
+# $Revision: #18 $ $Change: 2224 $ $DateTime: 2001/10/29 01:20:50 $
 
 package OurNet::BBS::BBSAgent::Article;
 
@@ -23,11 +23,13 @@ sub refresh_meta {
     $var{headansi}    ||= '47;34m';
     $var{headansiend} ||= '44;37m';
     $var{separator}   ||= '\x0d(?:\e\[[0-9;]+m)?(?:─)+';
-    $var{headl}       ||= '\x1b\[' . $var{headansi} . ' ';
-    $var{headr}       ||= ' \x1b\[' . $var{headansiend} . ' (.+?)\s*\x1b';
+    $var{headl}       ||= '\e\[' . $var{headansi} . ' ';
+    $var{headr}       ||= ' \e\[' . $var{headansiend} . ' (.+?)\s*\e';
     $var{headi}       ||= '作者,標題,時間'; # must be in this order
 
-    my @compiled = map { "$var{headl}$_$var{headr}" } split(',', $var{headi});
+    my @compiled = map { 
+	"(?:$var{headl})(?:$_)(?:$var{headr})" 
+    } split(',', $var{headi});
 
     $self->{name} ||= $self->new_id;
 
@@ -38,20 +40,19 @@ sub refresh_meta {
 	    /$var{separator}/, $self->_fetch_body, 2
 	);
 
-        $body ||= $head; # fallback unless in expected format
+	if (!defined($body)) {
+	    $self->{bbsobj}->board_article_fetch_last;
+	    die "header/body separator not found";
+	}
 
-        my $author = $head =~ m/$compiled[0]/m ? $1 : '';
-        my $title  = $head =~ m/$compiled[1]/m ? $1 : '';
-        my $date   = $head =~ m/$compiled[2]/m ? $1 : '';
+        my $author = $head   =~ m/$compiled[0]/m ? $1 : '';
+        my $title  = $head   =~ m/$compiled[1]/m ? $1 : '';
+        my $date   = $head   =~ m/$compiled[2]/m ? $1 : '';
+	my $nick   = $author =~ s/\s?\((.*?)\)?(?:[\s\t]+.*)?$// ? $1 : '';
 
-	my $nick;
-
-        # special-case header munging
-
-        $date = $1 if $date   =~ m/\(([^)]*)\)/;            # embedded date
-	$date =~ s/(年|月|日)/\x20/g;			    # kludge
-	$date = $1 if $date =~ m/([\w\s\d:]+)/;             # strip shit
-	$nick = $1 if $author =~ s/\s?\((.*?)\)?[\s\t]*$//; # nickname
+        # date munging
+	$date =~ s/年|月|日/\x20/g;			    # kludge
+	$date = $1 if $date =~ m/([\w\s\d:]{10,})/;	    # keep date only
 
 	$author ||= '(unknown)';
 	$title  ||= '(untitled)';
@@ -94,7 +95,7 @@ sub _adjust_body {
     $_[0] =~ s/\x1b\[[KHJ]//g; 
     $_[0] =~ s/\x1b\[;H.+\n//g;
     $_[0] =~ s/\n\x1b\[0m$//g;
-    $_[0] =~ s/\n*\x1b\[\d+;1H/\n\n/g;
+    $_[0] =~ s/\n*(?:\x1b\[\d+;1H)+/\n\n/g;
     $_[0] =~ s/\x1b\[3[26]m(.+)\x1b\[0?m/$1/g;
 
     $_[0] =~ s/^\x1b\[0m\n\n//g;

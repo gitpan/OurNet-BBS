@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/MELIX/SessionGroup.pm $ $Author: autrijus $
-# $Revision: #11 $ $Change: 2053 $ $DateTime: 2001/10/13 23:46:19 $
+# $Revision: #13 $ $Change: 2350 $ $DateTime: 2001/11/13 14:33:49 $
 
 package OurNet::BBS::MELIX::SessionGroup;
 
@@ -25,6 +25,8 @@ sub refresh_meta {
     $self->shminit unless ($self->{shmid} || !$self->{shmkey});
 
     if ($key eq int($key)) {
+	no strict 'vars';
+
         print "new toy called $key\n" 
 	    if !$self->{_hash}{$key} and $OurNet::BBS::DEBUG;
 
@@ -44,27 +46,31 @@ sub refresh_meta {
 sub shminit {
     my $self = shift;
 
-    if ($^O ne 'MSWin32' and
-	$self->{shmid} = shmget($self->{shmkey},
-				($self->{maxsession})*$packsize+36, 0)) {
-      tie $self->{shm}{number}, 'OurNet::BBS::ShmScalar',
-	  $self->{shmid}, $self->{maxsession} * $packsize     , 4, 'L';
-      tie $self->{shm}{offset}, 'OurNet::BBS::ShmScalar',
-	  $self->{shmid}, $self->{maxsession} * $packsize +  4, 4, 'L';
-      tie @{$self->{shm}{sysload}}, 'OurNet::BBS::ShmArray',
-	  $self->{shmid}, $self->{maxsession} * $packsize +  8, 8, 3, 'd';
-      tie $self->{shm}{avgload}, 'OurNet::BBS::ShmScalar',
-	  $self->{shmid}, $self->{maxsession} * $packsize + 32, 4, 'L';
-      tie $self->{shm}{mbase}, 'OurNet::BBS::ShmScalar',
-	  $self->{shmid}, $self->{maxsession} * $packsize + 36, 4, 'L';
-      tie @{$self->{shm}{mpool}}, 'OurNet::BBS::ShmArray',
-	  $self->{shmid}, $self->{maxsession} * $packsize + 40, 100, 128, 'LLLLZ13Z71';
+    if ($^O ne 'MSWin32' and $self->{shmid} = shmget(
+	$self->{shmkey}, ($self->{maxsession}) * $packsize + 36, 0)
+    ) {
+	tie $self->{shm}{number}, 'OurNet::BBS::ShmScalar',
+	    $self->{shmid}, $self->{maxsession} * $packsize     , 4, 'L';
+	tie $self->{shm}{offset}, 'OurNet::BBS::ShmScalar',
+	    $self->{shmid}, $self->{maxsession} * $packsize +  4, 4, 'L';
+	tie @{$self->{shm}{sysload}}, 'OurNet::BBS::ShmArray',
+	    $self->{shmid}, $self->{maxsession} * $packsize +  8, 8, 3, 'd';
+	tie $self->{shm}{avgload}, 'OurNet::BBS::ShmScalar',
+	    $self->{shmid}, $self->{maxsession} * $packsize + 32, 4, 'L';
+	tie $self->{shm}{mbase}, 'OurNet::BBS::ShmScalar',
+	    $self->{shmid}, $self->{maxsession} * $packsize + 36, 4, 'L';
+	tie @{$self->{shm}{mpool}}, 'OurNet::BBS::ShmArray',
+	    $self->{shmid}, $self->{maxsession} * $packsize + 40, 100, 128,
+		'LLLLZ13Z71';
 
-      $instances{$self} = $self;
+	no strict 'vars';
+	$instances{$self} = $self;
     }
 }
 
 sub message_handler {
+    no strict 'vars';
+
     # we don't handle multiple messages in the queue yet.
 
     foreach my $instance (values %instances) {
@@ -139,6 +145,8 @@ sub lastref { shift->ego->{lastref} }
 
 sub DESTROY {
     my $self = shift->ego;
+
+    no strict 'vars';
 
     delete $instances{$self};
 }

@@ -1,5 +1,5 @@
-# $File: //depot/OurNet-BBS/BBS/MELIX/GroupGroup.pm $ $Author: autrijus $
-# $Revision: #9 $ $Change: 1647 $ $DateTime: 2001/09/01 20:55:28 $
+# $File: //depot/OurNet-BBS/BBS/MELIX/GroupGroup.pm $ $Author: clkao $
+# $Revision: #12 $ $Change: 2386 $ $DateTime: 2001/11/22 20:30:56 $
 
 package OurNet::BBS::MELIX::GroupGroup;
 
@@ -119,12 +119,12 @@ sub STORE {
     if ($entry{xmode} eq GEM_BOARD) {
 	$entry{author} = $value->{bm};
 	$entry{title}  = $value->{title};
-	$entry{id}     = $value->{name};
+	$entry{id}     = $value->{id};
     }
     else {
 	$entry{author} = $value->{owner};
 	$entry{title}  = $value->{title};
-	$entry{id}     = $value->{id};
+	$entry{id}     = '@'.$value->{id};
     }
 
     no warnings 'uninitialized';
@@ -137,7 +137,7 @@ sub STORE {
 	# promote it to a Group object
 	$value = $self->module('Group')->new(
 	    @{$self}{qw/bbsroot group/}, ((stat($file))[7] / $packsize) - 1,
-	    $entry{id}, @entry{@packlist},
+	    $value->{id}, @entry{@packlist},
 	);
     };
 

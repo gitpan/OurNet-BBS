@@ -1,5 +1,5 @@
-# $File: //depot/OurNet-BBS/BBS/MAPLE3/UserGroup.pm $ $Author: autrijus $
-# $Revision: #14 $ $Change: 1630 $ $DateTime: 2001/08/31 04:14:01 $
+# $File: //depot/OurNet-BBS/BBS/MAPLE3/UserGroup.pm $ $Author: clkao $
+# $Revision: #16 $ $Change: 2388 $ $DateTime: 2001/11/22 22:34:45 $
 
 package OurNet::BBS::MAPLE3::UserGroup;
 
@@ -38,7 +38,7 @@ sub refresh_meta {
         else {
             # key fetch
             $name = $key;
-            $key = 0;
+	   undef $key
         }
 
 	return if $self->{_hash}{$name};
@@ -50,7 +50,7 @@ sub refresh_meta {
         $key,
     );
 
-    $key ||= $obj->{userno};
+    $key = $obj->{userno} - 1 unless defined $key;
 
     $self->{_hash}{$name} = $self->{_array}[$key] = $obj;
 

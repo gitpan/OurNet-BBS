@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Server.pm $ $Author: autrijus $
-# $Revision: #50 $ $Change: 2064 $ $DateTime: 2001/10/15 07:20:27 $
+# $Revision: #53 $ $Change: 2328 $ $DateTime: 2001/11/09 23:11:22 $
 
 package OurNet::BBS::Server;
 
@@ -113,20 +113,20 @@ sub daemonize {
 
     if ($AuthLevel & (AUTH_CRYPT | AUTH_PGP)) {
 	if (UNIVERSAL::isa($ROOT, 'OurNet::BBS')) {
-	    local $@;
 	    no warnings;
 
 	    my $sysop = eval { $ROOT->{users}{SYSOP} } || [];
+	    my $guest = eval { $ROOT->{users}{autrijus} } || [];
+
+	    local $@;
 
 	    $AuthLevel &= ~AUTH_CRYPT unless eval{
-		$sysop->{passwd} 
-	    } and !$@;
-
-	    undef $@;
+		$sysop->{passwd} or $guest->{passwd} 
+	    };
 
 	    $AuthLevel &= ~AUTH_PGP unless eval{
-		$sysop->{plans} 
-	    } or !$@;
+		$sysop->{plans} or $guest->{plans}
+	    };
 	}
 	else {
 	    $AuthLevel &= ~(AUTH_CRYPT | AUTH_PGP)
@@ -162,6 +162,9 @@ sub handshake {
 
     nextstate('get_suites', 'get_pubkey', 'cipher_none');
     $Server->{methods}{__}{handshake} = 1; # allows re-authenticate
+
+    $CipherLevel &= ~CIPHER_PGP and $AuthLevel &= ~AUTH_PGP
+	unless $Auth and $Auth->test;
 
     return ($CipherLevel & $cipher_level, $AuthLevel & $auth_level);
 }

@@ -27,7 +27,7 @@ OurNet::BBS - Component Object Model for BBS systems
     die "Error: cannot read board $board -- $@\n" if $@;
 
     printf (
-        "The $board board has %d articles, %d toplevel archive entries.\n",
+        "The $board board has %d articles, %d top-level archive entries.\n",
         $#{$brd->{articles}}, $#{$brd->{archives}},
     );
 
@@ -59,6 +59,10 @@ solution for identity-based information storage & retrieval,
 much like the Project Jabber's goal toward instant messaging,
 or Project JXTA's aim toward distributed services.
 
+If you are new to the telnet-bbs platform, please download a
+copy of Melix BBS software (in English, Traditional Chinese
+and Simplified Chinese) at L<http://melix.elixus.org/>.
+
 For some of its practical uses, search for B<OurNet::BBSApp>
 on CPAN.
 
@@ -76,7 +80,7 @@ means to retrieve, forward and store data securely.
 
 =head2 Multiple Representation Paradigms
 
-In order to translate between heterogenous services within
+In order to translate between heterogeneous services within
 a common network, OurNet-BBS I<MUST> accept both storage-based
 (eg. HTTP/FreeNet/LDAP) and message-based (eg. Jabber/XML-RPC)
 renderings, and be able to render into corresponding formats
@@ -88,11 +92,11 @@ Monolithic, single point-of-failure servers has remained
 as the state of art in telnet-based BBS networks since the
 very beginning, which leads to its incapability to leverage
 viewers, services and computing resources on client machines
-as well as the high failure rate in online services.
+as well as the high failure rate in on-line services.
 
 While not an end in itself, OurNet-BBS I<MUST> provide a
-clearly defined layer for writing interoperable agent and
-services in a serverless environment, either by utilizing
+clearly defined layer for writing inter-operable agent and
+services in a server-less environment, either by utilizing
 existing networks (eg. Gnutella, JXTA, FreeNet) or by
 creating its own network. 
 
@@ -114,7 +118,7 @@ boards, articles, nested archives, board classes, user
 info, mailbox, sessions, instant message, and chat rooms.
 
 Backend developers are strongly encouraged to actively
-abstract similiar file-based operations among components,
+abstract similar file-based operations among components,
 via the B<OurNet::BBS::Base> object framework.
 
 All backends I<MUST> provide the same interface for Board,
@@ -159,7 +163,7 @@ offers advanced features as OurNet-BBS' representation layer.
 
 These backends I<SHOULD> map their native data representation
 into traditional ones, and I<MAY> offer additional options
-to control their behaviour. They I<SHOULD NOT> break any
+to control their behavior. They I<SHOULD NOT> break any
 semantics common to all traditional backends.
 
 =over 4
@@ -167,7 +171,7 @@ semantics common to all traditional backends.
 =item RAM
 
 This is the skeleton implementation which I<MUST> support
-common subsets of all possible components, and serves as a
+common subsets of all possible components, and serve as a
 reference for resolving conflicts between backends. It also
 I<MUST NOT> rely on any on-disk storage or operating system
 dependent features.
@@ -204,10 +208,10 @@ read/write interface.
 
 =item DBI
 
-This backend I<MUST> support MySQL, PosgreSQL, MS SQL and
+This backend I<MUST> support MySQL, PostgreSQL, MS SQL and
 Oracle DBDs. It I<MUST> provide a reference schema of
-neccessary fields for each components, and I<SHOULD> accept
-other schemas using clear-defined configuration methods.
+necessary fields for each components, and I<SHOULD> accept
+other schemata using clear-defined configuration methods.
 
 =back
 
@@ -225,7 +229,7 @@ targets.
 This CGI-based interface I<MUST> be capable of handling user
 sessions, authentication and have customizable templates.
 It also I<SHOULD NOT> depend on any specific backend's 
-behaviour.
+behavior.
 
 =item Web Framework Integration
 
@@ -237,11 +241,11 @@ OurNet objects into HTML format without loss, and vice versa.
 =item Cross-Backend Migration Kit
 
 Since not every backends support all OurNet-BBS components,
-it is sometimes neccessary for sites using existing systems
+it is sometimes necessary for sites using existing systems
 to convert to MELIX, in order to fully utilize the OurNet-BBS
 platform.
 
-Such migration kits I<MUST> perserve static data as much as
+Such migration kits I<MUST> preserve static data as much as
 possible, and I<SHOULD> retain the same structure and content
 in the OurNet perspective.
 
@@ -284,7 +288,7 @@ XXX: To be determined
 
 The medium-term goal for OurNet-BBS is to become a backend-independent
 Agent platform, consisting of all interconnected OurNet nodes. It is
-therefore neccessary to offer a common set of API and infrastructure
+therefore necessary to offer a common set of API and infrastructure
 to encourage people writing OurNet Agents.
 
 =over 4
@@ -305,13 +309,13 @@ and event-driven interfaces.
 This module I<MUST> support both traditional C<crypt()>-based
 and asymmetric authentications. It also I<SHOULD> negotiate among
 multiple available ciphers. The permission model I<MUST> allow
-user-defined fine grained control, including ACL, OPCode locking,
+user-defined fine grained control, including ACL, Opcode locking,
 and respects the default settings of each backends.
 
 =item Transportable Objects
 
 This module I<MUST> allow ircbot-like agents to deserialize 
-and walk through nodes, to translating requests across heterogenous
+and walk through nodes, to translating requests across heterogeneous
 services. It also I<MUST> allow each signed objects to be distributed
 and discovered across OurNet, so each node could look at the source
 code, run it in a Safe compartment, and if they like it, they could
@@ -343,7 +347,7 @@ XXX: To be determined
 
 This milestone gives the baseline of basic functionalities,
 and a working prototype of RPC + Access Control network.
-It also includes manpages and overviews.
+It also includes man pages and overviews.
 
     backend:	MAPLE2, PTT, MAPLE3, MELIX.
     wrapper:	RAM, BBSAgent, NNTP, MailBox.
@@ -379,7 +383,7 @@ network should be formed by this milestone.
 =head2 Milestone 3 - v1.9 - 2001/01/15
 
 Cross-node messaging, presence and session management are the
-main purpose fors this milestone. By this release, we should
+main purpose for this milestone. By this release, we should
 also gradually move away from depending on text-file based
 storage.
 
@@ -391,7 +395,7 @@ storage.
 
 This milestone turns existing OurNet network into a true Agent
 Platform, by offering intention- and subscription- based
-sydication between nodes.
+syndication between nodes.
 
     rendering:	Web Framework Integration.
     network:	Syndication.
@@ -401,6 +405,28 @@ sydication between nodes.
 =head1 HISTORY
 
 =over 4
+
+=item v1.63, Fri Nov  9 19:51:33 CST 2001
+
+The dependency to B<Test::More> 0.31+ is now handled.
+
+Better diagnostics from the test process.
+
+Updated document to cut down sales-talk and beef up spelling.
+
+New ciphers B<Crypt::DES_EDE3> and B<Crypt::Rijndael_PP> are supported.
+
+The B<NNTP> backend now handles C<id> and C<title> predicably.
+
+Fixed a B<bbscomd> bug of not detecting wrong passphrases.
+
+Secure communication via B<CIPH_PGP> is restored.
+
+If the gnupg keyring is suddenly unavailable, B<Server> can now accomodate.
+
+The auto-installer B<ExtUtils::AutoInstall> is now less buggy.
+
+MIME QuotedPrint handling of B<bbsboard>/B<bbsmail> has been improved.
 
 =item v1.62, Mon Oct 15 07:48:58 CST 2001
 
@@ -476,7 +502,7 @@ Implemented C<{'owner'}> fetch for B<CVIC> groups.
 The chrono-ahead algorithm now works correctly for all backends,
 so there will no longer be duplicate C<Message-ID>s.
 
-Fixed the B<MAPLE3> backend's incestous relationship with B<MELIX>.
+Fixed the B<MAPLE3> backend's incestuous relationship with B<MELIX>.
 
 Upgraded the B<Authen> protocol to v0.3. Setting the flag
 C<$OurNet::BBS::BYPASS_NEGOTIATION> now bypasses handshaking
@@ -497,7 +523,7 @@ The long-timed 'extra test' heisenbug has been eliminated.
 
 =item v1.6-alpha, Sun Aug 12 19:03:08 CST 2001
 
-Added the HISTORY secion in manpage.
+Added the HISTORY section in manpage.
 
 Rewritten B<Base> to be C<overload>-based.
 
@@ -517,7 +543,7 @@ File access via B<FileGroup> components.
 
 Group support for B<MAPLE3> with a twisted API.
 
-Proper permission control for nearly all componetts.
+Proper permission control for nearly all components.
 
 Unix-style mailbox support via the B<MailBox> backend.
 
@@ -539,7 +565,7 @@ Massive speed increase.
 
 This version implements the new B<OurNet> (formerly known as B<PlClient>)
 asymmetric-key based authentication model, article/board permission model
-for M3 backends, numerous bugfixes, win32 support, and much, much more.
+for M3 backends, numerous bug fixes, win32 support, and much, much more.
 
 =item v1.53, Sat Jun  9 11:09:26 2001
 
@@ -602,13 +628,13 @@ Initial commit, with B<CVIC> as the only backend.
 
 =head1 AUTHORS
 
-Chia-Liang Kao E<lt>clkao@clkao.org>,
-Autrijus Tang E<lt>autrijus@autrijus.org>
+Chia-Liang Kao E<lt>clkao@clkao.orgE<gt>,
+Autrijus Tang E<lt>autrijus@autrijus.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2001 by Chia-Liang Kao E<lt>clkao@clkao.org>,
-                  Autrijus Tang E<lt>autrijus@autrijus.org>.
+Copyright 2001 by Chia-Liang Kao E<lt>clkao@clkao.orgE<gt>,
+                  Autrijus Tang E<lt>autrijus@autrijus.orgE<gt>.
 
 This program is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.

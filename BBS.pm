@@ -1,11 +1,11 @@
 # $File: //depot/OurNet-BBS/BBS.pm $ $Author: autrijus $
-# $Revision: #40 $ $Change: 2068 $ $DateTime: 2001/10/15 07:50:03 $
+# $Revision: #41 $ $Change: 2088 $ $DateTime: 2001/10/16 05:33:05 $
 # See BBS.pod for documentations.
 
 package OurNet::BBS;
 use 5.006;
 
-$OurNet::BBS::VERSION  = '1.62';
+$OurNet::BBS::VERSION  = '1.62_01';
 
 use strict;
 use warnings;

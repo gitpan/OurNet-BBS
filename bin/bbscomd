@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 # $File: //depot/OurNet-BBS/bin/bbscomd $ $Author: autrijus $
-# $Revision: #28 $ $Change: 2068 $ $DateTime: 2001/10/15 07:50:03 $
+# $Revision: #31 $ $Change: 2353 $ $DateTime: 2001/11/13 16:26:37 $
 
-$VERSION = '1.62';
+$VERSION = '1.62_01';
 $REVISION = "rev$1\[\@$2\]" 
-    if ('$Revision: #28 $ $Change: 2068 $' =~ /(\d+)[^\d]+(\d+)/);
+    if ('$Revision: #31 $ $Change: 2353 $' =~ /(\d+)[^\d]+(\d+)/);
 
 =head1 NAME
 
@@ -142,11 +142,11 @@ __END__
 
 =head1 AUTHORS
 
-Autrijus Tang E<lt>autrijus@autrijus.org>
+Autrijus Tang E<lt>autrijus@autrijus.orgE<gt>
 
 =head1 COPYRIGHT
 
-Copyright 2001 by Autrijus Tang E<lt>autrijus@autrijus.org>.
+Copyright 2001 by Autrijus Tang E<lt>autrijus@autrijus.orgE<gt>.
 
 This program is free software; you can redistribute it and/or 
 modify it under the same terms as Perl itself.

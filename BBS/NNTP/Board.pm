@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/NNTP/Board.pm $ $Author: autrijus $
-# $Revision: #6 $ $Change: 1897 $ $DateTime: 2001/09/24 19:12:48 $
+# $Revision: #7 $ $Change: 2234 $ $DateTime: 2001/11/01 14:57:59 $
 
 package OurNet::BBS::NNTP::Board;
 
@@ -20,9 +20,18 @@ sub refresh_archives {
     die 'no refresh_archives';
 }
 
-sub refresh_title {
+sub refresh_id {
     my $self = shift;
-    $self->{_hash}{title} = $self->{board};
+
+    $self->{_hash}{id} = $self->{board};
+    return 1;
+}
+
+sub refresh_title {
+    my $self  = shift;
+    my $board = $self->{board};
+
+    $self->{_hash}{title} = $self->{nntp}->newsgroups($board)->{$board};
     return 1;
 }
 

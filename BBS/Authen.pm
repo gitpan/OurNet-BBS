@@ -1,5 +1,5 @@
 # $File: //depot/OurNet-BBS/BBS/Authen.pm $ $Author: autrijus $
-# $Revision: #27 $ $Change: 2060 $ $DateTime: 2001/10/15 03:45:40 $
+# $Revision: #30 $ $Change: 2324 $ $DateTime: 2001/11/09 20:07:29 $
 
 package OurNet::BBS::Authen;
 $OurNet::BBS::Authen::VERSION = '0.4';
@@ -79,8 +79,7 @@ sub export_key {
 
 sub test {
     my $self = shift;
-
-    return $self->{gnupg} and $self->{gnupg}->test_default_key_passphrase;
+    return ($self->{gnupg} and $self->{gnupg}->test_default_key_passphrase);
 }
 
 # query for existing BCB ciphers
@@ -88,8 +87,8 @@ sub suites {
     my ($self, @ciphers) = @_;
 
     @ciphers = map { "Crypt::$_" } (
-	qw/Rijndael Twofish2 Twofish Blowfish IDEA DES/,
-	qw/TEA GOST Blowfish_PP DES_PP/,
+	qw/Rijndael Twofish2 Twofish Blowfish IDEA DES_EDE3/,
+	qw/DES TEA GOST Rijndael_PP Blowfish_PP DES_PP/,
     ) unless @ciphers;
 
     my @suites;
@@ -205,7 +204,7 @@ foreach my $method (qw/sign verify encrypt clearsign import_keys decrypt/) {
 
 	local $/;
 	my $ret = ($method eq 'verify') ? <$e> : <$o>; # reading the output
-	waitpid $pid, 0;  # clean up the finished GnuPG process
+	wait; # clean up the finished GnuPG process
 	return $ret;
     };
 }
