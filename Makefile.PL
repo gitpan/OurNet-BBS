@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # $File: //depot/libOurNet/BBS/Makefile.PL $ $Author: autrijus $
-# $Revision: #6 $ $Change: 6074 $ $DateTime: 2003/05/25 09:17:33 $
+# $Revision: #7 $ $Change: 8637 $ $DateTime: 2003/10/30 11:42:45 $
 
 use 5.006001;
 use inc::Module::Install;
@@ -35,7 +35,7 @@ requires(
     'File::Spec'		=> '0.6',
     'Hook::LexWrap'		=> '0.01',
     'enum'			=> '1.016',	# MAPLE3
-    'if'			=> '0.001',
+    'if'			=> '0.04',
 );
 build_requires( 'Test::More'	=> '0.31' );
 
@@ -105,6 +105,7 @@ WriteMakefile(
     }
 );
 
+sign(1);
 check_nmake();
 include('ExtUtils::AutoInstall');
 auto_install();

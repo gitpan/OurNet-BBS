@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # $File: //depot/libOurNet/BBS/t/stdtests $ $Author: autrijus $
-# $Revision: #2 $ $Change: 3857 $ $DateTime: 2003/01/26 07:17:02 $
+# $Revision: #3 $ $Change: 8639 $ $DateTime: 2003/10/30 12:12:52 $
 
 $|++;
 use strict;
@@ -297,13 +297,8 @@ SKIP: {
     TODO: {
         skip(__('no groups for this backend'), 1) unless $grp;
 
-        local $TODO = 'todo: OurNet-CVIC deletion'
-          if $IsClient
-          and $BBS->backend eq 'CVIC';
-
-        local $TODO = 'todo: CVIC deletion on Win32'
-          if IsWin32
-          and $BBS->backend eq 'CVIC';
+        local $TODO = 'todo: CVIC deletion'
+           if $BBS->backend eq 'CVIC';
 
         # delete group
         delete $BBS->{groups}{home};

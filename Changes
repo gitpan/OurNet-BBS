@@ -1,4 +1,19 @@
 ____________________________________________________________________________
+[  8637] By: autrijus                              on 2003/10/30  11:42:45
+        Log: * This be 1.66.
+             * Update dependency on IlyaZ's new if.pm.
+	   ! Makefile.PL inc/ExtUtils/AutoInstall.pm
+	   ! lib/OurNet/BBS.pod
+____________________________________________________________________________
+[  6076] By: autrijus                              on 2003/05/25  10:43:25
+        Log: * manifest.
+	   ! MANIFEST
+____________________________________________________________________________
+[  6074] By: autrijus                              on 2003/05/25  09:17:33
+        Log: * This be OurNet::BBS, 1.65.
+	   ! ChangeLog Makefile.PL README lib/OurNet/BBS.pm
+	   ! lib/OurNet/BBS.pod
+____________________________________________________________________________
 [  5039] By: autrijus                              on 2003/03/30  15:34:38
         Log: * turns out it needs binmode.
 	   ! lib/OurNet/BBS/MELIX/Article.pm
@@ -44,10 +59,6 @@ ____________________________________________________________________________
 	   ! lib/OurNet/BBS/MAPLE3/UserGroup.pm
 	   ! lib/OurNet/BBS/MELIX/Group.pm
 	   ! lib/OurNet/BBS/ScalarFile.pm
-____________________________________________________________________________
-[  3987] By: autrijus                              on 2003/01/28  19:32:48
-        Log: * minor open tweaks.
-	   ! lib/OurNet/BBS/MAPLE3/ArticleGroup.pm
 ____________________________________________________________________________
 [  3978] By: autrijus                              on 2003/01/28  12:07:29
         Log: * omg.
