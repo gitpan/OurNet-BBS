@@ -25,8 +25,6 @@ sub deltree {
 sub locate {
     my ($file, $path) = @_;
 
-    print "[@_]\n";
-    
     unless ($path) {
 	$path = (caller)[0];
 	$path =~ s|::\w+$||;
@@ -36,7 +34,6 @@ sub locate {
 
     unless (-e $file) {
         foreach my $inc (@INC) {
-	    print "$inc/$path/$_[0]\n";
             last if -e ($file = join('/', $inc, $_[0]));
             last if -e ($file = join('/', $inc, $path, $_[0]));
         }
@@ -63,6 +60,7 @@ sub get_msgid {
     $timestamp = time2str('%Y%m%d%H%M%S', $timestamp)
         unless length($timestamp ||= ('0' x 14)) == 14;
 
+    local $^W;
     return $timestamp.'.'.md5_base64("$board $author").'@'.$host;
 }
 

@@ -33,9 +33,11 @@ sub refresh_meta {
     if (defined $self->{recno}) {
 	return 0 if $self->{_cache}{header}; # already exists
 
-        my ($ta, $tb) = $self->{bbsobj}->board_article_fetch_first(
-            $self->{board}, $self->{recno}
-        );
+        my ($ta, $tb);
+	eval {
+	    ($ta, $tb) = $self->{bbsobj}->board_article_fetch_first
+		( $self->{board}, $self->{recno} ) };
+	die $self->{bbsobj}{errmsg} if $self->{bbsobj}{errmsg};
 
         my $body = '';
 

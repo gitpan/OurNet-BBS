@@ -3,7 +3,7 @@ $OurNet::BBS::PlClient::VERSION = '0.1';
 
 use RPC::PlClient;
 use fields qw/id remote_ref optree _phash/;
-use vars qw/$DEBUG @delegators $AUTOLOAD/;
+use vars qw/@delegators $AUTOLOAD/;
 
 sub new {
     my $class = shift;
@@ -15,19 +15,19 @@ sub new {
 }
 
 sub debug {
-    print @_ if $DEBUG;
+    print @_ if $OurNet::BBS::PlClient::DEBUG;
 }
 
 # spawn (moreop)
 sub spawn {
-    my ($self, $proxy);
     my $parent = shift;
+    my ($self, $proxy);
 
     debug "SPAWN: $parent @_\n";
 
     tie %{$self}, ref($parent);
     tied(%{$self})->{id} = $parent->{id};
-    tied(%{$self})->{optree} = $parent->{optree};
+    tied(%{$self})->{optree} = [ @{$parent->{optree}} ];
     tied(%{$self})->{remote_ref} = shift;
 
     push @{tied(%{$self})->{optree}}, @_;
@@ -47,12 +47,14 @@ sub TIEHASH {
     if (@_) {
         $self->{id} = 1 + scalar @delegators; # 1 more than max
         $delegators[$self->{id}] = RPC::PlClient->new(
-            'peeraddr'    => shift,
-            'peerport'    => shift || 2000,
-            'application' => 'OurNet::BBS::PlServer',
-            'version'     => $VERSION,
-            'username'    => shift,
-            'password'    => shift,
+            peeraddr    => shift,
+            peerport    => shift || 7978,
+            application => 'OurNet::BBS::PlServer',
+            version     => $VERSION,
+            username    => shift,
+            password    => shift,
+	    maxmessage  => (1 << 31),
+#	    compression => 'gzip',
         )->ClientObject('OurNet::BBS::PlServer', 'spawn');
         $self->{remote_ref} = $delegators[$self->{id}]->rootref();
     }
@@ -95,11 +97,13 @@ sub AUTOLOAD {
     debug "<call: $prefix.$AUTOLOAD (@_)>\n";
     my @result = $delegators[$ego->{id}]->invoke(@{$ego->{optree}}, @callstack);
     debug "</call>\n";
+
     if (defined $result[0] and $result[0] eq 'OBJECT.SPAWN') {
         debug "spawnref: $result[1]\n";
         return $ego->spawn($result[1], @callstack);
     }
-    return @result;
+
+    return wantarray ? @result : $result[0];
 }
 
 1;

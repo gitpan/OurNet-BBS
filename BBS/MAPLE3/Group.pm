@@ -5,7 +5,6 @@ use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot group mtime _cache/;
 use OurNet::BBS::MAPLE3::Board;
-use File::stat;
 
 use constant GEM_FOLDER         => 0x00010000;
 use constant GEM_BOARD          => 0x00020000;
@@ -29,15 +28,14 @@ sub refresh_meta {
     return unless $self->{group};
     local *GROUP;
 
-    return if $self->{mtime} and stat($file)->mtime == $self->{mtime};
+    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
 
     open (GROUP, $file) or open (GROUP, "+>>$file")
         or die("Cannot read group file $file: $!");
 
-    my $st = stat($file);
-    $self->{mtime} = $st->mtime;
+    $self->{mtime} = (stat($file))[9];
+    return if (stat($file))[7] % $packsize;
 
-    return if $st->size % $packsize;
     local $/ = \$packsize;
     my %foo;
     my $buf;

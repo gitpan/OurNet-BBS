@@ -11,8 +11,8 @@ BEGIN { __PACKAGE__->initvars() };
 sub post_new_board {
     my $self = shift;
     foreach my $dir (
-        "$self->{bbsroot}/brd/$self->{board}/",
-        "$self->{bbsroot}/gem/brd/$self->{board}/",
+        "$self->{bbsroot}/$PATH_BRD/$self->{board}/",
+        "$self->{bbsroot}/$PATH_GEM/$self->{board}/",
     ) {
         mkdir $dir;
 
@@ -27,18 +27,14 @@ sub refresh_articles {
 
     return $self->{_cache}{articles} ||= $self->module('ArticleGroup')->new
       ({
-	basepath => "$self->{bbsroot}/brd",
+	basepath => "$self->{bbsroot}/$PATH_BRD",
 	board => $self->{board},
 	idxfile => '.DIR',
        });
 }
 
 sub shmtouch {
-    my $self = shift;
-# XXX this doesn't work, why?
-    print "number => $self->{shm}{number}\n";
-    print "uptime => $self->{shm}{uptime}\n";
-
+    my $self = $_[0]->ego();
     $self->{shm}{uptime} = 0;
 }
 
@@ -47,7 +43,7 @@ sub refresh_archives {
 
     return $self->{_cache}{archives} ||= $self->module('ArticleGroup')->new
       ({
-	basepath => "$self->{bbsroot}/gem/brd",
+	basepath => "$self->{bbsroot}/$PATH_GEM",
 	board => $self->{board},
 	idxfile => '.DIR',
        });

@@ -7,7 +7,6 @@ use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/basepath board name dir hdrfile idxfile recno mtime btime _cache _phash/;
 use vars qw/%chronos/;
-use File::stat;
 
 use constant GEM_FOLDER  => 0x00010000;
 use constant GEM_BOARD   => 0x00020000;
@@ -81,10 +80,10 @@ sub refresh_id {
     }
 
     my $file = join('/', $self->basedir(), $self->{hdrfile});
-    return if $self->{btime} and stat($file)->mtime == $self->{btime}
+    return if $self->{btime} and (stat($file))[9] == $self->{btime}
               and defined $self->{recno};
 
-    $self->{btime} = stat($file)->mtime;
+    $self->{btime} = (stat($file))[9];
 
     local $/ = \$packsize;
     open DIR, "$file" or die "can't read DIR file for $self->{board}: $!";
@@ -163,8 +162,8 @@ sub refresh_meta {
 
     if ($key) {
         # out-of-bound check
-	my $st = stat($file);
-        die 'no such article' if $key < 1 || $key > int($st->size / $packsize);
+        die 'no such article' 
+	    if $key < 1 || $key > int((stat($file))[7] / $packsize);
 
         my (%param, %foo);
         seek DIR, $packsize * ($key-1), 0;
@@ -172,7 +171,9 @@ sub refresh_meta {
         @foo{@packlist} = unpack($packstring, <DIR>);
 	die "article deleted" if $foo{xmode} & POST_DELETE;
         $name = $foo{id};
-#        return if $self->{_phash}[0][0]{$name} == $key;
+
+	local $^W;
+        return if $self->{_phash}[0][0]{$name} == $key;
 
         $param{idxfile} = substr($foo{id},-1)."/$foo{id}"
             if $foo{xmode} & GEM_FOLDER;
@@ -189,13 +190,13 @@ sub refresh_meta {
                });
         $self->{_phash}[0][0]{$name} = $key;
         $self->{_phash}[0][$key] = $obj;
-	$self->{mtime} = $st->mtime;
+	$self->{mtime} = (stat($file))[9];
         close DIR;
         return 1;
     }
 
-    return if $self->{mtime} and stat($file)->mtime == $self->{mtime};
-    $self->{mtime} = stat($file)->mtime;
+    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
+    $self->{mtime} = (stat($file))[9];
 
     print "!! reload all articles in ag\n" if $OurNet::BBS::DEBUG;
 
@@ -220,7 +221,7 @@ sub refresh_meta {
           %param,
           })
         );
-    } (0..int(stat($file)->size / $packsize)-1));
+    } (0..int((stat($file))[7] / $packsize)-1)); # size
 
     close DIR;
 
@@ -244,31 +245,21 @@ sub STORE {
         close DIR;
     }
     else {
-        use Carp;
-        confess "STORE: attempt to store non-hash value ($value) into $key: ".ref($self)
-            unless UNIVERSAL::isa($value, 'HASH');
-
         my $obj;
 
         if ($key > 0 and exists $self->{_phash}[0][$key]) {
             $obj = $self->{_phash}[0][$key];
         }
         else {
-            my $class  = (UNIVERSAL::isa($value, "UNIVERSAL"))
-                ? ref($value) : $self->module('Article');
-
-            my $module = "$class.pm";
-            $module =~ s|::|/|g;
-            require $module;
-            $obj = $class->new
-              ({
-                basepath=> $self->{basepath},
-                board        => $self->{board},
-                name        => "$self->{name}",
-                hdrfile        => $self->{idxfile},
-                recno        => int($key) ? $key - 1 : undef,
-               });
+            $obj = $self->module('Article', $value)->new({
+                basepath => $self->{basepath},
+                board    => $self->{board},
+                name     => $self->{name},
+                hdrfile  => $self->{idxfile},
+                recno    => int($key) ? $key - 1 : undef,
+	    });
         }
+
 	$key = $obj->recno;
         while (my ($k, $v) = each %{$value}) {
             $obj->{$k} = $v unless $k eq 'body' or $k eq 'id';
@@ -276,7 +267,7 @@ sub STORE {
 
         $obj->{body} = $value->{body} || "\n";
         $self->refresh($key);
-        $self->{mtime} = obj->mtime;
+        $self->{mtime} = $obj->mtime;
     }
 }
 
@@ -285,12 +276,12 @@ sub EXISTS {
     return 1 if exists ($self->{_cache}{$key});
 
     my $file = join('/', $self->basedir(), $self->{name}, '.DIR');
-    return 0 if $self->{mtime} and stat($file)->mtime == $self->{mtime};
+    return 0 if $self->{mtime} and (stat($file))[9] == $self->{mtime};
 
     open DIR, $file or die "can't read DIR file $file: $!";
 
     my $board;
-    foreach (0..int(stat($file)->size / $packsize)-1) {
+    foreach (0..int((stat($file))[9] / $packsize)-1) {
         seek DIR, $packsize * $_, 0;
         read DIR, $board, 44;
         return 1 if unpack('x12Z32', $board) eq $key;

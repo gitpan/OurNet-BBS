@@ -25,10 +25,6 @@ sub STORE {
         $self->{mtime} = $self->{_cache}{$key}->mtime;
     }
     else {
-        use Carp;
-        confess "STORE: attempt to store non-hash value ($value) into $key: ".ref($self)
-            unless UNIVERSAL::isa($value, 'HASH');
-
         my $obj;
 
         if ($key > 0 and exists $self->{_phash}[0][$key]) {

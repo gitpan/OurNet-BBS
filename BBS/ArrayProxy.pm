@@ -4,6 +4,8 @@ sub FETCHSIZE {
     my $self = shift;
     my $ego  = (tied %{$self->{_hash}});
 
+    return $ego->FETCHSIZE() if ($ego->can('FETCHSIZE'));
+
     $ego->refresh();
 
     return (($#{$ego->{_phash}[0]} + 1) || 1);

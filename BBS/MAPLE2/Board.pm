@@ -4,11 +4,12 @@ $VERSION = "0.1";
 use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot board shmid shm recno mtime _cache/;
-use File::stat;
 
 BEGIN {
     __PACKAGE__->initvars(
-        'BoardGroup' => [qw/$BRD $packsize $packstring @packlist/],
+        'BoardGroup' => [
+	    qw/$BRD $PATH_BRD $PATH_GEM $packsize $packstring @packlist/
+	],
     );
 }
 
@@ -16,7 +17,7 @@ sub refresh_articles {
     my $self = shift;
 
     return $self->{_cache}{articles} ||= $self->module('ArticleGroup')->new(
-        $self->{bbsroot}, $self->{board}, 'boards'
+        $self->{bbsroot}, $self->{board}, $PATH_BRD
     );
 }
 
@@ -24,7 +25,7 @@ sub refresh_archives {
     my $self = shift;
 
     return $self->{_cache}{archives} ||= $self->module('ArticleGroup')->new(
-        $self->{bbsroot}, $self->{board}, 'man/boards'
+        $self->{bbsroot}, $self->{board}, $PATH_GEM
     );
 }
 
@@ -34,21 +35,26 @@ sub refresh_meta {
     my ($self, $key) = @_;
     die 'cannot parse board' unless $self->{board};
 
-    if ($key and index(" forward anonymous permit notes anonymous access etc_brief ".
-                       " maillist overrides reject water notes friendplan",
-                       " $key ") > -1) {
+    if ($key and index(
+	" forward anonymous permit anonymous access etc_brief ".
+	" maillist overrides reject water note friendplan",
+	" $key "
+    ) > -1) {
+	# special-casing MAPLE2 note => notes:
+	$key = 'notes' if $key eq 'note' and $PATH_BRD eq 'boards';
+
         return if exists $self->{_cache}{$key};
 
         require OurNet::BBS::ScalarFile;
         tie $self->{_cache}{$key}, 'OurNet::BBS::ScalarFile',
-            "$self->{bbsroot}/boards/$self->{board}/$key";
+            "$self->{bbsroot}/$PATH_BRD/$self->{board}/$key";
 
         return 1;
     }
 
     my $file = "$self->{bbsroot}/$BRD";
-    return if $self->{mtime} and stat($file)->mtime == $self->{mtime};
-    $self->{mtime} = stat($file)->mtime;
+    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
+    $self->{mtime} = (stat($file))[9];
 
     local $/ = \$packsize;
     open DIR, $file or die "can't read $BRD: $!";
@@ -77,12 +83,12 @@ sub refresh_meta {
             $self->{_cache}{date}     = sprintf("%2d/%02d", (localtime)[4] + 1, (localtime)[3]);
             $self->{_cache}{title}    = '(untitled)';
 
-            mkdir "$self->{bbsroot}/boards/$self->{board}";
-            open DIR, ">$self->{bbsroot}/boards/$self->{board}/.DIR";
+            mkdir "$self->{bbsroot}/$PATH_BRD/$self->{board}";
+            open DIR, ">$self->{bbsroot}/$PATH_BRD/$self->{board}/.DIR";
             close DIR;
 
-            mkdir "$self->{bbsroot}/man/boards/$self->{board}";
-            open DIR, ">$self->{bbsroot}/man/boards/$self->{board}/.DIR";
+            mkdir "$self->{bbsroot}/$PATH_GEM/$self->{board}";
+            open DIR, ">$self->{bbsroot}/$PATH_GEM/$self->{board}/.DIR";
             close DIR;
 
             open DIR, ">>$file" or die "can't write $BRD file for $self->{board}: $!";
@@ -113,7 +119,7 @@ sub STORE {
     seek DIR, $packsize * $self->{recno}, 0;
     print DIR pack($packstring, @{$self->{_cache}}{@packlist});
     close DIR;
-    $self->{mtime} = stat($file)->mtime;
+    $self->{mtime} = (stat($file))[9];
     $self->shmtouch() if exists $self->{shm};
 }
 
@@ -133,8 +139,8 @@ sub remove {
     close DIR;
 =cut
 
-    OurNet::BBS::Utils::deltree("$self->{bbsroot}/boards/$self->{board}");
-    OurNet::BBS::Utils::deltree("$self->{bbsroot}/man/boards/$self->{board}");
+    OurNet::BBS::Utils::deltree("$self->{bbsroot}/$PATH_BRD/$self->{board}");
+    OurNet::BBS::Utils::deltree("$self->{bbsroot}/$PATH_GEM/$self->{board}");
 
     return 1;
 }

@@ -4,7 +4,6 @@ $VERSION = "0.1";
 use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/dbh id recno _cache/;
-use File::stat;
 
 BEGIN {
     __PACKAGE__->initvars(

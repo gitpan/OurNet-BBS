@@ -5,7 +5,6 @@ use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot board basepath name dir recno mtime btime _cache _phash/;
 use vars qw/%chronos/;
-use File::stat;
 
 BEGIN {
     __PACKAGE__->initvars(
@@ -46,10 +45,10 @@ sub refresh_id {
 
     my $file = join('/', $self->basedir(), '.DIR');
 
-    return if $self->{btime} and stat($file)->mtime == $self->{btime}
+    return if $self->{btime} and (stat($file))[9] == $self->{btime}
               and defined $self->{recno};
 
-    $self->{btime} = stat($file)->mtime;
+    $self->{btime} = (stat($file))[9];
 
     local $/ = \$packsize;
     open DIR, "$file" or die "can't read DIR file for $self->{board}: $!";
@@ -132,7 +131,7 @@ sub refresh_meta {
 
     if ($key) {
         # out-of-bound check
-        return if $key < 1 or $key > int(stat($file)->size / $packsize);
+        return if $key < 1 or $key > int((stat($file))[7] / $packsize);
 
         seek DIR, $packsize * ($key-1), 0;
         read DIR, $name, 33;
@@ -158,8 +157,8 @@ sub refresh_meta {
         return 1;
     }
 
-    return if $self->{mtime} and stat($file)->mtime == $self->{mtime};
-    $self->{mtime} = stat($file)->mtime;
+    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
+    $self->{mtime} = (stat($file))[9];
 
     $self->{_phash}[0] = fields::phash(map {
         seek DIR, $packsize * $_, 0;
@@ -176,7 +175,7 @@ sub refresh_meta {
                 "$self->{dir}/$self->{name}",
                 $_,
         ));
-    } (0..int(stat($file)->size / $packsize)-1));
+    } (0..int((stat($file))[7] / $packsize)-1));
 
     close DIR;
 
@@ -199,7 +198,7 @@ sub STORE {
         seek DIR, $packsize * $self->{recno}, 0;
         print DIR pack($packstring, @{$self->{_cache}}{@packlist});
         close DIR;
-        $self->{mtime} = stat($file)->mtime;
+        $self->{mtime} = (stat($file))[9];
     }
     else {
         die "STORE: attempt to store non-hash value ($value) into $key: ".ref($self)
@@ -260,12 +259,12 @@ sub EXISTS {
     return 1 if exists ($self->{_cache}{$key});
 
     my $file = join('/', $self->basedir(), $self->{name}, '.DIR');
-    return 0 if $self->{mtime} and stat($file)->mtime == $self->{mtime};
+    return 0 if $self->{mtime} and (stat($file))[9] == $self->{mtime};
 
     open DIR, $file or die "can't read DIR file $file: $!";
 
     my $board;
-    foreach (0..int(stat($file)->size / $packsize)-1) {
+    foreach (0..int((stat($file))[7] / $packsize)-1) {
         print '.';
         seek DIR, $packsize * $_, 0;
         read DIR, $board, 33;

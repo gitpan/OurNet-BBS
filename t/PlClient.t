@@ -6,7 +6,7 @@ use File::Path;
 use File::Temp;
 
 BEGIN { 
-    plan tests => ($^O =~ /Win32/ ? 1 : 5);
+    plan tests => ($^O =~ /Win32/ ? 1 : 6);
 }
 
 use OurNet::BBS;
@@ -49,6 +49,7 @@ if (fork()) {
     }
 
     ok(kill(1, $pid));
+    ok($brd->{title}, 'new board');
     ok($brd->{bm}, $brd->{title});
     ok($brd->{articles}[1]{title}, 'new title');
 
@@ -59,10 +60,17 @@ else {
         sleep 1;
     }
 
-    my $brd = OurNet::BBS::PlClient->new('localhost');
+    my $brd = OurNet::BBS->new('PlClient', 'localhost');
 
-    $brd->{bm} = $brd->{title};
+    $brd->{title} = 'new board';
     sleep 1;
+
+    while (my ($k, $v) = each(%{$brd})) {
+	if ($k eq 'bm') {
+	    $brd->{$k} = $brd->{title};
+	    sleep 1;
+	}
+    }
 
     my $art = $brd->{articles};
     $art->[1]{title} = 'new title';

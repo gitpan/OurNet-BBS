@@ -16,11 +16,8 @@ sub refresh_meta {
         die 'hash key not implemented (!)';
     }
 
-    unless ($self->{_cache}{_cached}) {
-        local $^W = 0; # usage of int() below is voluntary
-	$self->{_cache}{_article_last} ||= int($self->{bbsobj}->board_list_last($self->{board}));
-	$self->{_cache}{_cached} = 1;
-    }
+    $self->FETCHSIZE();
+
     if ($key) {
         # out-of-bound check
         local $^W = 0; # usage of int() below is voluntary
@@ -41,9 +38,9 @@ sub refresh_meta {
         return 1;
     }
 
-    return 0 if $self->{_cache}{_cached};
-    local $_;
+    return 0 if $self->{_cache}{_article_last};
 
+    local $_;
     $self->{_phash}[0] = fields::phash(map {
         # return the thing
         ($_, $self->module('Article')->new(
@@ -57,6 +54,17 @@ sub refresh_meta {
     } (1..$self->{_cache}{_article_last}));
 
     return 1;
+}
+
+sub FETCHSIZE {
+    my $self = $_[0];
+
+    local $^W; # usage of int() below is voluntary
+
+    $self->{_cache}{_article_last} 
+	||= int($self->{bbsobj}->board_list_last($self->{board}));
+
+    return $self->{_cache}{_article_last} + 1;
 }
 
 sub STORE {

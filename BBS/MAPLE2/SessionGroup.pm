@@ -5,7 +5,6 @@ use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot shmkey maxsession chatport shmid shm _cache/;
 use OurNet::BBS::ShmScalar;
-use File::stat;
 use POSIX;
 
 our %registered; # registered callbacks

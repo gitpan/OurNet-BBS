@@ -1,7 +1,7 @@
 package OurNet::BBS;
 require 5.005;
 
-$OurNet::BBS::VERSION = "1.52";
+$OurNet::BBS::VERSION = "1.53";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -63,6 +63,17 @@ More detailed document is expected to appear soon.
 
 =cut
 
+sub new { 
+    local $@;
+
+    my $mod = eval {
+	$_[0]->fillmod($_[1], 'BBS');
+    };
+
+    return $@ ? OurNet::BBS::Base::new(@_)
+              : $mod->new(@_[2..$#_]);
+}           
+
 sub refresh_boards {
     my ($self, $key) = @_;
 
@@ -96,16 +107,24 @@ sub refresh_meta {
     # do nothing -- as of now
 }
 
+sub fillmod {
+    my ($self, $backend, $class) = @_;
+
+    my $prefix = (index($backend, '::') > -1 ? '' : ((ref($self) || $self).'::'));
+    my $module = "$prefix$backend/$class.pm";
+    $module =~ s|::|/|g;
+    require $module;
+    
+    return "$prefix${backend}::$class";
+}
+
 sub fillin {
     my ($self, $key, $class) = splice(@_, 0, 3);
     return if defined($self->{_cache}{$key});
 
-    my $prefix = (index($self->{backend}, '::') > -1 ? '' : (ref($self).'::'));
-    my $module = "$prefix$self->{backend}/$class.pm";
-    $module =~ s|::|/|g;
-    require $module;
-
-    $self->{_cache}{$key} = "$prefix$self->{backend}::$class"->new(@_);
+    $self->{_cache}{$key} = $self->fillmod(
+	$self->{backend}, $class
+    )->new(@_);
     
     return 1;
 }

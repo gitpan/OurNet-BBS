@@ -79,6 +79,7 @@ BBS/NNTP/Article.pm
 BBS/NNTP/ArticleGroup.pm
 BBS/NNTP/Board.pm
 BBS/NNTP/BoardGroup.pm
+BBS/PlClient/BBS.pm
 BBS/PTT/Article.pm
 BBS/PTT/ArticleGroup.pm
 BBS/PTT/Board.pm

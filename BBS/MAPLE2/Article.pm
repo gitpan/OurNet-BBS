@@ -5,7 +5,6 @@ use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot board basepath name dir recno mtime btime _cache/;
 use vars qw/%chronos/;
-use File::stat;
 
 BEGIN {
     __PACKAGE__->initvars(
@@ -52,19 +51,23 @@ sub _refresh_body {
 
     my $file = join('/', $self->basedir, $self->{name});
 
-    return if $self->{btime} and stat($file)->mtime == $self->{btime}
+    return if $self->{btime} and (stat($file))[9] == $self->{btime}
                              and defined $self->{_cache}{body};
 
-    $self->{btime} = stat($file)->mtime;
-    $self->{_cache}{date} ||= sprintf("%2d/%02d", (localtime($self->{btime}))[4] + 1, (localtime($self->{btime}))[3]);
+    $self->{btime} = (stat($file))[9];
+    $self->{_cache}{date} ||= 
+	sprintf("%2d/%02d", (localtime($self->{btime}))[4] + 1, 
+	        (localtime($self->{btime}))[3]);
 
     local $/;
     open _, $file or die "can't open DIR file for $self->{board}";
     $self->{_cache}{body} = <_>;
 
     my ($from, $title, $date);
-    if ($self->{_cache}{body} =~ s/^作者: ([^ ]+) .*\n標題: (.*)\n時間: (.+)\n\n//) {
-        ($from, $title, $date) = ($1, $2, $3);
+    if ($self->{_cache}{body} =~ 
+	    s/^作者: ([^ ]+) (?:\((.+?)\) )?[^\n]*\n標題: (.*)\n時間: (.+)\n\n//
+    ) {
+        ($from, $self->{_cache}{nick}, $title, $date) = ($1, $2, $3, $4);
     }
     else {
         $self->refresh_meta;
@@ -87,6 +90,10 @@ sub _refresh_body {
     return 1;
 }
 
+sub refresh_nick {
+    shift->_refresh_body;
+}
+
 sub refresh_body {
     shift->_refresh_body;
 }
@@ -102,12 +109,12 @@ sub refresh_meta {
 
     my $file = join('/', $self->basedir, $self->{name});
     return unless -e $file;
-    $self->{btime} = stat($file)->mtime;
+    $self->{btime} = (stat($file))[9];
 
     $file = join('/', $self->basedir, '.DIR');
 
-    return if $self->{mtime} and stat($file)->mtime == $self->{mtime};
-    $self->{mtime} = stat($file)->mtime;
+    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
+    $self->{mtime} = (stat($file))[9];
 
     local $/ = \$packsize;
     open DIR, "$file" or die "can't read DIR file for $self->{board}: $!";
@@ -164,7 +171,7 @@ sub STORE {
         open _, ">$file" or die "cannot open $file";
         print _ $value;
         close _;
-        $self->{btime} = stat($file)->mtime;
+        $self->{btime} = (stat($file))[9];
         $self->{_cache}{$key} = $value;
     }
     else {
@@ -183,7 +190,7 @@ sub STORE {
         seek DIR, $packsize * $self->{recno}, 0;
         print DIR pack($packstring, @{$self->{_cache}}{@packlist});
         close DIR;
-        $self->{mtime} = stat($file)->mtime;
+        $self->{mtime} = (stat($file))[9];
     }
 }
 
@@ -200,9 +207,9 @@ sub remove {
         seek DIR, 0, 0;
         read(DIR, $buf, $packsize * $self->{recno});
     }
-    if ($self->{recno} < (stat($file)->size / $packsize) - 1) {
+    if ($self->{recno} < ((stat($file))[7] / $packsize) - 1) {
         seek DIR, $packsize * ($self->{recno}+1), 0;
-        read(DIR, $buf, $packsize * (stat($file)->size - (($self->{recno}+1) * $packsize)));
+        read(DIR, $buf, $packsize * ((stat($file))[7] - (($self->{recno}+1) * $packsize)));
     }
 
     close DIR;

@@ -4,7 +4,6 @@ $VERSION = "0.1";
 use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot group mtime _cache/;
-use File::stat;
 
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
@@ -15,12 +14,12 @@ sub refresh_meta {
     return unless $self->{group};
     local *GROUP;
 
-    return if $self->{mtime} and stat($file)->mtime == $self->{mtime};
+    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
 
     open (GROUP, $file) or open (GROUP, "+>>$file")
         or die("Cannot read group file $file: $!");
 
-    $self->{mtime} = stat($file)->mtime;
+    $self->{mtime} = (stat($file))[9];
 
     my %remain = %{$self->{_cache} || {}};
     while ($key = <GROUP>) {

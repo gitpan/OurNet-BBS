@@ -19,7 +19,7 @@ WriteMakefile(
 	'Digest::MD5'		=> '2.13',       # BBSCOM
 	'Net::NNTP'		=> '2.19',       # NNTP backend
 	'LWP'			=> '5.00',       # LWP-BBS
-	'OurNet::BBSAgent'	=> '1.5',        # BBSAgent backend
+	'OurNet::BBSAgent'	=> '1.53',       # BBSAgent backend
 	'File::Temp'		=> '0.12',       # test scripts
     },
 

@@ -5,14 +5,17 @@ use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot shmkey maxboard shmid shm mtime _cache/;
 use OurNet::BBS::ShmScalar;
-use File::stat;
 
 BEGIN {
     __PACKAGE__->initvars(
         '$packstring'    => 'Z13Z49Z39Z11LZ3CLL',
         '$packsize'      => 128,
-        '@packlist'      => [qw/id title bm pad bupdate pad2 bvote vtime level/],
+        '@packlist'      => [
+	    qw/id title bm pad bupdate pad2 bvote vtime level/
+	],
         '$BRD'           => '.BOARDS',
+	'$PATH_BRD'      => 'boards',
+	'$PATH_GEM'      => 'man/boards',
 
     );
 }
@@ -40,33 +43,37 @@ sub refresh_meta {
     $self->shminit unless ($self->{shmid} || !$self->{shmkey});
 
     if ($key) {
-        $self->{_cache}{$key} ||= $self->module('Board')->new(
-            $self->{bbsroot},
-            $key,
-            $self->{shmid},
-            $self->{shm}
-        );
+        $self->{_cache}{$key} ||= $self->module('Board')->new({
+            bbsroot => $self->{bbsroot},
+            board   => $key,
+            shmid   => $self->{bbsroot},
+            shm     => $self->{shm},
+        });
+
+	print $self->{_cache}{$key}->shmid
+	    if $OurNet::BBS::DEBUG;
         return;
     }
 
-    return if $self->{mtime} and stat($file)->mtime == $self->{mtime};
+    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
 
-    $self->{mtime} = stat($file)->mtime;
+    $self->{mtime} = (stat($file))[9];
 
     open DIR, "$file" or die "can't read DIR file $file $!";
 
-    foreach (0..int(stat($file)->size / 128)-1) {
+    foreach (0..int((stat($file))[7] / 128)-1) {
         seek DIR, 128 * $_, 0;
         read DIR, $board, 13;
         $board = unpack('Z13', $board);
         next unless $board and substr($board,0,1) ne "\0";
-        $self->{_cache}{$board} ||= $self->module('Board')->new(
-            $self->{bbsroot},
-            $board,
-            $self->{shmid},
-            $self->{shm},
-            $_,
-        );
+
+        $self->{_cache}{$board} ||= $self->module('Board')->new({
+            bbsroot => $self->{bbsroot},
+            board   => $board,
+            shmid   => $self->{shmid},
+            shm     => $self->{shm},
+            recno   => $_,
+        });
     }
 
     close DIR;
@@ -77,12 +84,12 @@ sub EXISTS {
     return 1 if exists ($self->{_cache}{$key});
 
     my $file = "$self->{bbsroot}/$BRD";
-    return 0 if $self->{mtime} and stat($file)->mtime == $self->{mtime};
+    return 0 if $self->{mtime} and (stat($file))[9] == $self->{mtime};
 
     open DIR, $file or die "can't read DIR file $file: $!";
 
     my $board;
-    foreach (0..int(stat($file)->size / 128)-1) {
+    foreach (0..int((stat($file))[7] / 128)-1) {
         seek DIR, 128 * $_, 0;
         read DIR, $board, 13;
         return 1 if unpack('Z13', $board) eq $key;
@@ -109,10 +116,14 @@ sub STORE {
         $module =~ s|::|/|g;
         require $module;
 
-        %{$class->new(
-            $self->{bbsroot},
-            $key,
-        )} = (%{$value}, bstamp => time());
+	$self->shminit unless ($self->{shmid} || !$self->{shmkey});
+
+        %{$class->new({
+            bbsroot => $self->{bbsroot},
+            board   => $key,
+            shmid   => $self->{shmid},
+            shm     => $self->{shm},
+        })} = (%{$value}, bstamp => time());
     }
 }
 

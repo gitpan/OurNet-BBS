@@ -5,7 +5,6 @@ use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot shmkey maxuser shmid shm _cache _phash/;
 use OurNet::BBS::ShmScalar;
-use File::stat;
 
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {

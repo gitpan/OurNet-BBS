@@ -15,6 +15,8 @@ BEGIN {
                battr btime bpost blast/
         ],
         '$BRD'        => '.BRD',
+	'$PATH_BRD'   => 'brd',
+	'$PATH_GEM'   => 'gem/brd',
     );
 }
 
@@ -28,13 +30,15 @@ sub shminit {
         tie $self->{shm}{uptime}, 'OurNet::BBS::ShmScalar',
             $self->{shmid}, $self->{maxboard}*128+4, 4, 'L';
     }
-    print "shmid = $self->{shmid} number: $self->{shm}{number}\n";
+
+    print "shmid = $self->{shmid} number: $self->{shm}{number}\n"
+	if $OurNet::BBS::DEBUG;
 }
 
 sub EXISTS {
     my ($self, $key) = @_;
     return 1 if exists ($self->{_cache}{$key});
-    return ((-d "$self->{bbsroot}/brd/$key") ? 1 : 0);
+    return ((-d "$self->{bbsroot}/$PATH_BRD/$key") ? 1 : 0);
 }
 
 1;

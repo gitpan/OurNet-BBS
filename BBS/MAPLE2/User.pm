@@ -4,7 +4,6 @@ $VERSION = "0.1";
 use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot id recno _cache/;
-use File::stat;
 
 sub refresh_meta {
     my $self = shift;

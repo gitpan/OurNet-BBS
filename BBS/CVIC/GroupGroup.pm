@@ -4,7 +4,6 @@ $VERSION = "0.1";
 use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot mtime _cache/;
-use File::stat;
 
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
@@ -20,8 +19,8 @@ sub refresh_meta {
         return;
     }
 
-    return if $self->{mtime} and stat($file)->mtime == $self->{mtime};
-    $self->{mtime} = stat($file)->mtime;
+    return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
+    $self->{mtime} = (stat($file))[9];
 
     opendir DIR, $file or die "can't read group file $file: $!";
     %{$self->{_cache}} = map {

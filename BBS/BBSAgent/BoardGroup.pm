@@ -19,14 +19,10 @@ BEGIN {
 sub sanity_test {
     my ($self, $nologin) = @_;
 
-	my $ego = tied(%{$self})
-        ? UNIVERSAL::isa(tied(%{$self}), 'OurNet::BBS::ArrayProxy')
-            ? tied(%{tied(%{$self})->{_hash}})
-            : tied(%{$self})
-        : $self;
+    my $ego = $self->ego();
 
-	my $vars = ($ego->load_bbsobj('', $nologin) || return)->{var};
-	my $brd = $vars->{sanity_board} or return 1;
+    my $vars = ($ego->load_bbsobj('', $nologin) || return)->{var};
+    my $brd = $vars->{sanity_board} or return 1;
 
     my %var = map {
         (substr($_, length("sanity_board_")), $vars->{$_})

@@ -4,7 +4,6 @@ $VERSION = "0.1";
 use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot id recno _cache/;
-use File::stat;
 
 BEGIN {
     __PACKAGE__->initvars(
@@ -37,7 +36,7 @@ sub refresh_meta {
         open USR, ">$self->{bbsroot}/usr/".
                   lc(substr($self->{id}, 0, 1))."/$self->{id}".
                   "/.ACCT";
-        $self->{_cache}{userno} = stat("$self->{bbsroot}/.USR")->size / 16;
+        $self->{_cache}{userno} = (stat("$self->{bbsroot}/.USR"))[7] / 16;
         $self->{_cache}{userid} = $self->{id};
         $self->{_cache}{userlevel} = 15;
         $self->{_cache}{ufo} = 15;

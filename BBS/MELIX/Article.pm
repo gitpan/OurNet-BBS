@@ -4,6 +4,7 @@ $VERSION = "0.1";
 use strict;
 use base qw/OurNet::BBS::MAPLE3::Article/;
 use fields qw/_cache/;
+use subs qw/STORE/;
 
 BEGIN {__PACKAGE__->initvars()};
 
@@ -32,7 +33,7 @@ sub STORE {
         open _, ">$file" or die "cannot open $file";
         print _ $value;
         close _;
-        $self->{btime} = stat($file)->mtime;
+        $self->{btime} = (stat($file))[9];
         $self->{_cache}{$key} = $value;
     }
     else {
