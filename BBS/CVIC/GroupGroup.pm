@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/CVIC/GroupGroup.pm $ $Author: autrijus $
+# $Revision: #3 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+
 package OurNet::BBS::CVIC::GroupGroup;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -10,10 +12,8 @@ sub refresh_meta {
     my ($self, $key) = @_;
     my $file = "$self->{bbsroot}/group";
 
-    require OurNet::BBS::CVIC::Group;
-
     if ($key) {
-        $self->{_cache}{$key} ||= OurNet::BBS::CVIC::Group->new(
+        $self->{_cache}{$key} ||= $self->module('Group')->new(
             $self->{bbsroot}, $key
         );
         return;
@@ -24,7 +24,7 @@ sub refresh_meta {
 
     opendir DIR, $file or die "can't read group file $file: $!";
     %{$self->{_cache}} = map {
-        ($_, OurNet::BBS::CVIC::Group->new($self->{bbsroot}, $_));
+        ($_, $self->module('Group')->new($self->{bbsroot}, $_));
     } grep {
         /^[^\.]/;
     } readdir(DIR);

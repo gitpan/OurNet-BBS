@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/MAPLE3/GroupGroup.pm $ $Author: autrijus $
+# $Revision: #3 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+
 package OurNet::BBS::MAPLE3::GroupGroup;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -31,3 +33,5 @@ sub refresh_meta {
 
     closedir DIR;
 }
+
+1;

@@ -45,7 +45,7 @@ $brd->{articles}[2] = {
 
 ok($brd->{articles}[2]{body}, qr/bodie/);
 ok($brd->{articles}[2]{header}{From}, 'smart');
-ok(index($brd->{articles}[2]{header}{'Message-ID'}, '@'), 37);
+ok(index($brd->{articles}[2]{header}{'Message-ID'}, '@'), 38);
 
 # alternative access
 

@@ -67,7 +67,8 @@ sub remove {
 
 sub STORE {
     my ($self, $key, $value) = @_;
-    local $^W = 0; # turn off uninitialized warnings
+
+    no warnings 'uninitialized';
 
     if ($key eq 'msg') {
 	my $head = $self->{shm}{mbase};

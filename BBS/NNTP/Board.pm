@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/NNTP/Board.pm $ $Author: autrijus $
+# $Revision: #3 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+
 package OurNet::BBS::NNTP::Board;
-$VERSION = '0.1';
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -25,14 +27,7 @@ sub refresh_archives {
     die 'no refresh_archives';
 }
 
-sub refresh_meta {
-    my ($self, $key) = @_;
-
-    # XXX: no meta-data yet
-    # @{$self->{_cache}}{@packlist} = ();
-
-    return 1;
-}
+sub refresh_meta { 1 } # XXX: no meta-data yet
 
 1;
 

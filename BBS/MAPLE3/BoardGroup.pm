@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/MAPLE3/BoardGroup.pm $ $Author: autrijus $
+# $Revision: #5 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+
 package OurNet::BBS::MAPLE3::BoardGroup;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::MAPLE2::BoardGroup/;
@@ -30,7 +32,6 @@ sub readok {
     my ($self, $user, $op, $argref) = @_;
 
     # reading a board requires checking against its 'read' permission
-    # XXX: must incoporate with board's permission here
     my $readlevel = $self->{$argref->[0]}{readlevel};
     return (!$readlevel or $readlevel & $user->{userlevel});
 }
@@ -39,7 +40,10 @@ sub shminit {
     my $self = shift;
 
     if ($^O ne 'MSWin32' and
-        $self->{shmid} = shmget($self->{shmkey}, $self->{maxboard}*$packsize+8, 0)) {
+        $self->{shmid} = shmget(
+	    $self->{shmkey}, $self->{maxboard}*$packsize+8, 0)
+	) 
+    {
         tie $self->{shm}{number}, 'OurNet::BBS::ShmScalar',
            $self->{shmid}, $self->{maxboard}*128, 4, 'L';
         tie $self->{shm}{uptime}, 'OurNet::BBS::ShmScalar',

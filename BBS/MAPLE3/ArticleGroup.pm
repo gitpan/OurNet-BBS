@@ -1,13 +1,15 @@
+# $File: //depot/OurNet-BBS/BBS/MAPLE3/ArticleGroup.pm $ $Author: autrijus $
+# $Revision: #12 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+
 package OurNet::BBS::MAPLE3::ArticleGroup;
-$VERSION = "0.1";
 
 # hdrfile for the upper level hdr file holding metadata of this level
 # idxfile for hdr of the deeper level that this articlegroup is holding.
+
 use strict;
 use base qw/OurNet::BBS::Base/;
 use fields qw/basepath board name dir hdrfile idxfile recno 
 	      bm readlevel postlevel mtime btime _cache _phash/;
-use vars qw/%chronos/;
 use subs qw/readok writeok/;
 
 use constant GEM_FOLDER  => 0x00010000;
@@ -16,6 +18,8 @@ use constant GEM_GOPHER  => 0x00040000;
 use constant GEM_HTTP    => 0x00080000;
 use constant GEM_EXTEND  => 0x80000000;
 use constant POST_DELETE => 0x0080;
+
+my %chronos;
 
 BEGIN {
     __PACKAGE__->initvars(
@@ -26,10 +30,27 @@ BEGIN {
 }
 
 sub writeok {
-    my ($self, $user) = @_;
+    my ($self, $user, $op, $argref) = @_;
 
-    # store/delete an article require bm permission in that board
-    return $user->has_perm('PERM_BM') or $user->id() eq $self->bm();
+    # store/delete an arbitary article require bm permission in that board
+    return 1 if $user->has_perm('PERM_BM') or ($user->id() eq $self->bm());
+
+    # but actually you can store your own article, no big deal
+    if ($op eq 'STORE') {
+	# check the author bit
+	my $value = $argref->[0];
+	my $id    = $user->id();
+
+	return 1 if $value->{author} and $value->{author} ne $id;
+
+	my $header = $value->{header} if $value->{header};
+
+	return 1 if $header and substr(
+	    $header->{From}, 0, length($id) + 1
+	) eq "$id ";
+    }
+
+    return 0;
 }
 
 sub readok {
@@ -38,6 +59,7 @@ sub readok {
     my $readlevel = $self->readlevel();
     return (!$readlevel or $readlevel & $user->{userlevel});
 }
+    # but actually you can store your own article, no big deal
 
 sub basedir {
     my $self = shift;
@@ -62,9 +84,9 @@ sub new_id {
     $file = $self->basedir();
 
     unless (-e "$file/$self->{hdrfile}") {
-        open _, ">$file/$self->{hdrfile}"
+        open(my $HEADER, '>', "$file/$self->{hdrfile}")
           or die "cannot create $file/$self->{hdrfile}}";
-        close _;
+        close $HEADER;
     }
 
     $chrono = time();
@@ -78,8 +100,8 @@ sub new_id {
         $chrono = ++$chronos{$self->{board}};
     }
 
-    open _, ">$fname" or die "cannot open $fname";
-    close _;
+    open(my $BODY, '>', $fname) or die "cannot open $fname";
+    close $BODY;
 
     return $chrono;
 }
@@ -100,19 +122,19 @@ sub refresh_id {
     $self->{btime} = (stat($file))[9];
 
     local $/ = \$packsize;
-    open DIR, "$file" or die "can't read DIR file for $self->{board}: $!";
+    open(my $DIR, $file) or die "can't read DIR file for $self->{board}: $!";
     if (defined $self->{recno}) {
-        seek DIR, $packsize * $self->{recno}, 0;
-        @{$self->{_cache}}{@packlist} = unpack($packstring, <DIR>);
+        seek $DIR, $packsize * $self->{recno}, 0;
+        @{$self->{_cache}}{@packlist} = unpack($packstring, <$DIR>);
         if ($self->{_cache}{id} ne $self->{name}) {
             undef $self->{recno};
-            seek DIR, 0, 0;
+            seek $DIR, 0, 0;
         }
     }
 
     unless (defined $self->{recno}) {
         $self->{recno} = 0;
-        while (my $data = <DIR>) {
+        while (my $data = <$DIR>) {
             @{$self->{_cache}}{@packlist} = unpack($packstring, $data);
             # print "$self->{_cache}{id} versus $self->{name}\n";
             last if ($self->{_cache}{id} eq $self->{name});
@@ -122,18 +144,25 @@ sub refresh_id {
             $self->{_cache}{id}       = $self->{name};
             $self->{_cache}{xmode}    = GEM_FOLDER;
             $self->{_cache}{time}     = scalar time;
-            $self->{_cache}{author}   ||= 'guest.';
-            $self->{_cache}{date}     ||= sprintf("%02d/%02d/%02d", substr((localtime)[5]+1900, -2), (localtime)[4] + 1, (localtime)[3]);
+            $self->{_cache}{author}   ||= '(unknown).';
+            $self->{_cache}{date}     ||= sprintf(
+		"%02d/%02d/%02d", 
+		substr((localtime)[5]+1900, -2), 
+		(localtime)[4] + 1, 
+		(localtime)[3]
+	    );
             $self->{_cache}{title}    ||= '(untitled)';
             $self->{_cache}{filemode} = 0;
-            open DIR, "+>>$file" or die "can't write DIR file for $self->{board}: $!";
-            print DIR pack($packstring, @{$self->{_cache}}{@packlist});
-            close DIR;
 
-            open DIR, ">".join('/', $self->basedir(), substr($self->{name}, -1), $self->{name});
-            close DIR;
+            open(my $DIR, '+>>', $file)
+		or die "can't write DIR file for $self->{board}: $!";
+            print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
+            close $DIR;
 
-            # print "Recno: ".$self->{recno}."\n";
+            open($DIR, '>', join(
+		'/', $self->basedir(), substr($self->{name}, -1), $self->{name}
+	    )) or die "can't write BODY file for $self->{board}: $!";
+            close $DIR;
         }
     }
 
@@ -142,19 +171,17 @@ sub refresh_id {
 
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
-    my ($self, $key) = @_;
+    my ($self, $key, $arrayfetch) = @_;
 
-#    local $^W = 0; # turn off warnings
     my $file = join('/', $self->basedir(), $self->{idxfile});
     my $name;
 
-    if ($key and index(' '.join(' ',@packlist).' ', " $key ") > -1) {
-        goto &refresh_id;
-    }
-    elsif (!defined($key) and $self->{dir}) {
-        $self->refresh_id;
-    }
-    if ($key and !($key =~ /^\d+$/)) {
+    goto &refresh_id if ($key and $self->contains($key));
+    $self->refresh_id if (!defined($key) and $self->{dir});
+
+    if ($key and ($key =~ /\D/)) {
+	no warnings 'uninitialized';
+
         # hash key -- no recaching needed
         return if $self->{_phash}[0][0]{$key};
         my $obj = $self->module(substr($key, 0, 2) eq 'D.'
@@ -172,91 +199,94 @@ sub refresh_meta {
         return 1;
     }
 
-    open DIR, $file or (warn "can't read DIR file for $file: $!", return);
+    open(my $DIR, $file) or (warn "can't read DIR file for $file: $!", return);
 
     if ($key) {
         # out-of-bound check
         die 'no such article' 
 	    if $key < 1 || $key > int((stat($file))[7] / $packsize);
 
-        my (%param, %foo);
-        seek DIR, $packsize * ($key-1), 0;
+        my (%param, %entry);
+        seek $DIR, $packsize * ($key-1), 0;
         local $/ = \$packsize;
-        @foo{@packlist} = unpack($packstring, <DIR>);
-	die "article deleted" if $foo{xmode} & POST_DELETE;
-        $name = $foo{id};
+        @entry{@packlist} = unpack($packstring, <$DIR>);
 
-	local $^W;
+	die "article deleted" if $entry{xmode} & POST_DELETE;
+        $name = $entry{id};
+
+	no warnings 'uninitialized';
+
         return if $self->{_phash}[0][0]{$name} == $key;
 
-        $param{idxfile} = substr($foo{id},-1)."/$foo{id}"
-            if $foo{xmode} & GEM_FOLDER;
+        $param{idxfile} = substr($entry{id},-1)."/$entry{id}"
+            if $entry{xmode} & GEM_FOLDER;
 
-        my $obj = $self->module(($foo{xmode} & GEM_FOLDER)
-            ? 'ArticleGroup' : 'Article')->new
-              ({
-                board        => $self->{board},
-                basepath=> $self->{basepath},
-                name        => $name,
-                hdrfile        => $self->{idxfile},
-                recno        => $key-1,
+        my $obj = $self->module(($entry{xmode} & GEM_FOLDER)
+	    ? 'ArticleGroup' : 'Article')->new({
+		board		=> $self->{board},
+		basepath	=> $self->{basepath},
+		name		=> $name,
+		hdrfile		=> $self->{idxfile},
+		recno		=> $key - 1,
                 %param
-               });
+	});
         $self->{_phash}[0][0]{$name} = $key;
         $self->{_phash}[0][$key] = $obj;
 	$self->{mtime} = (stat($file))[9];
-        close DIR;
+        close $DIR;
         return 1;
     }
 
     return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
     $self->{mtime} = (stat($file))[9];
 
-    print "!! reload all articles in ag\n" if $OurNet::BBS::DEBUG;
+    print "reloading articlegroup\n" if $OurNet::BBS::DEBUG;
 
     $self->{_phash}[0] = fields::phash(map {
-        my (%param, %foo);
-        seek DIR, $packsize * ($_), 0;
-        local $/ = \$packsize;
-        @foo{@packlist} = unpack($packstring, <DIR>);
-        $name = $foo{id};
-        # return the thing
-        $param{idxfile}        = substr($foo{id},-1)."/$foo{id}"
-          if $foo{xmode} & GEM_FOLDER;
+	my (%param, %entry);
 
-        ($name, $self->module(($foo{xmode} & GEM_FOLDER)
-            ? 'ArticleGroup' : 'Article')->new
-         ({
-          board                => $self->{board},
-          basepath        => $self->{basepath},
-          name                => $name,
-          hdrfile        => $self->{idxfile},
-          recno                => $_,
-          %param,
-          })
-        );
+	seek $DIR, $packsize * ($_), 0;
+	local $/ = \$packsize;
+	@entry{@packlist} = unpack($packstring, <$DIR>);
+	$name = $entry{id};
+
+	# return the thing
+	$param{idxfile} = substr($entry{id},-1)."/$entry{id}"
+	    if $entry{xmode} & GEM_FOLDER;
+
+	($name, $self->module(($entry{xmode} & GEM_FOLDER)
+	    ? 'ArticleGroup' : 'Article')->new({
+		board		=> $self->{board},
+		basepath	=> $self->{basepath},
+		name		=> $name,
+		hdrfile		=> $self->{idxfile},
+		recno		=> $_,
+		%param,
+	})
+    );
     } (0..int((stat($file))[7] / $packsize)-1)); # size
 
-    close DIR;
+    close $DIR;
 
     return 1;
 }
 
 sub STORE {
     my ($self, $key, $value) = @_;
-    local $^W = 0; # turn off warnings
 
-    if ($key and index(' '.join(' ', @packlist).' ', " $key ") > -1) {
+    no warnings 'uninitialized';
+
+    if ($self->contains($key)) {
         $self->refresh($key);
         $self->{_cache}{$key} = $value;
 
         my $file = join('/', $self->basedir(), '.DIR');
 
-	open DIR, "+<$file" or die "cannot open $file for writing";
+	open(my $DIR, '+<', $file) or die "cannot open $file for writing";
         # print "seeeking to ".($packsize * $self->{recno});
-        seek DIR, $packsize * $self->{recno}, 0;
-        print DIR pack($packstring, @{$self->{_cache}}{@packlist});
-        close DIR;
+        seek $DIR, $packsize * $self->{recno}, 0;
+        print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
+        close $DIR;
     }
     else {
         my $obj;
@@ -266,11 +296,11 @@ sub STORE {
         }
         else {
             $obj = $self->module('Article', $value)->new({
-                basepath => $self->{basepath},
-                board    => $self->{board},
-                name     => $self->{name},
-                hdrfile  => $self->{idxfile},
-                recno    => int($key) ? $key - 1 : undef,
+		basepath	=> $self->{basepath},
+		board		=> $self->{board},
+		name		=> $self->{name},
+		hdrfile		=> $self->{idxfile},
+		recno		=> int($key) ? $key - 1 : undef,
 	    });
         }
 
@@ -283,6 +313,8 @@ sub STORE {
         $self->refresh($key);
         $self->{mtime} = $obj->mtime;
     }
+
+    return 1;
 }
 
 sub EXISTS {
@@ -292,16 +324,16 @@ sub EXISTS {
     my $file = join('/', $self->basedir(), $self->{name}, '.DIR');
     return 0 if $self->{mtime} and (stat($file))[9] == $self->{mtime};
 
-    open DIR, $file or die "can't read DIR file $file: $!";
+    open(my $DIR, $file) or die "can't read DIR file $file: $!";
 
     my $board;
     foreach (0..int((stat($file))[9] / $packsize)-1) {
-        seek DIR, $packsize * $_, 0;
-        read DIR, $board, 44;
+        seek $DIR, $packsize * $_, 0;
+        read $DIR, $board, 44;
         return 1 if unpack('x12Z32', $board) eq $key;
     }
 
-    close DIR;
+    close $DIR;
     return 0;
 }
 

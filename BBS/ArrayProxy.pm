@@ -1,3 +1,6 @@
+# $File: //depot/OurNet-BBS/BBS/ArrayProxy.pm $ $Author: autrijus $
+# $Revision: #3 $ $Change: 1132 $ $DateTime: 2001/06/14 16:34:13 $
+
 package OurNet::BBS::ArrayProxy;
 
 sub FETCHSIZE {
@@ -58,40 +61,34 @@ sub EXISTS {
     my ($self, $key) = @_;
     my $ego  = (tied %{$self->{_hash}});
 
-    # if (defined(${$self->{_flag}})) { # XXX perl can't exists phash
-    #     return $ego->EXISTS(${$self->{_flag}});
-    # }
-    # else {
-        $ego->refresh($key, 1);
-        return $ego->{_phash}[0][$key] ? 1 : 0;
-    # }
+    $ego->refresh($key, 1);
+    return $ego->{_phash}[0][$key] ? 1 : 0;
 }
 
 sub FETCH {
     my ($self, $key) = @_;
     my $hash = $self->{_hash};
     return $hash if $key == 0;
-    # print "$self AFETCH: $key\n";
+
     my $ego = tied %{$hash};
 
     if (defined ${$self->{_flag}}) {
         $key = ${$self->{_flag}};
         undef ${$self->{_flag}};
-        # print "ensues $key!\n";
+
         $ego->refresh($key);
-        # print "fetching: ${$self->{_flag}}\n";
-        return (exists $ego->{_phash}[0] and exists $ego->{_phash}[0][0]{$key})
+
+        return (exists $ego->{_phash}[0] and $ego->{_phash}[0][0]{$key})
             ? $ego->{_phash}[0]{$key}
             : $ego->{_cache}{$key};
     }
     else {
-        # print "ensues $key.\n";
         $ego->refresh($key, 1);
-        # die "$key $#{(tied %{$hash})->{_phash}[0]}\n";
         return $ego->{_phash}[0][$key];
     }
 }
 
 sub CLEAR {};
 sub EXTEND {};
+
 1;

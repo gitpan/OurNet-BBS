@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/NNTP/Article.pm $ $Author: autrijus $
+# $Revision: #5 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+
 package OurNet::BBS::NNTP::Article;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -44,13 +46,10 @@ sub refresh_header {
     return 1;
 }
 
-sub refresh_meta {
-    return 1;
-}
+sub refresh_meta { 1 }
 
 sub STORE {
     die 'no Article STORE yet';
 }
 
 1;
-

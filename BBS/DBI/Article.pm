@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/Base.pm $ $Author: autrijus $
+# $Revision: #16 $ $Change: 1132 $ $DateTime: 2001/06/14 16:34:13 $
+
 package OurNet::BBS::DBI::Article;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -44,18 +46,16 @@ sub refresh_header {
     my ($from, $date);
 
     $self->{_cache}{header} = {
-        From         => $from  ||= (
+        From	=> $from  ||= (
             $self->{_cache}{author} .
             ($self->{_cache}{nick} ? " ($self->{_cache}{nick})" : '')
         ),
-        Subject      => $self->{_cache}{title},
-        Date         => $date ||= scalar localtime($self->{btime}),
-        'Message-ID' => OurNet::BBS::Utils::get_msgid(
-            $date,
-            $from,
-            $self->{board},
-        ),
+        Subject	=> $self->{_cache}{title},
+        Date	=> $date ||= scalar localtime($self->{btime}),
+	Board  	=> $self->{board},
     };
+
+    OurNet::BBS::Utils::set_msgid($self->{_cache}{header});
     
     return 1;
 }
@@ -79,7 +79,9 @@ sub refresh_meta {
 
         $self->{_cache}{id}       = $self->{name};
         $self->{_cache}{author}   ||= 'guest.';
-        $self->{_cache}{date}     ||= time2str('%y/%m/%d', str2time(scalar localtime));
+        $self->{_cache}{date}     ||= time2str(
+	    '%y/%m/%d', str2time(scalar localtime)
+	);
         $self->{_cache}{title}    ||= '(untitled)';
 
         # XXX: STORE INTO ARTICLE
@@ -105,6 +107,8 @@ sub STORE {
         $self->{_cache}{$key} = $value;
         $self->{mtime} = 1;
     }
+
+    return 1;
 }
 
 sub remove {

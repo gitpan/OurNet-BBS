@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/MAPLE2/Session.pm $ $Author: autrijus $
+# $Revision: #5 $ $Change: 1181 $ $DateTime: 2001/06/17 22:14:27 $
+
 package OurNet::BBS::MAPLE2::Session;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -63,9 +65,9 @@ sub remove {
 
 sub STORE {
     my ($self, $key, $value) = @_;
-    local $^W = 0; # turn off uninitialized warnings
 
-    print "setting $key $value\n";
+    no warnings 'uninitialized';
+    print "setting $key $value\n" if $OurNet::BBS::DEBUG;
 
     if ($key eq 'msg') {
 	$self->{_cache}{msgs} =
@@ -78,7 +80,8 @@ sub STORE {
     }
     elsif ($key eq 'cb_msg') {
 	if (ref($value) eq 'CODE') {
-	    print "register callback from $self->{registered}\n";
+	    print "register callback from $self->{registered}\n"
+		if $OurNet::BBS::DEBUG;
 	    $self->{registered}{$self->{recno}} = $self;
 	}
 	else {

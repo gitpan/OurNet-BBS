@@ -1,6 +1,7 @@
-package OurNet::BBS::NNTP::BBS;
+# $File: //depot/OurNet-BBS/BBS/NNTP/BBS.pm $ $Author: autrijus $
+# $Revision: #2 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
 
-$VERSION = '0.01';
+package OurNet::BBS::NNTP::BBS;
 
 use strict;
 use base qw/OurNet::BBS/;

@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/NNTP/ArticleGroup.pm $ $Author: autrijus $
+# $Revision: #6 $ $Change: 1181 $ $DateTime: 2001/06/17 22:14:27 $
+
 package OurNet::BBS::NNTP::ArticleGroup;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -18,7 +20,8 @@ BEGIN {
 sub refresh_meta {
     my ($self, $key, $arrayfetch) = @_;
 
-    local $^W;
+    no warnings; # XXX: why?
+
     # for compatibility.
     $self->{board} ||= $self->{groupname};
     @{$self}{qw/num first last/} = $self->{nntp}->group($self->{groupname})

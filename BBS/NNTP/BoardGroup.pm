@@ -1,10 +1,12 @@
+# $File: //depot/OurNet-BBS/BBS/NNTP/BoardGroup.pm $ $Author: autrijus $
+# $Revision: #3 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+
 package OurNet::BBS::NNTP::BoardGroup;
-$VERSION = "0.1";
 
 use strict;
+use Net::NNTP;
 use base qw/OurNet::BBS::Base/;
 use fields qw/bbsroot dummy nntp _cache/;
-use Net::NNTP;
 
 BEGIN {
     __PACKAGE__->initvars(

@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/BBSAgent/Article.pm $ $Author: autrijus $
+# $Revision: #11 $ $Change: 1215 $ $DateTime: 2001/06/19 01:21:04 $
+
 package OurNet::BBS::BBSAgent::Article;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -28,86 +30,100 @@ sub refresh_meta {
     $var{headr}       ||= ' \x1b\[' . $var{headansiend} . ' (.+?)\s*\x1b';
     $var{headi}       ||= '作者,標題,時間'; # must be in this order
 
-    $self->{name} ||= $self->new_id();
+    my @compiled = map { "$var{headl}$_$var{headr}" } split(',', $var{headi});
+
+    $self->{name} ||= $self->new_id;
 
     if (defined $self->{recno}) {
-	return 0 if $self->{_cache}{header}; # already exists
+	return if $self->{_cache}{header}; # already exists
 
-        my ($ta, $tb);
-	eval {
-	    ($ta, $tb) = $self->{bbsobj}->board_article_fetch_first
-		( $self->{board}, $self->{recno} ) };
-	die $self->{bbsobj}{errmsg} if $self->{bbsobj}{errmsg};
-
-        my $body = '';
-
-        while ($body .= $ta) {
-            # put special case here
-            last unless index($tb, '%') > -1;
-            last if index($tb, '100%') > -1;
-
-            ($ta, $tb) = $self->{bbsobj}->board_article_fetch_next();
-        }
-
-        my ($head, $body) = split(/$var{separator}/, $body, 2);
-        my ($author, $nick, $title, $date);
+        my ($head, $body) = split(
+	    /$var{separator}/o, $self->_refresh_body, 2
+	);
 
         $body ||= $head; # fallback unless in expected format
 
-        ($author, $title, $date) = map {
-            $head =~ m/$var{headl}$_$var{headr}/m ? $1 : ''
-        } split(',', $var{headi});
+        my $author = $head =~ m/$compiled[0]/mo ? $1 : '';
+        my $title  = $head =~ m/$compiled[1]/mo ? $1 : '';
+        my $date   = $head =~ m/$compiled[2]/mo ? $1 : '';
+
+	my $nick;
 
         # special-case header munging
+
         $date = $1 if $date   =~ m/\(([^)]*)\)/;            # embedded date
 	$nick = $1 if $author =~ s/\s?\((.*?)\)?[\s\t]*$//; # nickname
 
-        # this should rule out most ANSI codes but not all
-        $body =~ s/\015//g;         # crlf: fascist!
-        $body =~ s/\012/\n/g;       # crlf: whatever way you feel comfortable
-        $body =~ s/\x00//g;         # trim all nulls
+	$author ||= '(unknown)';
+	$title  ||= '(untitled)';
+	$date   ||= scalar localtime;
 
-        $body =~ s/\x1b\[[KHJ]//g; 
-        $body =~ s/\x1b\[;H.+\n//g;
-        $body =~ s/\n\x1b\[0m$//g;
-        $body =~ s/\n*\x1b\[\d+;1H/\n\n/g;
-        $body =~ s/\x1b\[3[26]m(.+)\x1b\[0?m/$1/g;
+	_adjust_body($body);
 
-        $body =~ s/^\x1b\[0m\n\n//g;
-        $body =~ s/\n\x1b\[0m\n\n+/\n\n/g; # this is not good. needs tuning.
-
-        @{$self->{_cache}}{qw/title author nick body date datetime/} =
-            ($title, $author, $nick, $body, time2str(
+        @{$self->{_cache}}{qw/title author nick body date datetime/} = (
+	    $title, $author, $nick, $body, time2str(
                 '%y/%m/%d', str2time($date)
-            ), $date);
-
-	$author ||= 'unknown';
-	$title  ||= 'unknown';
-	$date   ||= 'unknown';
-        
-        my $from = (index($author, '@') > -1)
-                   ? $author : "$author.bbs\@$self->{bbsobj}{bbsaddr}";
+            ), $date,
+	);
 
         $self->{_cache}{header} = {
-            From         => $from . (defined $nick ? " ($nick)" : ''),
-            Subject      => $title,
-            Date         => $date,
-            'Message-ID' => OurNet::BBS::Utils::get_msgid(
-		$date,
-		$from, # should we add nick here, as per above?
-		$self->{board},
-		$self->{bbsobj}{bbsaddr},
-            ),
-        };
+            From	=> $author . (defined $nick ? " ($nick)" : ''),
+            Subject	=> $title,
+            Date	=> $date,
+	    Board	=> $self->{board},
+	};
 
-        $self->{bbsobj}->board_article_fetch_last();
+	OurNet::BBS::Utils::set_msgid(
+	    $self->{_cache}{header}, 
+	    $self->{bbsobj}{bbsaddr},
+	);
+
+        $self->{bbsobj}->board_article_fetch_last;
     }
 
-    unless (defined $self->{recno}) {
-        die "Random creation of article is unimplemented.";
-    }
+    die "Random creation of article is unimplemented."
+	unless defined($self->{recno});
 
     return 1;
+}
+
+sub _adjust_body {
+    # XXX: this should rule out most ANSI codes but not all
+
+    $_[0] =~ s/\015//g; # cf. 'Unix brain damage' in jargon file.
+    $_[0] =~ s/\x00//g; # trim all nulls
+
+    $_[0] =~ s/\x1b\[[KHJ]//g; 
+    $_[0] =~ s/\x1b\[;H.+\n//g;
+    $_[0] =~ s/\n\x1b\[0m$//g;
+    $_[0] =~ s/\n*\x1b\[\d+;1H/\n\n/g;
+    $_[0] =~ s/\x1b\[3[26]m(.+)\x1b\[0?m/$1/g;
+
+    $_[0] =~ s/^\x1b\[0m\n\n//g;
+    $_[0] =~ s/\n\x1b\[0m\n\n+/\n\n/g; # this is not good. needs tuning.
+}
+
+sub _refresh_body {
+    my ($self) = @_;
+    my ($body, $chunk, $precent) = ('');
+
+    eval {
+	($chunk, $precent) = $self->{bbsobj}->board_article_fetch_first( 
+	    $self->{board}, $self->{recno} 
+	) 
+    };
+
+    die $self->{bbsobj}{errmsg} if $self->{bbsobj}{errmsg};
+
+    while ($body .= $chunk) {
+	# put special case here
+	last unless index($precent, '%') > -1;
+	last if index($precent, '100%') > -1;
+
+	($chunk, $precent) = $self->{bbsobj}->board_article_fetch_next;
+    }
+
+    return $body;
 }
 
 sub STORE {

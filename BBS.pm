@@ -1,10 +1,10 @@
 # $File: //depot/OurNet-BBS/BBS.pm $ $Author: autrijus $
-# $Revision: #17 $ $Change: 1112 $ $DateTime: 2001/06/13 11:06:50 $
+# $Revision: #23 $ $Change: 1242 $ $DateTime: 2001/06/20 05:46:53 $
 
 package OurNet::BBS;
-require 5.005;
+require 5.006;
 
-$OurNet::BBS::VERSION  = '1.54';
+$OurNet::BBS::VERSION  = '1.55';
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -18,46 +18,51 @@ OurNet::BBS - Component Object Model for BBS systems
 
     use strict;
     use OurNet::BBS;
-    
-    my $backend = 'CVIC'; # same as 'OurNet::BBS::CVIC'
-    my $bbsroot = '/srv/bbs/cvic';
+
+    my $backend = 'MELIX'; # use the Melix BBS backend
+    my $bbsroot = '/home/melix';
     my $board   = 'sysop';
     my $BBS     = OurNet::BBS->new($backend, $bbsroot);
     my $brd     = $BBS->{boards}{$board};
     my $mtime;
-    
+
     printf (
         "This BBS has %d boards, %d groups.\n",
         scalar keys(%{$BBS->{boards}}),
         scalar keys(%{$BBS->{groups}}),
     );
-    
+
     eval { $mtime = $brd->{articles}->mtime };
     die "Error: cannot read board $board -- $@\n" if $@;
-    
+
     printf (
         "The $board board has %d articles, %d toplevel archive entries.\n",
         $#{$brd->{articles}}, $#{$brd->{archives}},
     );
-    
+
     # A simple Sysop board article monitor
     print "Watching for new articles...\n";
-    
+
     while (1) {
         print "=== wait here ($mtime) ===\n";
         sleep 5 until ($brd->{articles}->refresh);
-    
+
         foreach my $article (@{$brd->{articles}}[1..$#{$brd->{articles}}]) {
             print "Found article: $article->{title}\n" 
 		if $article->btime > $mtime;
         }
-    
+
         $mtime = $brd->{articles}->mtime;
     }
 
 =head1 DESCRIPTION
 
-OurNet::BBS implements a flexible object model for different BBS backends.
+OurNet::BBS implements a flexible object model for different 
+BBS backends, along with an asymmetric authentication and
+remote procedure call protocol.
+
+For some of its practical uses, search for 'OurNet::BBSApp' 
+on CPAN.
 
 More detailed document is expected to appear soon.
 
@@ -74,10 +79,13 @@ BEGIN {
 
 sub new { 
     return ($_[0] eq __PACKAGE__)
-	? $_[0]->fillmod($_[1], 'BBS')->new(@_[1..$#_])
+	? $_[0]->fillmod(
+		(ref($_[1]) ? $_[1]->{backend} : $_[1]),  'BBS'
+	    )->new(@_[1..$#_])
 	: OurNet::BBS::Base::new(@_);
 }           
 
+# default permission settings
 sub readok { 1 }
 sub writeok { 0 }
 
@@ -106,7 +114,9 @@ Autrijus Tang E<lt>autrijus@autrijus.org>
 Copyright 2001 by Chia-Liang Kao E<lt>clkao@clkao.org>,
 		  Autrijus Tang E<lt>autrijus@autrijus.org>.
 
-All rights reserved.  You can redistribute and/or modify
-this module under the same terms as Perl itself.
+This program is free software; you can redistribute it and/or 
+modify it under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
 
 =cut

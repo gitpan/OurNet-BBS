@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/MAPLE2/Board.pm $ $Author: autrijus $
+# $Revision: #6 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+
 package OurNet::BBS::MAPLE2::Board;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -57,46 +59,51 @@ sub refresh_meta {
     $self->{mtime} = (stat($file))[9];
 
     local $/ = \$packsize;
-    open DIR, $file or die "can't read $BRD: $!";
+    open(my $DIR, $file) or die "can't read $BRD: $!";
 
     if (defined $self->{recno}) {
-        seek DIR, $packsize * $self->{recno}, 0;
-        @{$self->{_cache}}{@packlist} = unpack($packstring, <DIR>);
+        seek $DIR, $packsize * $self->{recno}, 0;
+        @{$self->{_cache}}{@packlist} = unpack($packstring, <$DIR>);
         if ($self->{_cache}{id} ne $self->{board}) {
             undef $self->{recno};
-            seek DIR, 0, 0;
+            seek $DIR, 0, 0;
         }
     }
 
     unless (defined $self->{recno}) {
         $self->{recno} = 0;
 
-        while (my $data = <DIR>) {
+        while (my $data = <$DIR>) {
             @{$self->{_cache}}{@packlist} = unpack($packstring, $data);
             last if ($self->{_cache}{id} eq $self->{board});
             $self->{recno}++;
         }
 
+	no warnings 'uninitialized';
+
         if ($self->{_cache}{id} ne $self->{board}) {
             $self->{_cache}{id}       = $self->{board};
             $self->{_cache}{bm}       = '';
-            $self->{_cache}{date}     = sprintf("%2d/%02d", (localtime)[4] + 1, (localtime)[3]);
+            $self->{_cache}{date}     = sprintf(
+		"%2d/%02d", (localtime)[4] + 1, (localtime)[3]
+	    );
             $self->{_cache}{title}    = '(untitled)';
 
             mkdir "$self->{bbsroot}/$PATH_BRD/$self->{board}";
-            open DIR, ">$self->{bbsroot}/$PATH_BRD/$self->{board}/.DIR";
-            close DIR;
+            open $DIR, '>', "$self->{bbsroot}/$PATH_BRD/$self->{board}/.DIR";
+            close $DIR;
 
             mkdir "$self->{bbsroot}/$PATH_GEM/$self->{board}";
-            open DIR, ">$self->{bbsroot}/$PATH_GEM/$self->{board}/.DIR";
-            close DIR;
+            open $DIR, '>', "$self->{bbsroot}/$PATH_GEM/$self->{board}/.DIR";
+            close $DIR;
 
-            open DIR, ">>$file" or die "can't write $BRD file for $self->{board}: $!";
+            open $DIR, '>>', $file 
+		or die "can't write $BRD file for $self->{board}: $!";
 
-            local $^W = 0; # turn off uninitialized warnings
-            print DIR pack($packstring, @{$self->{_cache}}{@packlist});
+	    no warnings 'uninitialized';
+            print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
 
-            close DIR;
+            close $DIR;
 	    $self->post_new_board();
         }
     }
@@ -106,7 +113,8 @@ sub refresh_meta {
 
 sub STORE {
     my ($self, $key, $value) = @_;
-    local $^W = 0; # turn off uninitialized warnings
+
+    no warnings 'uninitialized';
 
     $self->refresh_meta($key);
     $self->{_cache}{$key} = $value;

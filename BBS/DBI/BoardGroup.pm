@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/Base.pm $ $Author: autrijus $
+# $Revision: #16 $ $Change: 1132 $ $DateTime: 2001/06/14 16:34:13 $
+
 package OurNet::BBS::DBI::BoardGroup;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -55,6 +57,8 @@ sub STORE {
 
         $self->timestamp(1);
     }
+
+    return 1;
 }
 
 1;

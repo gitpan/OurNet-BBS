@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/MAPLE2/SessionGroup.pm $ $Author: autrijus $
+# $Revision: #4 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+
 package OurNet::BBS::MAPLE2::SessionGroup;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -48,13 +50,8 @@ sub message_handler {
 
 $SIG{USR2} = \&message_handler;
 
-sub _lock {
-
-}
-
-sub _unlock {
-
-}
+sub _lock {}
+sub _unlock {}
 
 sub shminit {
     my $self = shift;
@@ -72,16 +69,14 @@ sub shminit {
     }
 }
 
-# Fetch key: id savemode author date title filemode body
 sub refresh_meta {
     my ($self, $key) = @_;
 
     $self->shminit unless ($self->{shmid} || !$self->{shmkey});
 
-    # print "[BoardGroup] no shm support" unless $self->{shm};
     if ($key eq int($key)) {
-        print "new toy called $key\n" unless 
-	    !$OurNet::BBS::DEBUG or $self->{_cache}{$key};
+        print "new toy called $key\n" 
+	    if !$self->{_cache}{$key} and $OurNet::BBS::DEBUG;
 
         $self->{_cache}{$key} ||= $self->module('Session')->new({
 	      recno	=> $key,

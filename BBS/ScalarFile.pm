@@ -1,8 +1,11 @@
+# $File: //depot/OurNet-BBS/BBS/ScalarFile.pm $ $Author: autrijus $
+# $Revision: #4 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+
 package OurNet::BBS::ScalarFile;
 
 sub TIESCALAR {
     my ($class, $filename) = @_;
-    my ($cache, $mtime);
+    my ($cache, $mtime) = (undef, 0);
     
     return bless([$filename, $mtime, $cache], $class);
 }
@@ -32,18 +35,20 @@ sub FETCH {
 sub STORE {
     my $self     = shift;
     my $filename = $self->[0];
+
+    no warnings 'uninitialized';
     
     if (defined($_[0])) {
         if (length($_[0]) >= length($self->[2]) and substr($_[0], 0,
             length($self->[2])) eq $self->[2]) 
         {
             # append mode
-            open FILE, ">>$filename" or die "cannot append $filename: $!";
+            open FILE, '>>', $filename or die "cannot append $filename: $!";
             print FILE substr($_[0], length($self->[2]));
             close FILE;
         }
         else {
-            open FILE, ">$filename" or die "cannot write $filename: $!";
+            open FILE, '>', $filename or die "cannot write $filename: $!";
             print FILE $self->[2];
             close FILE;
         }

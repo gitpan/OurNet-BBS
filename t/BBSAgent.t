@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
 use strict;
 use Test;
-use vars qw/%sites/;
+
+our %sites;
 
 # use a BEGIN block so we print our plan before MyModule is loaded
 
@@ -9,8 +10,9 @@ BEGIN {
     my $addr;
 
     %sites = map { 
-        open _; scalar <_>;
-        chomp($addr = <_>);
+        open(my $SITE, $_) or die "cannot open $_";
+	scalar <$SITE>;
+        chomp($addr = <$SITE>);
         (substr($_, rindex($_, '/') + 1) => (split(':', $addr))[0]);
     } map {
         glob("$_/OurNet/BBSAgent/*.bbs")

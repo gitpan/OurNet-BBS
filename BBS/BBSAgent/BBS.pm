@@ -1,7 +1,7 @@
-package OurNet::BBS::BBSAgent::BBS;
-$VERSION = "0.1";
+# $File: //depot/OurNet-BBS/BBS/BBSAgent/BBS.pm $ $Author: autrijus $
+# $Revision: #4 $ $Change: 1131 $ $DateTime: 2001/06/14 16:30:21 $
 
-# BBSAgent support is still considered experimental. please report bugs.
+package OurNet::BBS::BBSAgent::BBS;
 
 use strict;
 use base qw/OurNet::BBS/;
@@ -32,7 +32,7 @@ sub load_bbsobj {
     return $self->{bbsobj} if $self->{bbsobj};
 
     $bbsname ||= $self->{bbsroot};
-    $bbsname .= ".bbs" unless $bbsname =~ /\.bbs$/;
+    $bbsname .= ".bbs" unless substr($bbsname, -4) eq '.bbs';
 
     my $bbsobj = OurNet::BBSAgent->new(
 	OurNet::BBS::Utils::locate($bbsname, 'OurNet::BBSAgent'),
@@ -50,9 +50,9 @@ sub load_bbsobj {
 
     eval {
 	$self->{bbsobj}->login(
-	    grep {defined $_} (
-	    $self->{login}, $self->{password}
-	   ) );
+	    grep {defined $_} 
+		($self->{login}, $self->{password})
+	);
     };
 
     $self->{bbsobj}{var}{username} ||= $self->{login};
@@ -91,4 +91,3 @@ sub sanity_test {
 }
 
 1;
-

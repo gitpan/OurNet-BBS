@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/BBSAgent/BoardGroup.pm $ $Author: autrijus $
+# $Revision: #6 $ $Change: 1131 $ $DateTime: 2001/06/14 16:30:21 $
+
 package OurNet::BBS::BBSAgent::BoardGroup;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;

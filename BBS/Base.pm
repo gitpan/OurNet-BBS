@@ -1,6 +1,7 @@
-package OurNet::BBS::Base;
+# $File: //depot/OurNet-BBS/BBS/Base.pm $ $Author: autrijus $
+# $Revision: #19 $ $Change: 1207 $ $DateTime: 2001/06/18 19:51:06 $
 
-$VERSION = '0.1';
+package OurNet::BBS::Base;
 
 use strict;
 use OurNet::BBS::ArrayProxy;
@@ -10,20 +11,20 @@ use OurNet::BBS::ArrayProxy;
 # = module imports as $RegMod{$glob}
 # = variables      as $RegVar{$class}{$sym}
 
-use vars qw/%RegVar %RegSub %RegMod/; 
+my (%RegVar, %RegSub, %RegMod); 
 
 sub initvars {
     my $class = shift;
 
-    local $^W;
     no strict 'refs';
+    no warnings 'once';
 
     if (!UNIVERSAL::can($class, '__accessor')) {
         foreach my $property (keys(%{$class."::FIELDS"}), '__accessor') {
-            *{"${class}::$property"} = sub {
-                my $self = $_[0]->ego();
+            *{"$class\::$property"} = sub {
+                my $self = $_[0]->ego;
 
-                $self->refresh();
+                $self->refresh;
                 $self->{$property} = $_[1] if $#_ > 0;
                 return $self->{$property};
             };
@@ -34,10 +35,10 @@ sub initvars {
 
     my @defer;
 
-    foreach my $parent (@{"${class}::ISA"}) {
+    foreach my $parent (@{"$class\::ISA"}) {
         next if $parent eq __PACKAGE__;
 
-        while (my ($sym, $ref) = each(%{"${parent}::"})) {
+        while (my ($sym, $ref) = each(%{"$parent\::"})) {
 	    push @defer, $class, $sym, $ref;
         }
 
@@ -51,35 +52,35 @@ sub initvars {
 	    push @{$RegMod{$class}}, $mod, $symref;
 
             require "OurNet/BBS/$backend/$mod.pm";
-            $mod = "OurNet::BBS::${backend}::${mod}";
+            $mod = "OurNet::BBS::$backend\::$mod";
 
             foreach my $symref (@{$symref}) {
                 my ($ch, $sym) = unpack('a1a*', $symref);
-		next unless *{"${mod}::$sym"};
+		next unless *{"$mod\::$sym"};
 
 		++$RegVar{$class}{$sym};
 
-                *{"${class}::$sym"} = (
-                    $ch eq "\$" ? \$ {"${mod}::$sym"} :
-                    $ch eq "\@" ? \@ {"${mod}::$sym"} :
-                    $ch eq "\%" ? \% {"${mod}::$sym"} :
-                    $ch eq "\*" ? \* {"${mod}::$sym"} :
-                    $ch eq "\&" ? \& {"${mod}::$sym"} : ''
+                *{"$class\::$sym"} = (
+                    $ch eq "\$" ? \$ {"$mod\::$sym"} :
+                    $ch eq "\@" ? \@ {"$mod\::$sym"} :
+                    $ch eq "\%" ? \% {"$mod\::$sym"} :
+                    $ch eq "\*" ? \* {"$mod\::$sym"} :
+                    $ch eq "\&" ? \& {"$mod\::$sym"} : ''
                 );
             }
         }
         else { # setvar to this module
             my ($ch, $sym) = unpack('a1a*', $mod);
 
-	    *{"${class}::$sym"} = ($ch eq '$') ? \$symref : $symref;
+	    *{"$class\::$sym"} = ($ch eq '$') ? \$symref : $symref;
 	    ++$RegVar{$class}{$sym};
         }
     }
 
     my @defer_sub;
     while (my ($class, $sym, $ref) = splice(@defer, 0, 3)) {
-	next if exists $RegVar{$class}{$sym}  # already imported
-	     or defined(*{"${class}::$sym"}); # defined by use subs
+	next if exists $RegVar{$class}{$sym} # already imported
+	     or defined(*{"$class\::$sym"}); # defined by use subs
 
 	if (defined(&{$ref})) { 
 	    push (@defer_sub, $class, $sym, $ref);
@@ -89,7 +90,7 @@ sub initvars {
 	next unless ($ref =~ /^\*(.+)::(.+)/)
 	        and exists $RegVar{$1}{$2};
 
-	*{"${class}::$sym"} = $ref;
+	*{"$class\::$sym"} = $ref;
 	++$RegVar{$class}{$sym};
     } 
 
@@ -97,12 +98,13 @@ sub initvars {
 	my $ref = ($RegSub{$ref} || $ref);
 	next unless ($ref =~ /^\*(.+)::([^_][^:]+)$/);
 
-	if (%{$RegVar{$class}}) {
+	if (%{$RegVar{$class}} and (uc($sym) ne $sym or $sym eq 'STORE')) {
 	    eval qq(
-		*{"${class}::$sym"} = sub {
+		package $class;
+		sub $sym {
 	    ) . join('', 
 		map { qq(
-		    local *$1::$_ = *${class}::$_;
+		    local *$1::$_ = *$class\::$_;
 		)} (keys(%{$RegVar{$class}}))
 	    ) . qq(
 		    &{$ref}(\@_);
@@ -110,10 +112,10 @@ sub initvars {
 	    );
 	}
 	else {
-	    *{"${class}::$sym"} = $ref;
+	    *{"$class\::$sym"} = $ref;
 	};
 
-	$RegSub{"*${class}::$sym"} = $ref;
+	$RegSub{"*$class\::$sym"} = $ref;
     }
 }
 
@@ -127,6 +129,10 @@ sub ego {
                 : tied(%{$self})
             : $self
     );
+}
+
+sub SPAWN {
+    return $_[0];
 }
 
 sub daemonize {
@@ -245,7 +251,7 @@ sub EXISTS {
 sub FIRSTKEY {
     my $self = $_[0];
 
-    $self->refresh_meta();
+    $self->refresh_meta;
 
     scalar (
 	(exists $self->{_phash})
@@ -253,7 +259,7 @@ sub FIRSTKEY {
 	    : keys (%{$self->{_cache}})
     );
 
-    return $self->NEXTKEY();
+    return $self->NEXTKEY;
 }
 
 sub NEXTKEY {
@@ -268,18 +274,15 @@ sub NEXTKEY {
 }
 
 sub refresh {
-    my ($self, $key, $arrayfetch) = @_;
-
-    $self = $self->ego();
-
+    my $self = (shift)->ego;
     my $method = 'refresh_' .
-	($key && $self->can("refresh_$key") ? $key : 'meta');
+	($_[0] && UNIVERSAL::can($self, "refresh_$_[0]") ? $_[0] : 'meta');
 
-    return $self->$method($key, $arrayfetch);
+    return $self->$method(@_);
 }
 
 sub backend {
-    my $self = $_[0]->ego();
+    my $self = $_[0]->ego;
 
     my $backend = ref($self);
     $backend = $1 if $backend =~ m|^OurNet::BBS::(\w+)|;
@@ -301,7 +304,7 @@ sub module {
     my $backend = $self->backend();
 
     require "OurNet/BBS/$backend/$mod.pm";
-    return "OurNet::BBS::${backend}::${mod}";
+    return "OurNet::BBS::$backend\::$mod";
 }
 
 sub timestamp {

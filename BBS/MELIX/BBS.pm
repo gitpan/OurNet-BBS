@@ -1,6 +1,7 @@
-package OurNet::BBS::MELIX::BBS;
+# $File: //depot/OurNet-BBS/BBS/MELIX/BBS.pm $ $Author: autrijus $
+# $Revision: #4 $ $Change: 1136 $ $DateTime: 2001/06/14 18:12:19 $
 
-$VERSION = '0.01';
+package OurNet::BBS::MELIX::BBS;
 
 use strict;
 use base qw/OurNet::BBS/;
@@ -17,8 +18,9 @@ sub readok {
 
     return 1 if $user->has_perm('PERM_SYSOP');
     
-    return if ($user->has_perm('PERM_DENYLOGIN') 
-	    or $user->has_perm('PERM_PURGE'));
+    return if (
+	$user->has_perm('PERM_DENYLOGIN') or $user->has_perm('PERM_PURGE')
+    );
 
     return 1;
 }

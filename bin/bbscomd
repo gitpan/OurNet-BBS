@@ -1,20 +1,25 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
+# $File: //depot/OurNet-BBS/bin/bbscomd $ $Author: autrijus $
+# $Revision: #14 $ $Change: 1221 $ $DateTime: 2001/06/19 04:19:25 $
 
-$VERSION = '1.54';
+$VERSION = '1.55-dev';
+$REVISION = "rev$1\[\@$2\]" 
+    if ('$Revision: #14 $ $Change: 1221 $' =~ /(\d+)[^\d]+(\d+)/);
 
 =head1 NAME
 
-bbscomd - OurNet BBS remote access daemon
+bbscomd - OurNet BBS Remote Access Daemon
 
 =head1 SYNOPSIS
 
-    % bbscomd [-d] [-f] [-u key [-a]] [-p port] <backend> <args>...
+    % bbscomd [-acdfh] [-p port] [-u key] <backend> <args>...
+    % bbscomd -acf -u melix MELIX /home/melix 2997 350
 
 =head1 DESCRIPTION
 
-The bbscomd starts a L<OurNet::BBS::Server> daemon listening on 
+The bbscomd starts a I<OurNet::BBS::Server> daemon listening on 
 the specified port (default 7978). Remote users could then start
-using L<OurNet::BBS::Client> to connect, e.g.:
+using I<OurNet::BBS::Client> to connect, e.g.:
 
     use OurNet::BBS;
 
@@ -23,9 +28,10 @@ using L<OurNet::BBS::Client> to connect, e.g.:
 If the C<-f> flag is specified, bbscomd will fork a new process
 to run as daemon. The C<-d> flag turns on debugging.
 
-The C<-u> specified the pgp key used in authorization. If C<-a>
-is supplied, the server will serve in 'authentication' mode 
-with additional permission controls.
+The C<-u> specifies the pgp keyid or userid used in authorization. 
+If C<-a> is supplied, the server will serve in 'authentication' 
+mode with additional permission controls. Similarly, C<-c> 
+disallows insecure cipher modes.
 
 Please refer to L<OurNet::BBS> modules for more information on
 usages.
@@ -33,38 +39,63 @@ usages.
 =cut
 
 use strict;
+use warnings;
 use OurNet::BBS;
 use Getopt::Std;
 use Term::ReadKey;
 
-my %opt;
-getopts('p:u:dfa', \%opt);
+my %args;
 
-die "Usage: $0 [-d] [-f] [-p port] [-u key [-a]] <backend> <args>...\n" 
-    unless @ARGV;
+if (!@ARGV) {
+    die << ".";
 
-my $BBS = OurNet::BBS->new(@ARGV) 
-    or die "Cannot link to BBS: @ARGV\n";
+OurNet BBS Remote Access Daemon v$main::VERSION-$main::REVISION
 
-$OurNet::BBS::DEBUG = $OurNet::BBS::DEBUG = 1 if $opt{d};
+Usage: $0 [-acdfh] [-p port] [-u key] 
+       <backend> <args>...
 
-my @args = ($opt{p} || 7978);
+Type '$0 -h' to see available argument and options.
 
-if ($opt{u}) {
+Copyright 2001 by Autrijus Tang <autrijus\@autrijus.org>.
+
+This program is free software; you can redistribute it and/or 
+modify it under the same terms as Perl itself.
+
+See <http://www.perl.com/perl/misc/Artistic.html>.
+
+.
+}
+
+getopts('acp:u:fdh', \%args);
+exec('perldoc', $0) if defined $args{h};
+
+my ($auth, $ciph, $port, $key, $fork, $debug) = @{args}{qw/a c p u f d/};
+
+$auth = 6 if defined $auth;
+$ciph = $key ? 6 : 2 if defined $ciph;
+$port ||= 7978;
+
+my $BBS = OurNet::BBS->new(@ARGV) or die "Cannot link to BBS: @ARGV\n";
+
+$OurNet::BBS::DEBUG = $debug;
+
+print "entering in debug mode, expect lots of outputs\n" 
+    if $OurNet::BBS::DEBUG;
+
+my $pass = '';
+
+if ($key) {
     ReadMode('noecho');
-    print "enter passphrase for $opt{u}: ";
-    push @args, ($opt{u}, scalar <STDIN>);
+    print "enter passphrase for <$key>: ";
+    $pass = scalar <STDIN>;
     ReadMode('restore');
     print "\n";
 }
 
-if (!$opt{f} or !fork()) {
-    warn "warning: no key specified, using insecure connection.\n"
-	unless $opt{u};
+if (!$fork or !fork()) {
+    print "BBSCOM Daemon starting at port $port...\n";
 
-    print "BBSCOM Daemon starting at port $args[0]...\n";
-
-    $BBS->daemonize(@args, $opt{a})
+    $BBS->daemonize($port, $key, $pass, $ciph, $auth)
 	or die "Failed to daemonize: $!\n";
 }
 
@@ -78,8 +109,9 @@ Autrijus Tang E<lt>autrijus@autrijus.org>
 
 Copyright 2001 by Autrijus Tang E<lt>autrijus@autrijus.org>.
 
-All rights reserved.  You can redistribute and/or modify
-this module under the same terms as Perl itself.
+This program is free software; you can redistribute it and/or 
+modify it under the same terms as Perl itself.
+
+See L<http://www.perl.com/perl/misc/Artistic.html>
 
 =cut
-

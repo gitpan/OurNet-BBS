@@ -1,12 +1,14 @@
+# $File: //depot/OurNet-BBS/BBS/MELIX/Article.pm $ $Author: autrijus $
+# $Revision: #13 $ $Change: 1236 $ $DateTime: 2001/06/20 04:21:57 $
+
 package OurNet::BBS::MELIX::Article;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::MAPLE3::Article/;
 use fields qw/_cache/;
 use subs qw/STORE readok writeok/;
 
-BEGIN {__PACKAGE__->initvars()};
+BEGIN { __PACKAGE__->initvars() };
 
 sub writeok {
     my ($self, $user, $op) = @_;
@@ -15,7 +17,6 @@ sub writeok {
 
     # in melix, only sysop could modify an article
     return ($user->has_perm('PERM_SYSOP'));
-
 }
 
 # well, since you're here...
@@ -23,53 +24,56 @@ sub readok { 1 }
 
 sub STORE {
     my ($self, $key, $value) = @_;
+
     $self->refresh_meta($key);
 
     if ($key eq 'body') {
-        my $file = join(
-	    '/', $self->basedir, substr($self->{name}, -1), $self->{name}
-	);
-        unless (-s $file) {
-            my $hdr = $self->{_cache}{header};
-            my $temp;
+	my $file = "$self->{basepath}/$self->{board}/".
+	    substr($self->{name}, -1).'/'.$self->{name};
 
-            foreach my $head (qw/From Board Subject Date/) {
-                $temp .= "$head: $hdr->{$head}\n" if exists $hdr->{$head};
-            }
-
-            foreach my $head (keys(%{$hdr})) {
-                next if $head eq 'From' or $head eq 'Board' or
-                        $head eq 'Subject' or $head eq 'Date';
-                $temp .= "$head: $hdr->{$head}\n" if exists $hdr->{$head};
-            }
-
-            $value = "$temp\n$value" if $temp;
-        }
-
-        open _, ">$file" or die "cannot open $file";
+        open(my $BODY, '>', $file) or die "cannot open $file: $!";
 
 	if ($^O eq 'MSWin32') {
-	    binmode(_); # turn off crlf conversion
-	    $value =~ s/\n/\012/g;
+	    binmode($BODY); 	 # turn off crlf conversion
+	    $value =~ s/\015//g; # Unix brain damage
 	}
 
-        print _ $value;
-        close _;
+        unless (-s $file) {
+            my $hdr = $self->{_cache}{header};
+
+	    if (%{$hdr}) {
+		foreach my $head (qw/From Board Subject Date/) {
+		    print $BODY "$head: $hdr->{$head}\n" 
+			if exists $hdr->{$head};
+		}
+
+		foreach my $head (keys(%{$hdr})) {
+		    next if index(' From Board Subject Date', $head) > -1;
+		    print $BODY "$head: $hdr->{$head}\n";
+		}
+
+		print $BODY "\n";
+	    }
+        }
+
+        print $BODY $value;
+        close $BODY;
 
         $self->{btime} = (stat($file))[9];
         $self->{_cache}{$key} = $value;
     }
     else {
+	no warnings 'uninitialized';
+
         $self->{_cache}{$key} = $value;
 
-        my $file = join('/', $self->basedir, $self->{hdrfile});
+	my $file = "$self->{basepath}/$self->{board}/$self->{hdrfile}";
+        open(my $DIR, '+<', $file) or die "cannot open $file for writing";
+        seek $DIR, $packsize * $self->{recno}, 0;
+        print $DIR pack($packstring, @{$self->{_cache}}{@packlist});
+        close $DIR;
 
-        open DIR, "+<$file" or die "cannot open $file for writing";
-        # print "seeeking to ".($packsize * $self->{recno});
-        seek DIR, $packsize * $self->{recno}, 0;
-        print DIR pack($packstring, @{$self->{_cache}}{@packlist});
-        close DIR;
-        $self->{mtime} = time();
+        $self->{mtime} = time;
     }
 }
 

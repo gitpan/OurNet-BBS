@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/Client.pm $ $Author: autrijus $
+# $Revision: #17 $ $Change: 1235 $ $DateTime: 2001/06/20 04:21:24 $
+
 package OurNet::BBS::Client;
-$OurNet::BBS::Client::VERSION = '0.1';
 
 use strict;
 use RPC::PlClient;
@@ -7,18 +9,20 @@ use Digest::MD5 qw/md5/;
 use OurNet::BBS::Authen;
 
 use fields qw/id remote_ref optree _phash/;
-use vars qw/$AUTOLOAD/;
+use enum qw/BITMASK:CIPHER_ NONE BASIC PGP/;
+use enum qw/BITMASK:AUTH_ NONE CRYPT PGP/;
+
+our $AUTOLOAD;
 
 my $OP = $OurNet::BBS::Authen::OP;
-
-my @delegators;
+my (%Cache, @delegators);
 
 sub new {
     my $class = shift;
     my ($self, $proxy);
 
     tie %{$self}, $class, @_;
-    tie @{$proxy}, 'OurNet::BBS::ClientProxy', $self;
+    tie @{$proxy}, 'OurNet::BBS::ClientArrayProxy', $self;
     return bless($proxy, $class);
 }
 
@@ -27,145 +31,261 @@ sub spawn {
     my $parent = shift;
     my ($self, $proxy);
 
-    print "SPAWN: $parent @_\n" if $OurNet::BBS::DEBUG;
+    show("SPAWN: @_\n");
 
     tie %{$self}, ref($parent);
     tied(%{$self})->{id} = $parent->{id};
     tied(%{$self})->{remote_ref} = shift;
     tied(%{$self})->{optree} = shift;
 
-    tie @{$proxy}, 'OurNet::BBS::ClientProxy', $self;
+    tie @{$proxy}, 'OurNet::BBS::ClientArrayProxy', $self;
     
     return bless($proxy, ref($parent));
 }
 
 sub TIEHASH {
-    my $class = shift;
-    my $self  = ($] > 5.00562) ? fields::new($class)
-                               : do { no strict 'refs';
-                                      bless [\%{"$class\::FIELDS"}], $class };
-    if (@_) {
-        $self->{id} = 1 + scalar @delegators; # 1 more than max
-        my $client = $delegators[$self->{id}] = RPC::PlClient->new(
-            peeraddr    => shift,
-            peerport    => shift || 7978,
+    my ($class, $peeraddr, $peerport, 
+	$keyid, $user, $pass, $cipher_level, $auth_level) = @_; 
+
+    my $self = fields::new($class);
+
+    if ($#_) { # if not only class...
+        $self->{id} = scalar @delegators; # 1 more than max
+
+        $delegators[$self->{id}] = RPC::PlClient->new(
+            peeraddr    => $peeraddr,
+            peerport    => $peerport || 7978,
             application => 'OurNet::BBS::Server',
-            version     => $OurNet::BBS::Client::VERSION,
-	    maxmessage  => (1 << 31),
-#	    compression => 'gzip',
-        )->ClientObject('OurNet::BBS::Server', 'spawn');
+            version     => $OurNet::BBS::Authen::VERSION,
+        )->ClientObject('__', 'spawn');
 
-	$self->{remote_ref} = $delegators[$self->{id}]->rootref();
+	my $client = $delegators[$self->{id}];
 
-        # [negotiation procedure]
-	# phase 0: send available suites, let server choose one
-	# phase 1: receive public key from server, import to keyring
-	# phase 2: generated random session key of the correct size
-	#          and use the public key to encrypt it
-	# phase 3: send the encrypted sessions key back
+## Initialization #####################################################
+# spawn a handle and get server's accepted modes.
 
-	my @server_suite = $client->getsuite();
-	my $cipher;
+	($cipher_level, $auth_level) = $client->handshake(
+	    OurNet::BBS::Authen->adjust(
+		$cipher_level, $auth_level, $keyid, 1
+	    )
+	) or print "[Client] initialization failed.\n" and die;
 
-	if (@server_suite and $cipher = OurNet::BBS::Authen->suites(
-	    @server_suite)) {
-	    my ($server_auth, $server_pubkey) = $client->getauth($cipher);
+	my ($status, $auth) = negotiate_cipher($client, $cipher_level)
+	    or print "[Client] cipher negotiation failed.\n" and die;
 
-	    print "[Client] agreed on cipher: $cipher" if $OurNet::BBS::DEBUG;
+	negotiate_auth($client, $auth_level, $auth, $keyid, $user, $pass)
+	    or print "[Client] authentication failed.\n" and die;
 
-	    if ($server_pubkey) {
-		print ", negotiating..." if $OurNet::BBS::DEBUG;
-		secure_cipher(
-		    $client, $cipher, $server_auth, $server_pubkey, @_
-		);
-		print "done.\n" if $OurNet::BBS::DEBUG;
-	    }
-	    else {
-		print " in insecure mode.\n" if $OurNet::BBS::DEBUG;
-		$client->{cipher} = $cipher->new($server_auth);
-	    }
-	}
-	else {
-	    print "[Client] warning: using plaintext communication.\n";
-	}
+	$self->{remote_ref} = negotiate_locate($client)
+	    or print "[Client] object location failed.\n" and die;
+
+	show("done!\n");
     }
     
-    bless $self, $class;
+    bless ($self, $class);
     return $self;
 }
 
-sub make_key {
-    my $keysize = shift;
-    my $session_key = md5(rand());
-    $session_key .= md5(rand()) unless length($session_key) >= $keysize;
+sub negotiate_locate {
+    my $client = shift;
 
-    return substr($session_key, 0, $keysize);
+    return $client->locate(@_);
 }
 
-sub secure_cipher {
-    my ($client, $cipher, $server_auth, $server_pubkey) = splice(@_, 0, 4);
 
-    my $auth = OurNet::BBS::Authen->new($server_auth);
-    $auth->import_key($server_pubkey);
+sub make_auth {
+    my ($keyid, $pubkey) = @_;
 
-    my $keysize = $cipher->keysize ||
-	($cipher eq 'Crypt::Blowfish' ? 56 : 8);
+    my $auth = OurNet::BBS::Authen->new($keyid) or return;
+    $auth->import_key($pubkey);
 
-    my $session = make_key($cipher->keysize);
-    my $authcrypt = $auth->encrypt($session);
-    my $mode = $client->setauth($authcrypt);
+    return $auth;
+}
 
-    $client->{cipher} = $cipher->new($session);
+sub negotiate_cipher {
+    my ($client, $mode, $auth) = @_;
 
-    if ($mode) {
-	die "login failed: insufficient authentication info\n" 
-		    unless authenticate($auth, $client, @_);
+## Seed Phase #########################################################
+# gets supported cipher suites and (optionally) server's public key
+
+    my $cipher = OurNet::BBS::Authen->suites($client->get_suites())
+	if $mode & (CIPHER_BASIC | CIPHER_PGP);
+
+    show("[Client] agreed on cipher: $cipher ") if $cipher;
+
+    if ($cipher and $mode & CIPHER_PGP) {
+	$auth = make_auth($client->get_pubkey);
+
+## Cipher Phase #######################################################
+# try each mutually acceptable cipher schemes in turn to set cipher
+
+	if ($auth and cipher_pgp($client, $cipher, $auth)) {
+	    show("in secure mode.\n");
+	    return(CIPHER_PGP, $auth);
+	}
     }
+
+    if ($cipher and $mode & CIPHER_BASIC) {
+	if (cipher_basic($client, $cipher)) {
+	    show("in insecure mode.\n");
+	    return(CIPHER_BASIC, $auth);
+	}
+    }
+
+    if ($mode & CIPHER_NONE and cipher_none($client)) {
+	show("[Client] warning: using plaintext communication.\n");
+	return(CIPHER_NONE, $auth);
+    }
+
+    show("failed!\n");
+    return;
 }
 
-sub authenticate {
-    my ($auth, $client, $keyid, $login, $passphrase) = @_;
+sub cipher_pgp {
+    my ($client, $cipher, $auth) = @_;
 
+    my $keysize = $cipher->keysize || (
+	$cipher eq 'Crypt::Blowfish' ? 56 : 8
+    );
+
+    # make session key
+    my $session_key = md5(rand());
+    $session_key .= md5(rand()) until length($session_key) >= $keysize;
+    $session_key = substr($session_key, 0, $keysize);
+
+    my $authcrypt = $auth->encrypt($session_key) or return; # encrypt it
+    $client->cipher_pgp($cipher, $authcrypt) or return;	    # send it back
+
+    $client->{client}{cipher} = $cipher->new($session_key);
+
+    return $auth;
+}
+
+sub cipher_basic {
+    my ($client, $cipher) = @_;
+    my ($status, $session) = $client->cipher_basic($cipher) or return;
+
+    return ($client->{client}{cipher} = $cipher->new($session));
+}
+
+sub cipher_none {
+    my ($client) = @_;
+    return $client->cipher_none();
+}
+
+## Auth Phase #########################################################
+# log in by trying each mutually acceptable authentication schemes
+
+sub negotiate_auth {
+    my ($client, $mode, $auth, $keyid, $user, $pass) = @_;
+
+    # Authentication Negotiation
+    show("[Client] begin authentication...");
+
+    if ($mode & AUTH_PGP and $auth ||= make_auth($client->get_pubkey)) {
+	# public key authentication
+	show("trying pubkey...");
+	return AUTH_PGP if auth_pgp(
+	    $client, $auth, $keyid, $user, $pass
+	);
+    }
+
+    if ($mode & AUTH_CRYPT and $user) {
+	# crypt-based authentication
+	show("trying crypt...");
+	return AUTH_CRYPT if auth_crypt($client, $user, $pass);
+    }
+
+    if ($mode & AUTH_NONE and $client->auth_none()) {
+	# no authentication at all
+	show("fallback to none...");
+	return AUTH_NONE;
+    }
+
+    show("failed!\n");
+    return;
+}
+
+sub auth_pgp {
+    my ($client, $auth, $keyid, $login, $passphrase) = @_;
     return unless $keyid and $login and defined $passphrase;
 
     $auth->{keyid} = $keyid;
     $auth->setpass($passphrase);
 
-    my $challenge = $client->setlogin($login);
+    my $challenge = $client->auth_pgp($login);
 
-    die "[Client] login failed: no public key info.\n" 
-	if $challenge eq $OP->{STATUS_NO_PUBKEY};
-
-    if ($challenge eq $OP->{STATUS_OK}) {
-	print "challenge: $challenge\n";
-	$challenge = $client->setpubkey($auth->export_key());
+    if ($challenge eq $OP->{STATUS_NO_USER}) {
+	show('no such user! ');
+	return;
+    }
+    elsif ($challenge eq $OP->{STATUS_NO_PUBKEY}) {
+	show('no public key info! ');
+	return;
+    }
+    elsif ($challenge eq $OP->{STATUS_OK}) {
+	show("challenge($challenge)");
+	$challenge = $client->set_pubkey($auth->export_key());
     }
 
-    die "[Client] login failed: public key info mismatch.\n" 
-	if $challenge eq $OP->{STATUS_BAD_PUBKEY};
+    if ($challenge eq $OP->{STATUS_BAD_PUBKEY}) {
+	show('public key mismatch! ');
+	return;
+    }
 
-    die "[Client] login failed: signature rejected by server.\n"
-	if $client->setsign($auth->clearsign($challenge)) == 
-	   $OP->{STATUS_BAD_SIGNATURE};
+    my $signature = $auth->clearsign($challenge)
+	or show('cannot make signature! ') and return;
+
+    if ($client->set_sign($signature) eq $OP->{STATUS_BAD_SIGNATURE}) {
+	show('signature rejected! ');
+	return;
+    }
 
     return 1;
 }
 
-sub FETCH {
-    my ($self, $key) = @_;
+sub auth_crypt {
+    my ($client, $user, $pass) = @_;
+    my ($status, $salt) = $client->auth_crypt($user) or return;
 
-    ${$self->{_phash}} = $key;
-    return 1;
+    if ($status eq $OP->{STATUS_NO_USER}) {
+	show('no such user! ');
+	return;
+    }
+
+    return (
+	$client->set_crypted(crypt($pass, $salt)) eq $OP->{STATUS_ACCEPTED}
+    );
 }
 
-sub DESTROY {}
+sub auth_none {
+    my ($client) = @_;
+    return $client->auth_none();
+}
+
+sub quit {
+    foreach my $client (@delegators) {
+	$client->quit() if $client;
+    }
+    @delegators = ();
+}
+
+sub show {
+    no warnings 'once';
+    print $_[0] if $OurNet::BBS::DEBUG;
+}
+
+
+## Connected ##########################################################
+# do the real job via AUTOLOAD passing and ArrayHashMonster magic
 
 sub AUTOLOAD {
     my $self = shift;
     my ($ego, $op);
 
-    return unless rindex($AUTOLOAD, '::') > -1;
-    $AUTOLOAD = substr($AUTOLOAD, rindex($AUTOLOAD, '::') + 2);
+    $AUTOLOAD = substr($AUTOLOAD, (
+	(rindex($AUTOLOAD, ':') + 1) || return
+    ));
 
     if (tied(%{$self})) {
         $op = "OBJECT_$AUTOLOAD";
@@ -180,15 +300,15 @@ sub AUTOLOAD {
         $ego = $self;
     }
 
-    # debug "<call: $prefix.$AUTOLOAD (@_)>\n";
-    my @result = $delegators[$ego->{id}]->invoke(
+    my @result = $delegators[$ego->{id}]->__(
 	$OP->{$op} || $op, $ego->{optree}, @_
     );
-    # debug "</call>\n";
 
     if (@result == 4 and !$result[0] and my $opcode = $result[1]) {
         return $ego->spawn($result[2], $result[3])
 	    if $OP->{$opcode} eq 'OBJECT_SPAWN';
+
+	return undef if $OP->{$opcode} eq 'STATUS_IGNORED';
 
         die "$result[2] $result[3] [$OP->{$opcode}]\n";
     }
@@ -196,11 +316,23 @@ sub AUTOLOAD {
     return wantarray ? @result : $result[0];
 }
 
+sub FETCH {
+    my ($self, $key) = @_;
+
+    ${$self->{_phash}} = $key;
+
+    return 1;
+}
+
+sub DESTROY {}
+
 1;
 
+package OurNet::BBS::ClientArrayProxy;
 
-package OurNet::BBS::ClientProxy;
-*OurNet::BBS::ClientProxy::AUTOLOAD = *OurNet::BBS::Client::AUTOLOAD;
+our $AUTOLOAD;
+
+*OurNet::BBS::ClientArrayProxy::AUTOLOAD = *OurNet::BBS::Client::AUTOLOAD;
 
 sub TIEARRAY {
     my ($class, $hash) = @_;
@@ -226,11 +358,11 @@ sub STORE {
         undef ${$self->{_flag}};
 
         # hash store: VERY CRUDE HACK!
-        ${ref($ego).'::AUTOLOAD'} = '::STORE';
+        $AUTOLOAD = ':STORE';
         return ($ego->AUTOLOAD($key, @_))[0];
     }
     else {
-        ${ref($ego).'::AUTOLOAD'} = '::STORE';
+        $AUTOLOAD = ':STORE';
         return ($ego->AUTOLOAD($key, @_))[0];
     }
 }
@@ -250,11 +382,11 @@ sub FETCH {
         undef ${$self->{_flag}};
 
         # hash fetch: VERY CRUDE HACK!
-        ${ref($ego).'::AUTOLOAD'} = '::FETCH';
-        return ($ego->AUTOLOAD($key))[0];
+	$AUTOLOAD = ':FETCH';
+	return ($ego->AUTOLOAD($key))[0];
     }
     else {
-        ${ref($ego).'::AUTOLOAD'} = '::FETCHARRAY';
+        $AUTOLOAD = ':FETCHARRAY';
         return ($ego->AUTOLOAD($key))[0];
     }
 }

@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/BBSAgent/ArticleGroup.pm $ $Author: autrijus $
+# $Revision: #5 $ $Change: 1215 $ $DateTime: 2001/06/19 01:21:04 $
+
 package OurNet::BBS::BBSAgent::ArticleGroup;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -9,18 +11,14 @@ BEGIN { __PACKAGE__->initvars() }
 
 # Fetch key: id savemode author date title filemode body
 sub refresh_meta {
-    my ($self, $key) = @_;
+    my ($self, $key, $arrayfetch) = @_;
 
-    if ($key and $key ne int($key)) {
-        # hash key -- no recaching needed
-        die 'hash key not implemented (!)';
-    }
+    die 'hash key not implemented (!)' if $key and !$arrayfetch;
 
     $self->FETCHSIZE();
 
     if ($key) {
         # out-of-bound check
-        local $^W = 0; # usage of int() below is voluntary
         return if $key < 1 or $key > $self->{_cache}{_article_last};
         return if $self->{_phash}[0][0]{$key};
 
@@ -29,7 +27,7 @@ sub refresh_meta {
                 $self->{board},
                 $self->{basepath},
                 $key,
-                "",
+                '',
                 $key,
             );
 
@@ -59,8 +57,7 @@ sub refresh_meta {
 sub FETCHSIZE {
     my $self = $_[0];
 
-    local $^W; # usage of int() below is voluntary
-
+    no warnings 'numeric';
     $self->{_cache}{_article_last} 
 	||= int($self->{bbsobj}->board_list_last($self->{board}));
 
@@ -70,10 +67,14 @@ sub FETCHSIZE {
 sub STORE {
     my ($self, $key, $value) = @_;
     my $body = $value->{body};
-    $body =~ s/\x0d?\x0a/\x0d\x0a/g;
-    $body = << ".";
-作者: $value->{header}{From} 看板: $value->{header}{Board}\r\n標題: $value->{header}{Subject}\r\n時間: $value->{header}{Date}\r\n\r\n$body
-.
+
+    $body =~ s/\015?\012/\015\012/g; # crlf: sensible
+    $body = "作者: $value->{header}{From} ".
+            "看板: $value->{header}{Board}\015\012".
+	    "標題: $value->{header}{Subject}\015\012".
+	    "時間: $value->{header}{Date}\015\012\015\012".
+	    $body;
+
     use Mail::Address;
     my $author = (Mail::Address->parse($value->{header}{From}))[0]->user;
 
@@ -81,19 +82,15 @@ sub STORE {
         $author =~ s/\..*//;
         $author .= '.';
     }
-    # We still need to fake remote article headers.
-=comment
-    else {
-        $author = ''; # no need to change author
-    }
-=cut
 
     $self->{bbsobj}->article_post_raw(
         $self->{board},
-	    $value->{header}{Subject},
-	    $body,
-	    $author,
-	);
+	$value->{header}{Subject},
+	$body,
+	$author,
+    );
+
+    return 1;
 }
 
 sub EXISTS {

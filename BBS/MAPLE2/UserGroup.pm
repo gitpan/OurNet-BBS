@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/MAPLE2/UserGroup.pm $ $Author: autrijus $
+# $Revision: #3 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+
 package OurNet::BBS::MAPLE2::UserGroup;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -55,11 +57,8 @@ sub refresh_meta {
             $key ||= $self->{maxuser}++;
         }
     }
-    else {
-        # $key = $self->{maxuser}++;
-    }
 
-    print "new $name $key\n";
+    print "new $name $key\n" if $OurNet::BBS::DEBUG;
 
     my $obj = $self->module('User')->new(
         $self->{bbsroot},

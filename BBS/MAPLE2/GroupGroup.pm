@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/MAPLE2/GroupGroup.pm $ $Author: autrijus $
+# $Revision: #3 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+
 package OurNet::BBS::MAPLE2::GroupGroup;
-$VERSION = "0.1";
 
 # do we have group in standard maple2??
 

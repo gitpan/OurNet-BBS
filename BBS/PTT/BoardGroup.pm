@@ -1,9 +1,10 @@
+# $File: //depot/OurNet-BBS/BBS/PTT/BoardGroup.pm $ $Author: autrijus $
+# $Revision: #3 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+
 package OurNet::BBS::PTT::BoardGroup;
-$VERSION = "0.1";
 
 use base qw/OurNet::BBS::MAPLE2::BoardGroup/;
 use fields qw/_cache _shm _shmid/;
-use vars qw/$packstring $packsize @packlist/;
 
 BEGIN {
     __PACKAGE__->initvars(
@@ -16,6 +17,5 @@ BEGIN {
 
     )
 };
-
 
 1;

@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/CVIC/Group.pm $ $Author: autrijus $
+# $Revision: #4 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+
 package OurNet::BBS::CVIC::Group;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -12,23 +14,23 @@ sub refresh_meta {
     my $board;
 
     return unless $self->{group};
-    local *GROUP;
 
     return if $self->{mtime} and (stat($file))[9] == $self->{mtime};
 
-    open (GROUP, $file) or open (GROUP, "+>>$file")
+    my $GROUP;
+    open($GROUP, $file) or open($GROUP, '+>>', $file)
         or die("Cannot read group file $file: $!");
 
     $self->{mtime} = (stat($file))[9];
 
     my %remain = %{$self->{_cache} || {}};
-    while ($key = <GROUP>) {
+    while ($key = <$GROUP>) {
         $key = $1 if $key =~ m/(\w+)/;
 	delete $remain{$key};
         next if exists $self->{_cache}{$key};
 
         if (-e "$self->{bbsroot}/group/$key") {
-            $self->{_cache}{$key} = OurNet::BBS::CVIC::Group->new(
+            $self->{_cache}{$key} = $self->module('Group')->new(
                 $self->{bbsroot}, $key
             );
         }
@@ -40,17 +42,16 @@ sub refresh_meta {
             );
         }
         elsif (-e "$self->{bbsroot}/boards/$key/.DIR") {
-            require OurNet::BBS::CVIC::Board;
-
-            $self->{_cache}{$key} = OurNet::BBS::CVIC::Board->new(
+            $self->{_cache}{$key} = $self->module('Board')->new(
                 $self->{bbsroot}, $key
             );
         }
     }
+
     foreach my $del (keys(%remain)) {
 	delete $self->{_cache}{$del};
     }
-    close GROUP;
+    close $GROUP;
 }
 
 sub DELETE {
@@ -58,16 +59,15 @@ sub DELETE {
     my $file = "$self->{bbsroot}/group/$self->{group}";
 
     $self->refresh($key);
-    # print join(',', keys(%{$self->{_cache}}));
     return unless delete($self->{_cache}{$key});
 
-    open GROUP, $file or die "Cannot read group file $file: $!";
-    my $content = join ('', grep { not m/\b$key\b/ } <GROUP>);
-    close GROUP;
+    open(my $GROUP, $file) or die "Cannot read group file $file: $!";
+    my $content = join ('', grep { not m/\b$key\b/ } <$GROUP>);
+    close $GROUP;
 
-    open GROUP, ">$file" or die "Cannot write group file $file: $!";
-    print GROUP $content;
-    close GROUP;
+    open($GROUP, '>', $file) or die "Cannot write group file $file: $!";
+    print $GROUP $content;
+    close $GROUP;
 }
 
 sub STORE {
@@ -75,13 +75,14 @@ sub STORE {
     my $file = "$self->{bbsroot}/group/$self->{group}";
 
     return if exists $self->{_cache}{$key}; # doesn't make sense yet
+
     die "doesn't exists such group or board $key: panic!"
         unless (-e "$self->{bbsroot}/group/$key" or
                 -e "$self->{bbsroot}/boards/$key/.DIR");
 
-    open GROUP, ">>$file" or die "Cannot append group file $file: $!";
-    print GROUP $key, "\n";
-    close GROUP;
+    open(my $GROUP, '>>', $file) or die "Cannot append group file $file: $!";
+    print $GROUP $key, "\n";
+    close $GROUP;
 }
 
 sub remove {

@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/OurNet/BBS.pm $ $Author: autrijus $
+# $Revision: #5 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+
 package OurNet::BBS::OurNet::BBS;
-$VERSION = "0.1";
 
 use strict;
 use OurNet::BBS::Client;

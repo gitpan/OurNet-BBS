@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/MAPLE3/User.pm $ $Author: autrijus $
+# $Revision: #9 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+
 package OurNet::BBS::MAPLE3::User;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -30,14 +32,14 @@ use constant GEM_SYSOP       => 3;
 
 BEGIN {
     __PACKAGE__->initvars(
-        '$packstring' => 'iZ13Z14CZ20Z24IiiILLLLZ32iLZ60Z60Z60Z60Z120L',
-        '$packsize'   => 512,
-        '@packlist'   => [
-            qw/userno userid passwd signature realname username userlevel 
-               numlogins numposts ufo firstlogin lastlogin staytime tcheck 
-               lasthost numemail tvalid email address justify vmail ident 
-               vtime/
-        ],
+	'$packstring' => 'iZ13Z14CZ20Z24IiiILLLLZ32iLZ60Z60Z60Z60Z120L',
+	'$packsize'   => 512,
+	'@packlist'   => [ qw(
+	    userno userid passwd signature realname username userlevel 
+	    numlogins numposts ufo firstlogin lastlogin staytime tcheck 
+	    lasthost numemail tvalid email address justify vmail ident 
+	    vtime
+	) ],
     );
 }
 
@@ -50,39 +52,43 @@ sub refresh_meta {
     my $self = shift;
     my $key  = shift;
 
-    $self->{_cache}{uid} ||= $self->{recno} - 1;
-    $self->{_cache}{name} ||= $self->{id};
-    return if exists $self->{_cache}{$key};
+    return if $key and exists $self->{_cache}{$key};
 
-    my $dir = "$self->{bbsroot}/usr/".
-              lc(substr($self->{id}, 0, 1))."/$self->{id}";
-    local *USR;
+    my $path = "$self->{bbsroot}/usr/".
+              lc(substr($self->{id}, 0, 1)."/$self->{id}");
+
     local $/;
 
-    unless (-d $dir) {
-        mkdir $dir or die "cannot mkdir $dir\n";
-        open USR, ">$self->{bbsroot}/usr/".
-                  lc(substr($self->{id}, 0, 1))."/$self->{id}".
-                  "/.ACCT";
+    unless (-d $path) {
+        mkdir $path or die "cannot mkdir $path\n";
+
+        open(my $USR, '>', "$path/.ACCT") or die "cannot open: $path/.ACCT";
+
         $self->{_cache}{userno} = (stat("$self->{bbsroot}/.USR"))[7] / 16;
         $self->{_cache}{userid} = $self->{id};
         $self->{_cache}{userlevel} = 15;
         $self->{_cache}{ufo} = 15;
-        print USR pack($packstring, @{$self->{_cache}}{@packlist});
-        close USR;
-        open USR, ">>$self->{bbsroot}/.USR" or die "too random";
-        print USR pack("LZ12", time(), $self->{id});
-        close USR;
+        print $USR pack($packstring, @{$self->{_cache}}{@packlist});
+        close $USR;
+
+        open($USR, '>>', "$self->{bbsroot}/.USR")
+	    or die "cannot open: $path/.USR";
+        print $USR pack("LZ12", time(), $self->{id});
+        close $USR;
     }
 
-    my $path = "$self->{bbsroot}/usr/".
-		lc(substr($self->{id}, 0, 1)).
-		"/$self->{id}";
+    if (!defined($key) or $self->contains($key)) {
+	open my $USR, "$path/.ACCT" or die "cannot: open $path/.ACCT";
+	@{$self->{_cache}}{@packlist} = unpack($packstring, <$USR>);
+	close $USR;
 
-    if ($self->contains($key)) {
-	open USR, "$path/.ACCT";
-	@{$self->{_cache}}{@packlist} = unpack($packstring, <USR>);
-	close USR;
+	no warnings 'numeric';
+
+	$self->{recno} ||= $self->{_cache}{userno} + 1;
+	$self->{_cache}{uid} ||= $self->{recno} - 1;
+	$self->{_cache}{name} ||= $self->{id};
+
+	return 1;
     }
     else {
 	die "malicious intent stopped cold" if index($key, '../') > -1;
@@ -100,7 +106,7 @@ sub refresh_mailbox {
 
     $self->{_cache}{mailbox} ||= $self->module('ArticleGroup')->new(
         $self->{bbsroot},
-        'usr/'.lc(substr($self->{id}, 0, 1))."/$self->{id}".
+        'usr/'.lc(substr($self->{id}, 0, 1)."/$self->{id}").
         '',
         '',
         '.DIR',
@@ -114,22 +120,21 @@ sub STORE {
     $self->refresh_meta($key);
 
     my $path = "$self->{bbsroot}/usr/".
-		lc(substr($self->{id}, 0, 1)).
-		"/$self->{id}";
+		lc(substr($self->{id}, 0, 1)."/$self->{id}");
 
     if ($self->contains($key)) {
 	$self->{_cache}{$key} = $value;
 
-	open USR, ">$path/.ACCT";
-	print USR pack($packstring, @{$self->{_cache}}{@packlist});
-	close USR;
+	open my $USR, '>', "$path/.ACCT";
+	print $USR pack($packstring, @{$self->{_cache}}{@packlist});
+	close $USR;
     }
     else {
 	die "malicious intent stopped cold" if index($key, '../') > -1;
 
 	require OurNet::BBS::ScalarFile;
 	tie $self->{_cache}{$key}, 'OurNet::BBS::ScalarFile',
-	    "$path/$key";
+	    "$path/$key" unless $self->{_cache}{$key};
 
 	$self->{_cache}{$key} = $value;
     }

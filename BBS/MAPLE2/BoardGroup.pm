@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/MAPLE2/BoardGroup.pm $ $Author: autrijus $
+# $Revision: #5 $ $Change: 1204 $ $DateTime: 2001/06/18 19:29:55 $
+
 package OurNet::BBS::MAPLE2::BoardGroup;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::Base/;
@@ -59,11 +61,11 @@ sub refresh_meta {
 
     $self->{mtime} = (stat($file))[9];
 
-    open DIR, "$file" or die "can't read DIR file $file $!";
+    open(my $DIR, $file) or die "can't read DIR file $file $!";
 
     foreach (0..int((stat($file))[7] / 128)-1) {
-        seek DIR, 128 * $_, 0;
-        read DIR, $board, 13;
+        seek $DIR, 128 * $_, 0;
+        read $DIR, $board, 13;
         $board = unpack('Z13', $board);
         next unless $board and substr($board,0,1) ne "\0";
 
@@ -76,7 +78,7 @@ sub refresh_meta {
         });
     }
 
-    close DIR;
+    close $DIR;
 }
 
 sub EXISTS {
@@ -86,16 +88,16 @@ sub EXISTS {
     my $file = "$self->{bbsroot}/$BRD";
     return 0 if $self->{mtime} and (stat($file))[9] == $self->{mtime};
 
-    open DIR, $file or die "can't read DIR file $file: $!";
+    open(my $DIR, $file) or die "can't read DIR file $file: $!";
 
     my $board;
     foreach (0..int((stat($file))[7] / 128)-1) {
-        seek DIR, 128 * $_, 0;
-        read DIR, $board, 13;
+        seek $DIR, 128 * $_, 0;
+        read $DIR, $board, 13;
         return 1 if unpack('Z13', $board) eq $key;
     }
 
-    close DIR;
+    close $DIR;
     return 0;
 }
 
@@ -125,6 +127,8 @@ sub STORE {
             shm     => $self->{shm},
         })} = (%{$value}, bstamp => time());
     }
+
+    return 1;
 }
 
 1;

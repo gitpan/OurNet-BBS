@@ -1,5 +1,7 @@
+# $File: //depot/OurNet-BBS/BBS/MAPLE3/Board.pm $ $Author: autrijus $
+# $Revision: #5 $ $Change: 1134 $ $DateTime: 2001/06/14 18:08:06 $
+
 package OurNet::BBS::MAPLE3::Board;
-$VERSION = "0.1";
 
 use strict;
 use base qw/OurNet::BBS::MAPLE2::Board/;
@@ -17,8 +19,8 @@ sub readok {
     my $readlevel = $self->{readlevel};
 
     return ((!$readlevel or $readlevel & $user->{userlevel})
-         or ($user->id() eq $self->bm())
-	 or $user->has_perm('PERM_SYSOP'));
+	or ($user->id() eq $self->bm())
+	or $user->has_perm('PERM_SYSOP'));
 }
 
 sub post_new_board {
