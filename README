@@ -1,0 +1,28 @@
+This is the README file for OurNet::BBS, the Component Object Model 
+for BBS systems, by Elixir Group and OurInternet Inc.
+
+* Installation
+
+libOurNet uses the standard perl module install process:
+
+perl Makefile.PL
+make
+make install
+
+Note that scripts in bin/ directory could be useful tutorials, too.
+
+* Copyright
+
+Copyright 2001 by Autrijus Tang <autrijus@autrijus.org>,
+                  Chia-Liang Kao <clkao@clkao.org>.
+
+All rights reserved.  You can redistribute and/or modify
+this bundle under the same terms as Perl itself.
+
+* Introduction
+
+OurNet::BBS implements a flexible object model for different 
+BBS backends.
+
+(to be continued)
+

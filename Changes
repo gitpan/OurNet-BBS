@@ -1,0 +1,602 @@
+Revision history for Perl extension OurNet::BBS.
+
+[v1.5] 
+
+Change 883 on 2001/02/27 by autrijus@autribsd
+
+           * branch out for seperate release 
+
+[v1.4]
+
+Change 881 on 2001/06/02 by autrijus@autribsd
+
+	   * ebxysnc utilizes purge() now.
+
+Change 880 on 2001/06/02 by autrijus@autricvic
+
+	   * did away with ArticleGroup purge.
+	* fine-tuned Base.pm
+
+Change 873 on 2001/06/02 by autrijus@autribsd
+
+	   * BBSAgent now still dies. otherwise breaks everything.
+
+Change 872 on 2001/06/02 by autrijus@autribsd
+
+	   * massive readjustment for sanity testing
+	* BBS-BBSAgent.t now tests each bbs's sanity
+	* BBS-BBSAgent.t tests login sanity if cmdline argument specified.
+	* fixed ofo.bbs for guest logins, now silently fails
+	* upon error, BBSAgent.pm now returns via $bbsagent->{errmsg} instead of die.
+
+Change 871 on 2001/06/01 by autrijus@autribsd
+
+	   * added headl, headr, headi in BBSAgent processing
+	* incoporated kcwu's suggested features, but reimplemented
+	* numberous templates fix
+
+Change 865 on 2001/06/01 by autrijus@autribsd
+
+	   * implments purge.
+
+Change 836 on 2001/05/29 by clkao@claptop
+
+	edit article anyway to fake headers.
+
+Change 832 on 2001/05/28 by autrijus@autribsd
+
+	   * fixed warning on articlegroup int() call
+	* did away with *all* \d in bbsagent retrieval
+	* introduced the new elixus.bbs
+	* ebxpass now recognizes optional 3rd argument as user
+
+Change 830 on 2001/05/28 by clkao@claptop
+
+	kludge: purge cached articles when accessing key % 103 == 0.
+
+Change 829 on 2001/05/28 by clkao@claptop
+
+	Fix a serious STORE overhead. There is a refresh($key) in STORE, while the key is empty so a non-key refresh_meta would be called. This reloads the whole articlegroup, and thus makes STORE slower and slower.
+
+Change 828 on 2001/05/27 by clkao@claptop
+
+	touch mtime in key refresh.
+
+Change 825 on 2001/05/27 by autrijus@autrihome
+
+	* fixed 'wait, or' sequence
+	* smartboy:
+	1. § ±Æ setv ¤ ¥]¥i¦H¦r¥ê´N
+	2. load file, ­,¬­¨¬¤¨¦¤ procedure, «,««¨«ª¨ setv ·v¶·¶¶¥¶....
+	3. ¥3¤ ­[ debug message
+
+Change 816 on 2001/05/26 by clkao@claptop
+
+	cache board_list_last result.
+
+Change 764 on 2001/05/16 by clkao@claptop
+
+	initialize bstamp in board creation
+
+Change 655 on 2001/04/16 by autrijus@autribsd
+
+	       * additional fix on chronos issue
+
+Change 654 on 2001/04/16 by autrijus@autribsd
+
+	       * chronos algorithm: did away with random!!
+
+Change 651 on 2001/04/15 by autrijus@autribsd
+
+	       <autrijus> to use random is disgusting. :(
+	       <clkao> why is that some disgusting?
+	       <autrijus> if the rand() rolls 0.99999999925 *twice*
+	       <autrijus> it could overflow
+	       <clkao> then it will be 0, nothing bad
+	       <autrijus> ok, i give up the argument
+
+Change 650 on 2001/04/15 by autrijus@autribsd
+
+	       * <autrijus> you didn't mean in the field?
+	       * <clkao> no.. :D *ft*
+
+Change 649 on 2001/04/15 by autrijus@autribsd
+
+	       * <clkao> please change /first num last/ in AG.pm to /num first last/
+	       * <clkao> that's strange.
+
+Change 648 on 2001/04/15 by clkao@claptop
+
+	kludge fix for wrong fields init.
+
+Change 647 on 2001/04/15 by autrijus@autribsd
+
+	       * do away with sleep 1; on new_id -- just post it ahead of time!
+
+Change 646 on 2001/04/15 by autrijus@autribsd
+
+	       * BBSAgent test now skips without a valid connection
+	       * reduced warnings
+	       * updated TODO and Changes
+
+Change 643 on 2001/04/12 by autrijus@autricvic
+
+	       * enables correct parsing of header on maple2 store
+	       * do away with the barfed <CHANGE THIS> in sync.pl
+
+Change 638 on 2001/04/11 by clkao@claptop
+
+	implement nntp posting.
+
+Change 637 on 2001/04/11 by clkao@claptop
+
+	detect deleted articles.
+
+Change 633 on 2001/04/03 by clkao@claptop
+
+	date should have default too, to survive nonheader articles.
+
+Change 632 on 2001/04/03 by clkao@claptop
+
+	survive articles without headers.
+
+Change 622 on 2001/03/31 by autrijus@autrihome
+
+	biten by camel: EXISTS undef handling bug
+
+Change 619 on 2001/03/31 by autrijus@autrihome
+
+	okay, that was YASB submission
+
+Change 618 on 2001/03/31 by autrijus@autrihome
+
+	see if this works
+
+Change 617 on 2001/03/31 by autrijus@autrihome
+
+	article header in MELIX STORE now arrange alphabetically (or viewer.c won't render it properly)
+
+Change 614 on 2001/03/31 by autrijus@autrihome
+
+	* MAPLE3/MELIX Archive STORE implementation
+	* Archive syncer
+
+Change 609 on 2001/03/30 by clkao@claptop
+
+	initial import of NNTP backend.
+
+Change 603 on 2001/03/24 by autrijus@clwin
+
+	BBS::DBI now warning safe.
+
+Change 602 on 2001/03/24 by autrijus@clwin
+
+	BBS::DBI now passes sanity test.
+
+Change 601 on 2001/03/24 by autrijus@clwin
+
+	Initial attempt at DBI backend (skeleton only). Untested. Passes syntax at least.
+
+Change 597 on 2001/03/23 by clkao@claptop
+
+	use \r\n when sending over network.
+
+Change 596 on 2001/03/23 by clkao@claptop
+
+	cache read articles.
+
+Change 587 on 2001/03/22 by autrijus@autricvic
+
+	       * cancelled 'old format' MAPLE3 warnings
+	       * more tolerant on bugward compatilibity.
+
+Change 586 on 2001/03/22 by autrijus@clwin
+
+	hostname now calculates on load
+
+Change 585 on 2001/03/22 by autrijus@clwin
+
+	* full BBSAgent STORE support finished.
+	* article_post_raw now only attempt to change author if it's not the poster herself
+
+Change 583 on 2001/03/22 by clkao@claptop
+
+	minor tweaks and fix articlegroup->STORE.
+
+Change 581 on 2001/03/22 by autrijus@clwin
+
+	* maple2 now supports header storage.
+	* utilized Sys::Hostname in BBS::Utils to form msgids
+
+Change 577 on 2001/03/21 by autrijus@clwin
+
+	* initial support of article header of MAPLE2 systems; might break everything!
+
+Change 572 on 2001/03/21 by clkao@claptop
+
+	fix header parsing.
+
+Change 568 on 2001/03/20 by clkao@claptop
+
+	header/body catchup and Message-ID stuff.
+
+Change 565 on 2001/03/20 by autrijus@autricvic
+
+	       * revert Base to #12 -- #13 didn't fix anything
+
+Change 563 on 2001/03/20 by clkao@claptop
+
+	let out-of-bound access of article by number die.
+
+Change 561 on 2001/03/20 by autrijus@clwin
+
+	* {header} on BBSAgent backend implemented, including Message-ID.
+
+Change 560 on 2001/03/20 by autrijus@clwin
+
+	* YASB in Utils
+
+Change 559 on 2001/03/20 by autrijus@clwin
+
+	* bbsagent variable implemented.
+	* fix double-slash bug in BBS::Util::locate.
+	* implemented get_msgid hash function
+
+Change 554 on 2001/03/19 by clkao@claptop
+
+	YASB.
+
+Change 552 on 2001/03/18 by clkao@claptop
+
+	YASB.
+
+Change 551 on 2001/03/18 by clkao@claptop
+
+	some catch up. replying messages now works.
+
+Change 547 on 2001/03/12 by clkao@claptop
+
+	implement $art->{header}{HeaderName} and use subs.
+
+Change 532 on 2001/03/02 by clkao@claptop
+
+	declared overriding EXISTS.
+
+Change 531 on 2001/03/02 by autrijus@autribsd
+
+	       * use of File::Find in BBS::Utils changed to require to reduce overhead
+
+Change 530 on 2001/03/02 by autrijus@autribsd
+
+	       * fixes Base class delegation
+
+Change 524 on 2001/03/02 by autrijus@autribsd
+
+	       * Group backend for MELIX
+
+Change 523 on 2001/03/02 by autrijus@autribsd
+
+	       * fixed melix inheritance tree
+
+Change 521 on 2001/03/01 by autrijus@autribsd
+
+	       * new boards now makes gem
+
+Change 518 on 2001/02/28 by autrijus@autribsd
+
+	       * fix packstring error
+
+Change 516 on 2001/02/28 by autrijus@autribsd
+
+	       * New user, STORE, and various thing cleared.
+
+Change 515 on 2001/02/28 by autrijus@autribsd
+
+	       * Board tie now complete, sans shmtouch()
+	* Fix User tie bugs
+
+Change 514 on 2001/02/28 by autrijus@autribsd
+
+	       * Fix user tie's packstring
+	* Uses $self->module() on Group tie
+
+Change 513 on 2001/02/28 by autrijus@autribsd
+
+	       * Maple3 User tie implemented. (read-only)
+
+Change 512 on 2001/02/28 by clkao@claptop
+
+	add group support for maple3.
+
+Change 511 on 2001/02/27 by autrijus@autricvic
+
+	       * Fix FuzzyIndex import from DB_File
+	* Initial submit for MAPLE3 User tie; not working
+
+Change 467 on 2001/02/16 by autrijus@autricvic
+
+	       * implements EXISTS for Maple3 and Melix's Board
+
+Change 461 on 2001/02/13 by clkao@claptop
+
+	oops, i left this file in my home.
+
+Change 450 on 2001/02/11 by clkao@claptop
+
+	hopefully fixes everything.
+
+Change 449 on 2001/02/11 by clkao@claptop
+
+	a little optimization
+
+Change 448 on 2001/02/11 by clkao@claptop
+
+	fix message sending and receiving. phew.
+
+Change 447 on 2001/02/11 by clkao@claptop
+
+	import of the MELIX backend. which now (sorta) supports message receiving thru Session.
+
+Change 446 on 2001/02/11 by clkao@claptop
+
+	use hashref to init Session. make registered/instance ours.
+
+Change 445 on 2001/02/11 by clkao@claptop
+
+	really really fix that YASB.
+
+Change 444 on 2001/02/11 by clkao@claptop
+
+	really fix bug of last submit.
+
+Change 443 on 2001/02/11 by clkao@claptop
+
+	fix typo in die.
+
+Change 442 on 2001/02/10 by clkao@claptop
+
+	add m3 minimum session support.
+
+Change 441 on 2001/02/10 by clkao@claptop
+
+	abstract shminit.
+
+Change 431 on 2001/02/08 by clkao@claptop
+
+	YASB.
+
+Change 429 on 2001/02/08 by clkao@claptop
+
+	enable change author. yoyee!
+
+Change 422 on 2001/02/07 by clkao@claptop
+
+	* add second arg to BCOM::BAgent for login user. (kludge)
+	* use article_post_raw to emulate verbatim posting
+
+Change 421 on 2001/02/07 by clkao@claptop
+
+	add article_post
+
+Change 420 on 2001/02/07 by clkao@claptop
+
+	add twserv template and some fixes to BCOM::BAgent to make it work.
+
+Change 419 on 2001/02/07 by clkao@claptop
+
+	shut some warnings up.
+
+Change 417 on 2001/02/06 by clkao@claptop
+
+	fix gem writing(write article and articlegroup now works).
+
+Change 416 on 2001/02/06 by clkao@claptop
+
+	turns on warning and remove suspicious m2-specific condition.
+
+Change 415 on 2001/02/06 by clkao@claptop
+
+	fix gem reading.
+
+Change 413 on 2001/02/06 by autrijus@autrihome
+
+	* introduced __PACKAGE__->initvar() syntax
+	* modules now strict safe
+
+Change 393 on 2001/02/01 by autrijus@autribsd
+
+	       * add mailbox support to BBSCOM
+	* change ANSIScreen-1.0 to ANSIScreen path, updated to 1.1
+	* initial geek code submit
+
+Change 392 on 2001/01/28 by clkao@claptop
+
+	YASB.
+
+Change 391 on 2001/01/28 by clkao@claptop
+
+	fix brdshm tying.
+
+Change 390 on 2001/01/28 by clkao@claptop
+
+	make hash assignment really work in instanciation.
+
+Change 389 on 2001/01/28 by clkao@claptop
+
+	last submission was a mistake. m3 board/article should be working, while archive not yet.
+
+Change 382 on 2001/01/19 by autrijus@autricvic
+
+	       * BBSApp now works properly with CVIC backend.
+	* fixed ScalarFile append bug
+
+Change 378 on 2001/01/18 by autrijus@autribsd
+
+	       * Session with cb_msg will now set its pid to 0 on DESTROY.
+
+Change 377 on 2001/01/18 by autrijus@autribsd
+
+	       * clearing up of Session and User backends
+	* trial release of new fianjmo
+
+Change 375 on 2001/01/18 by autrijus@autribsd
+
+	* Inheritance fix #2, introduced getvar
+
+Change 374 on 2001/01/18 by autrijus@autribsd
+
+	       * cleaned up inheritance method
+	* now each object has a $obj->backend and $obj->module($arg)
+
+Change 371 on 2001/01/18 by autrijus@autribsd
+
+	       * UserGroup support fix
+
+Change 370 on 2001/01/18 by autrijus@autribsd
+
+	       * fixed FuzzyIndex::insert vs. null tied scalar
+	       * added UserGroup support for PTT & CVIC
+
+Change 365 on 2001/01/15 by autrijus@autribsd
+
+	     * added session classes for the other backends
+	     * updates manifesto
+	     * adds kaorc as test case BBSApp
+
+Change 364 on 2001/01/15 by autrijus@autribsd
+
+	    * now detects sessions new to echo-agent
+
+Change 363 on 2001/01/15 by autrijus@autribsd
+
+	* user tie using shm implemented
+	* array fetch now sets 2nd argument to refresh();
+
+Change 361 on 2001/01/15 by clkao@claptop
+
+	o complete session manipulation support.
+	o echo-agent which would replace bbsagent based interactive applications.
+
+Change 358 on 2001/01/15 by clkao@claptop
+
+	o implement message sending.
+	o (sorta) fixed packstring.
+
+Change 353 on 2001/01/14 by autrijus@autribsd
+
+	     * added experimental LWP::Protocol support
+	     * now forks PlServer daemonize servers
+	     * added bin/bbscomd to export whole BBSs (no permission check!)
+	     * PlClient now has a remote_ref field to keep track of remote object 
+	     * revised TODO items
+
+Change 342 on 2001/01/12 by autrijus@autribsd
+
+	   * cleared up PlClient STORE and FETCH
+	   * integrated *.bbs to put under BBSAgent/ instead of BBS/BBSAgent/
+	   * added splice work'round under 5.7.1.
+	   * much better test cases, including RPC ones
+	   * updated version number for FuzzyIndex
+
+Change 336 on 2001/01/09 by autrijus@hcchien
+
+	*really* fixed BBS::BBSAgent
+
+Change 333 on 2000/12/30 by clkao@claptop
+
+	fix padding.
+
+Change 332 on 2000/12/30 by clkao@claptop
+
+	back out last commit. should specify it in BBS->new.
+
+Change 331 on 2000/12/30 by clkao@claptop
+
+	USHMSIZE = MAXACTIVE + 4
+
+Change 330 on 2000/12/30 by clkao@claptop
+
+	don't use shmscalar tying Session. use raw shmread.
+
+Change 329 on 2000/12/30 by clkao@claptop
+
+	fixes things left from board{group}.pm
+
+Change 328 on 2000/12/30 by clkao@claptop
+
+	fix namespace/fields, etc.
+
+Change 327 on 2000/12/30 by clkao@claptop
+
+	initial work on session support.
+
+Change 326 on 2000/12/29 by autrijus@autribishop
+
+	basic bbsagent-bbscom handling
+
+Change 323 on 2000/12/29 by autrijus@clwin
+
+	YASB #2
+
+Change 322 on 2000/12/29 by autrijus@clwin
+
+	YASB
+
+Change 321 on 2000/12/29 by autrijus@clwin
+
+	trial RPC submit
+
+Change 299 on 2000/12/16 by autrijus@autrihome
+
+	* Templator alpha release: use autrijus board as example.
+	* Downgraded ArticleGroup without .DIR to warning to compensate empty archive directories.
+	* Article now updates date with btime whenever possible.
+
+Change 293 on 2000/12/16 by clkao@claptop
+
+	delete cache when entries got removed.
+
+Change 292 on 2000/12/16 by autrijus@autrihome
+
+	implements article delete.
+
+Change 291 on 2000/12/16 by autrijus@autrihome
+
+	massive $_ hunt; fixed the $foo/$_ kludge in Monitor.
+
+Change 287 on 2000/12/15 by clkao@claptop
+
+	don't return null boards.
+
+Change 285 on 2000/12/14 by autrijus@autricvic
+
+	  emergency hack
+
+Change 263 on 2000/12/09 by autrijus@autrihome
+
+	* libOurNet cleanup
+	* get rid of warnings under BBS and BBSAgent
+	* add OurNet::BBS::Util::locate() to find template files
+	* revised test cases for BBS
+	* test case for FuzzyIndex
+
+Change 262 on 2000/12/09 by clkao@claptop
+
+	YASB.
+
+Change 261 on 2000/12/09 by clkao@claptop
+
+	fixes wrong base/field sequences. add debug info for shm.
+
+Change 260 on 2000/12/09 by clkao@claptop
+
+	touch share memory now implemented in Board.pm rather than executing external hacked touchshm in proposal.
+
+Change 259 on 2000/12/09 by autrijus@autricvic
+
+	crlf.
+
+Change 258 on 2000/12/08 by autrijus@autricvic
+
+	   mega submit for 1.4
+
